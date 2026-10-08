@@ -6,7 +6,7 @@ import { decide, newDecisionId } from "@heatgate/engine";
 import { defaultSimParams } from "@heatgate/sim";
 import { BadCursorError, type AuditFilter, type Store } from "../store/types.ts";
 import { SimulationQueue, workerRunner, type SimRunner } from "./simulations.ts";
-import { ApiFailure, OUTCOMES, POLICY_VERSIONS, decideRequest, riderId, simParams } from "./validate.ts";
+import { ApiFailure, OUTCOMES, POLICY_VERSIONS, decideRequest, riderId, simParams, simulationId } from "./validate.ts";
 
 export interface AppOptions {
   store: Store;
@@ -66,6 +66,7 @@ export function createApp({ store, runSimulation = workerRunner }: AppOptions) {
     const rider = query(req, "rider");
     const outcome = query(req, "outcome");
     const policy = query(req, "policy");
+    const simId = query(req, "simulationId");
     if (rider !== undefined) filter.riderId = riderId(rider, "rider");
     if (outcome !== undefined) {
       if (!OUTCOMES.includes(outcome as never)) throw new ApiFailure(400, "INVALID_REQUEST", `outcome must be one of ${OUTCOMES.join(", ")}`);
@@ -77,6 +78,7 @@ export function createApp({ store, runSimulation = workerRunner }: AppOptions) {
       }
       filter.policyVersion = policy as AuditFilter["policyVersion"];
     }
+    if (simId !== undefined) filter.simulationId = simulationId(simId, "simulationId");
     const limitText = query(req, "limit") ?? "50";
     const limit = Number(limitText);
     if (!/^\d+$/.test(limitText) || limit < 1 || limit > 200) {

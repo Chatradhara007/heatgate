@@ -1,13 +1,22 @@
 // In-memory store: for local runs, tests and the smoke script. Data is lost on restart.
 import type { Decision, SimulationJob } from "@heatgate/contracts";
-import { BadCursorError, type AuditFilter, type Page, type Store } from "./types.ts";
+import { BadCursorError, MAX_AUDITED_SIMULATIONS, type AuditFilter, type Page, type Store } from "./types.ts";
 
 export class MemoryStore implements Store {
   private decisions: Decision[] = []; // oldest first
   private simulations = new Map<string, SimulationJob>();
+  private auditedSimulations: string[] = []; // oldest first
 
   async putDecision(decision: Decision): Promise<void> {
     this.decisions.push(structuredClone(decision));
+  }
+
+  async putSimulationDecisions(simulationId: string, decisions: Decision[]): Promise<void> {
+    this.auditedSimulations = this.auditedSimulations.filter((id) => id !== simulationId).concat(simulationId);
+    const dropped = new Set([simulationId]);
+    while (this.auditedSimulations.length > MAX_AUDITED_SIMULATIONS) dropped.add(this.auditedSimulations.shift()!);
+    this.decisions = this.decisions.filter((d) => d.simulationId === undefined || !dropped.has(d.simulationId));
+    for (const d of decisions) this.decisions.push(structuredClone({ ...d, simulationId }));
   }
 
   async listDecisions(filter: AuditFilter, page: { limit: number; cursor?: string }): Promise<Page<Decision>> {
@@ -19,7 +28,8 @@ export class MemoryStore implements Store {
         (d) =>
           (filter.riderId === undefined || d.riderId === filter.riderId) &&
           (filter.outcome === undefined || d.outcome === filter.outcome) &&
-          (filter.policyVersion === undefined || d.policyVersion === filter.policyVersion),
+          (filter.policyVersion === undefined || d.policyVersion === filter.policyVersion) &&
+          (filter.simulationId === undefined || d.simulationId === filter.simulationId),
       )
       .reverse();
     const items = matching.slice(offset, offset + page.limit).map((d) => structuredClone(d));

@@ -1,8 +1,9 @@
 // One simulated day for one rule set and one seed, one step per minute (docs/spec/simulator.md).
-import type { DecideRequest, Frame, Metrics, Outcome, PolicyVersion, RiderState, SimParams } from "@heatgate/contracts";
+import type { DecideRequest, Decision, Frame, Metrics, Outcome, PolicyVersion, RiderState, SimParams } from "@heatgate/contracts";
 import { decide, heatIndexC } from "@heatgate/engine";
 import { CITY_KM, cityLayout, dayAlertLevel, demandLevelFor, distance, nearest, temperatureAt, type Point } from "./city.ts";
 import { between, poisson, stream, type Rng } from "./rng.ts";
+import { AuditSampler } from "./audit.ts";
 
 const HANDOVER_MIN = 5;
 const PAUSE_MIN = 15;
@@ -52,6 +53,7 @@ export interface DayResult {
   frames: Frame[];
   demandMinutes: [number, number, number]; // minutes spent quiet / normal / rush
   expiredOrders: number; // also inside ordersLate and missing from ordersDelivered
+  audit?: Decision[]; // only with { audit: true }: see sim/audit.ts
 }
 
 const legMinutes = (from: Point, to: Point, speed: number) => Math.ceil(distance(from, to) / speed);
@@ -137,7 +139,13 @@ const FRAME_STATE: Record<Exclude<InternalState, "offline">, RiderState> = {
   paused: "paused",
 };
 
-export function runDay(params: SimParams, policy: PolicyVersion, seed: number, simulationId: string): DayResult {
+export function runDay(
+  params: SimParams,
+  policy: PolicyVersion,
+  seed: number,
+  simulationId: string,
+  options: { audit?: boolean } = {},
+): DayResult {
   const { hubs, coolingPoints } = cityLayout();
   const riders = makeRiders(params, seed);
   const orders = makeOrders(params, seed, hubs);
@@ -148,6 +156,7 @@ export function runDay(params: SimParams, policy: PolicyVersion, seed: number, s
   const decisions: Record<Outcome, number> = { ALLOW: 0, SKIP_ORDER: 0, DENY: 0, FORCE_REST: 0 };
   const demandMinutes: [number, number, number] = [0, 0, 0];
   const frames: Frame[] = [];
+  const audit = options.audit ? new AuditSampler() : undefined;
   let events: Frame["events"] = [];
   let nextOrder = 0;
   let unsafe90 = 0;
@@ -246,6 +255,7 @@ export function runDay(params: SimParams, policy: PolicyVersion, seed: number, s
         };
         const d = decide(request, policy, now);
         decisions[d.outcome]++;
+        audit?.add(d);
         events.push({ riderId: r.id, outcome: d.outcome, rule: d.firedRules[0] ?? "" });
         if (d.outcome === "ALLOW") {
           r.state = "delivering";
@@ -323,5 +333,7 @@ export function runDay(params: SimParams, policy: PolicyVersion, seed: number, s
     heatFeeCollectedInr: 0,
     decisions,
   };
-  return { metrics, frames, demandMinutes, expiredOrders: expired };
+  const result: DayResult = { metrics, frames, demandMinutes, expiredOrders: expired };
+  if (audit) result.audit = audit.take();
+  return result;
 }
