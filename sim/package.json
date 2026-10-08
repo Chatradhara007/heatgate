@@ -4,5 +4,5 @@
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
-  "dependencies": { "@heatgate/contracts": "*" }
+  "dependencies": { "@heatgate/contracts": "*", "@heatgate/engine": "*" }
 }
