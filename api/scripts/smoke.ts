@@ -174,6 +174,23 @@ async function run() {
     job?.result?.params,
   );
   check("done job has finishedAt, no error", typeof job?.finishedAt === "string" && job?.error === undefined, job && { ...job, result: undefined });
+
+  // The run's audit trail: tagged with the simulationId, rider ids that match the frames.
+  const simId = sim.json.simulationId as string;
+  const trail = await call("GET", `/audit?simulationId=${encodeURIComponent(simId)}&limit=200`);
+  const items = (trail.json.items ?? []) as Decision[];
+  check(
+    "GET /audit?simulationId=<id> -> entries from that run, simulated time",
+    trail.status === 200 && items.length > 0 && items.every((d) => d.simulationId === simId && d.at.startsWith("2026-05-20T1")),
+    trail.json,
+  );
+  const frameRider = runs["ndma-2025"]?.frames.find((f) => f.riders.length > 0)?.riders[0].id;
+  const riderTrail = frameRider && (await call("GET", `/audit?simulationId=${encodeURIComponent(simId)}&rider=${frameRider}`));
+  check(
+    `a rider id from a frame (${frameRider}) has at least one audit entry`,
+    !!riderTrail && riderTrail.status === 200 && riderTrail.json.items.length > 0 && riderTrail.json.items.every((d: Decision) => d.riderId === frameRider),
+    riderTrail && riderTrail.json,
+  );
 }
 
 const server = spawn(process.execPath, ["--import", "tsx", fileURLToPath(new URL("../src/index.ts", import.meta.url))], {

@@ -70,6 +70,15 @@ export function riderId(v: unknown, path: string): string {
   return id;
 }
 
+// Simulation ids look like "sim-01J..." (POST /simulations) or "sim-1-2-3" (simulate() default).
+const SIMULATION_ID = /^[A-Za-z0-9-]{1,64}$/;
+
+export function simulationId(v: unknown, path: string): string {
+  const id = str(v, path);
+  if (!SIMULATION_ID.test(id)) throw bad(`${path} must be letters, digits and dashes`);
+  return id;
+}
+
 export function decideRequest(body: unknown): DecideRequest {
   const b = obj(body, "body");
   const rider = obj(b.rider, "rider");

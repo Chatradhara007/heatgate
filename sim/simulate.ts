@@ -1,13 +1,21 @@
 // Runs every rule set on the same seeds and reports the mean and the min-max range.
-import type { Metrics, NumericMetric, Outcome, SimParams, SimResult } from "@heatgate/contracts";
+import type { Decision, Metrics, NumericMetric, Outcome, PolicyVersion, SimParams, SimResult } from "@heatgate/contracts";
 import { runDay } from "./dispatcher.ts";
 
 const OUTCOMES: Outcome[] = ["ALLOW", "SKIP_ORDER", "DENY", "FORCE_REST"];
 
-export function simulate(params: SimParams, simulationId = `sim-${params.seeds.join("-")}`): SimResult {
+export interface SimOutput {
+  result: SimResult;
+  // First seed only, per rule set: every non-ALLOW decision plus 1 in 20 ALLOWs, at most 3000 (sim/audit.ts).
+  // Simulated time, and the same pseudonymous rider ids as the frames.
+  audit: Partial<Record<PolicyVersion, Decision[]>>;
+}
+
+export function simulateWithAudit(params: SimParams, simulationId = `sim-${params.seeds.join("-")}`): SimOutput {
   const runs: SimResult["runs"] = {};
+  const audit: SimOutput["audit"] = {};
   for (const policy of params.policyVersions) {
-    const days = params.seeds.map((seed) => runDay(params, policy, seed, simulationId));
+    const days = params.seeds.map((seed, i) => runDay(params, policy, seed, simulationId, { audit: i === 0 }));
     const all = days.map((d) => d.metrics);
     const keys = Object.keys(all[0]).filter((k) => k !== "decisions") as NumericMetric[];
     const mean = { decisions: {} } as Metrics;
@@ -19,6 +27,11 @@ export function simulate(params: SimParams, simulationId = `sim-${params.seeds.j
     }
     for (const o of OUTCOMES) mean.decisions[o] = all.reduce((a, m) => a + m.decisions[o], 0) / all.length;
     runs[policy] = { metrics: mean, range, frames: days[0].frames };
+    audit[policy] = days[0].audit ?? [];
   }
-  return { simulationId, params, runs };
+  return { result: { simulationId, params, runs }, audit };
+}
+
+export function simulate(params: SimParams, simulationId = `sim-${params.seeds.join("-")}`): SimResult {
+  return simulateWithAudit(params, simulationId).result;
 }

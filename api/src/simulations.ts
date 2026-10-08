@@ -1,9 +1,10 @@
 // Async simulation jobs: queued -> running -> done | failed. One run at a time, first in first out.
 import { Worker } from "node:worker_threads";
-import type { SimParams, SimResult, SimulationJob } from "@heatgate/contracts";
+import type { Decision, SimParams, SimulationJob } from "@heatgate/contracts";
+import type { SimOutput } from "@heatgate/sim";
 import type { Store } from "../store/types.ts";
 
-export type SimRunner = (params: SimParams, simulationId: string) => Promise<SimResult>;
+export type SimRunner = (params: SimParams, simulationId: string) => Promise<SimOutput>;
 
 // Default runner: a worker thread. Workers inherit the parent's loader flags, so this works under tsx.
 export const workerRunner: SimRunner = (params, simulationId) =>
@@ -32,7 +33,13 @@ export class SimulationQueue {
   private async execute(job: SimulationJob, params: SimParams): Promise<void> {
     try {
       await this.store.putSimulation({ ...job, status: "running" });
-      const result = await this.run(params, job.simulationId);
+      const { result, audit } = await this.run(params, job.simulationId);
+      // Audit trail first, so it is there as soon as the job reads "done". Newest first in GET /audit
+      // means latest simulated time first; the sort is stable, so rule sets keep params order within a minute.
+      const trail = Object.values(audit)
+        .flatMap((decisions): Decision[] => decisions ?? [])
+        .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+      await this.store.putSimulationDecisions(job.simulationId, trail);
       await this.store.putSimulation({ ...job, status: "done", finishedAt: new Date().toISOString(), result });
     } catch (err) {
       console.error(`simulation ${job.simulationId} failed:`, err);
