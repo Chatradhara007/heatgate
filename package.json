@@ -13,7 +13,8 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json && tsc -p engine && tsc -p sim && tsc -p api",
-    "check-policies": "tsx scripts/check-policies.ts"
+    "check-policies": "tsx scripts/check-policies.ts",
+    "sim:full": "tsx sim/scripts/full.ts"
   },
   "keywords": [
     "cedar",
@@ -26,6 +27,7 @@
   "license": "MIT",
   "type": "module",
   "devDependencies": {
+    "@types/node": "^26.6.4",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"
