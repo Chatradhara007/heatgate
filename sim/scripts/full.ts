@@ -1,7 +1,7 @@
 // npm run sim:full — the full 5-seed run, plus the tuning and heat index tables.
 import { heatIndexC } from "@heatgate/engine";
 import type { NumericMetric } from "@heatgate/contracts";
-import { defaultSimParams, runDay, simulate, temperatureAt } from "../src/index.ts";
+import { defaultSimParams, runDay, simulateWithAudit, temperatureAt } from "../src/index.ts";
 
 console.log("3 PM heat index (°C) by peak air temperature and humidity");
 console.log("peak   RH25 RH35 RH45");
@@ -22,7 +22,7 @@ console.log(
 
 const params = defaultSimParams();
 const start = Date.now();
-const result = simulate(params);
+const { result, earningsPctOfNoRules } = simulateWithAudit(params);
 console.log(`\nDefault day: peak ${params.peakTempC} °C, humidity ${params.humidityPct}%, alert ${params.alertLevel}, seeds ${params.seeds.join(",")}`);
 const show = (k: NumericMetric, digits = 0) =>
   Object.entries(result.runs).map(([policy, run]) => {
@@ -35,4 +35,15 @@ console.log(`avg delivery min: ${show("avgDeliveryMinutes", 1)}`);
 console.log(`late (incl. expired): ${show("ordersLate")}`);
 console.log(`unsafe min > 90:  ${show("unsafeExposureMin90")}`);
 console.log(`unsafe min > 120: ${show("unsafeExposureMin120")}`);
+// Money: all rupee amounts are placeholders from params.economics.
+const f = params.fairFeatures;
+console.log(`\nmoney (₹ placeholders; heat fee ${f.heatFee ? "on" : "off"}, shade waiting ${f.shadeWaitCountsAsRest ? "ON" : "off"}):`);
+console.log(`avg earnings ₹:   ${show("avgEarningsPerRiderInr")}`);
+console.log(
+  `% of no-rules:    ${Object.entries(earningsPctOfNoRules).map(([p, r]) => `${p} ${r!.mean.toFixed(1)} (${r!.min.toFixed(1)}-${r!.max.toFixed(1)})`).join(" | ")}`,
+);
+console.log(`lowest rider ₹:   ${show("minEarningsPerRiderInr")}`);
+console.log(`rest pay ₹:       ${show("restPayTotalInr")}`);
+console.log(`heat fee ₹:       ${show("heatFeeCollectedInr")}`);
+console.log(`incentive hit %:  ${show("incentiveHitRatePct", 1)}`);
 console.log(`\nrun time: ${((Date.now() - start) / 1000).toFixed(1)} s`);

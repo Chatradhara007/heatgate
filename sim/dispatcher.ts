@@ -4,6 +4,8 @@ import { decide, heatIndexC } from "@heatgate/engine";
 import { CITY_KM, cityLayout, dayAlertLevel, demandLevelFor, distance, nearest, temperatureAt, type Point } from "./city.ts";
 import { between, poisson, stream, type Rng } from "./rng.ts";
 import { AuditSampler } from "./audit.ts";
+import { dailyTarget, earningsSummary, orderPayInr, type RiderTally } from "./earnings.ts";
+import { applyHeatFee, shadeWaitOn, waitInShade } from "./fair.ts";
 
 const HANDOVER_MIN = 5;
 const PAUSE_MIN = 15;
@@ -46,6 +48,12 @@ interface SimRider {
   minutesSinceBreak: number;
   exposureMinutesToday: number;
   rodeThisMinute: boolean;
+  // earnings (sim/earnings.ts)
+  ordersDelivered: number;
+  orderPayInr: number;
+  restMinutes: number;
+  restOrPauseMinutes: number;
+  shadeMinutes: number; // continuous minutes idle at a hub (shade waiting, sim/fair.ts)
 }
 
 export interface DayResult {
@@ -53,6 +61,9 @@ export interface DayResult {
   frames: Frame[];
   demandMinutes: [number, number, number]; // minutes spent quiet / normal / rush
   expiredOrders: number; // also inside ordersLate and missing from ordersDelivered
+  cancelledOrders: number; // dropped by customers because of the heat fee; not in ordersTotal
+  targetOrders: number; // the daily target before incentive protection
+  riders: RiderTally[];
   audit?: Decision[]; // only with { audit: true }: see sim/audit.ts
 }
 
@@ -81,6 +92,11 @@ export function makeRiders(params: SimParams, seed: number): SimRider[] {
       minutesSinceBreak: 0,
       exposureMinutesToday: 0,
       rodeThisMinute: false,
+      ordersDelivered: 0,
+      orderPayInr: 0,
+      restMinutes: 0,
+      restOrPauseMinutes: 0,
+      shadeMinutes: 0,
     };
   });
 }
@@ -139,17 +155,24 @@ const FRAME_STATE: Record<Exclude<InternalState, "offline">, RiderState> = {
   paused: "paused",
 };
 
+// options.noRulesOrdersPerRider: orders per rider in the no-rules run on the same seed, for the daily
+// target. Left out, it comes from this run (no-rules) or from an extra no-rules run.
 export function runDay(
   params: SimParams,
   policy: PolicyVersion,
   seed: number,
   simulationId: string,
-  options: { audit?: boolean } = {},
+  options: { audit?: boolean; noRulesOrdersPerRider?: number[] } = {},
 ): DayResult {
   const { hubs, coolingPoints } = cityLayout();
   const riders = makeRiders(params, seed);
-  const orders = makeOrders(params, seed, hubs);
+  const heatIndexAt = (minute: number) =>
+    Math.round(heatIndexC(temperatureAt(params.peakTempC, minute / 60), params.humidityPct));
+  const fee = applyHeatFee(makeOrders(params, seed, hubs), heatIndexAt, params, policy, seed);
+  const orders = fee.orders;
   const alertLevel = dayAlertLevel(params.alertLevel, params.peakTempC);
+  const shade = shadeWaitOn(params, policy);
+  const atHub = (p: Point) => distance(p, nearest(p, hubs)) < 1e-9;
 
   const waiting: SimOrder[] = [];
   const deliveryMinutes: number[] = [];
@@ -168,7 +191,7 @@ export function runDay(
   for (let minute = params.startHour * 60; minute < params.endHour * 60; minute++) {
     const hour = minute / 60;
     const tempC = temperatureAt(params.peakTempC, hour);
-    const hi = Math.round(heatIndexC(tempC, params.humidityPct));
+    const hi = heatIndexAt(minute);
     const now = new Date(Date.UTC(2026, 4, 20, 0, minute)); // simulated time
 
     // 1. Log riders in and out (a rider on a delivery finishes it first).
@@ -185,11 +208,27 @@ export function runDay(
     // 3. Count down rests and pauses.
     for (const r of onShift) {
       r.rodeThisMinute = false;
-      if (r.state === "resting" && --r.restLeft <= 0) {
-        r.state = "idle";
-        if (!r.multiApp) r.minutesSinceBreak = 0;
-      } else if (r.state === "paused" && --r.pauseLeft <= 0) {
-        r.state = "idle";
+      if (r.state === "resting") {
+        r.restMinutes++;
+        r.restOrPauseMinutes++;
+        if (--r.restLeft <= 0) {
+          r.state = "idle";
+          if (!r.multiApp) r.minutesSinceBreak = 0;
+        }
+      } else if (r.state === "paused") {
+        r.restOrPauseMinutes++;
+        if (--r.pauseLeft <= 0) r.state = "idle";
+      }
+    }
+
+    // 3b. Shade waiting (heatgate-fair, off by default): idle riders ride to the nearest hub and wait there.
+    if (shade) {
+      for (const r of onShift) {
+        if (r.state !== "idle" || atHub(r.pos)) continue;
+        const hub = nearest(r.pos, hubs);
+        const d = distance(r.pos, hub);
+        r.pos = d <= r.speed ? { x: hub.x, y: hub.y } : { x: r.pos.x + ((hub.x - r.pos.x) * r.speed) / d, y: r.pos.y + ((hub.y - r.pos.y) * r.speed) / d };
+        r.rodeThisMinute = true;
       }
     }
 
@@ -208,6 +247,8 @@ export function runDay(
       if (r.route.length > 0) continue;
       if (r.state === "delivering") {
         deliveryMinutes.push(minute + 1 - r.order!.createdMin);
+        r.ordersDelivered++;
+        r.orderPayInr += orderPayInr(r.order!.distanceKm, params.economics);
         r.order = undefined;
         r.state = "idle";
       } else {
@@ -286,9 +327,16 @@ export function runDay(
 
     // 6. Exposure. Idle, delivering and riding-to-rest riders are outdoors.
     //    Paused and resting riders are on break, except multi-app riders.
+    //    With shade waiting on, an idle rider who stays at a hub is in shade (multi-app riders excepted:
+    //    like a rest, they are taken to keep working on the other app).
     for (const r of riders) {
       if (r.state === "offline") continue;
       if (r.state === "paused") pausedRiderMinutes++;
+      if (shade && r.state === "idle" && !r.rodeThisMinute && !r.multiApp && atHub(r.pos)) {
+        waitInShade(r);
+        continue;
+      }
+      r.shadeMinutes = 0;
       const outdoors =
         r.state === "idle" || r.state === "delivering" || r.state === "toCooling" || r.rodeThisMinute;
       const onBreak = r.state === "resting" || r.state === "paused";
@@ -314,6 +362,19 @@ export function runDay(
     }
   }
 
+  const tallies: RiderTally[] = riders.map((r) => ({
+    id: r.id,
+    ordersDelivered: r.ordersDelivered,
+    orderPayInr: r.orderPayInr,
+    restMinutes: r.restMinutes,
+    restOrPauseMinutes: r.restOrPauseMinutes,
+  }));
+  const noRulesOrders =
+    options.noRulesOrdersPerRider ??
+    (policy === "no-rules" ? tallies : runDay(params, "no-rules", seed, simulationId).riders).map((t) => t.ordersDelivered);
+  const targetOrders = dailyTarget(noRulesOrders, params.economics);
+  const money = earningsSummary(tallies, targetOrders, params.economics, params.pay[policy]);
+
   const sorted = [...deliveryMinutes].sort((a, b) => a - b);
   const metrics: Metrics = {
     unsafeExposureMin90: unsafe90,
@@ -325,15 +386,20 @@ export function runDay(
     avgDeliveryMinutes: sorted.length ? sorted.reduce((a, b) => a + b, 0) / sorted.length : 0,
     p90DeliveryMinutes: percentile(sorted, 0.9),
     ordersLate: sorted.filter((m) => m > LATE_AFTER_MIN).length + expired, // expired orders count as late
-    // Money metrics come with sim/earnings.ts and sim/fair.ts (not built yet).
-    avgEarningsPerRiderInr: 0,
-    minEarningsPerRiderInr: 0,
-    incentiveHitRatePct: 0,
-    restPayTotalInr: 0,
-    heatFeeCollectedInr: 0,
+    // Money: placeholder rupee amounts from params.economics (sim/earnings.ts, sim/fair.ts).
+    ...money,
+    heatFeeCollectedInr: fee.heatFeeCollectedInr,
     decisions,
   };
-  const result: DayResult = { metrics, frames, demandMinutes, expiredOrders: expired };
+  const result: DayResult = {
+    metrics,
+    frames,
+    demandMinutes,
+    expiredOrders: expired,
+    cancelledOrders: fee.cancelled,
+    targetOrders,
+    riders: tallies,
+  };
   if (audit) result.audit = audit.take();
   return result;
 }
