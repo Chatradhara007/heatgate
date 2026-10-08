@@ -1,0 +1,13 @@
+ruleId,policy,outcome,english,hindi,telugu,urdu
+ndma-rest-in-progress,ndma-2025,FORCE_REST,Your cooling break is still running. No penalty and no pay cut.,,,
+ndma-peak-hours-pause,ndma-2025,DENY,Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.,,,
+ndma-break-due,ndma-2025,FORCE_REST,Heat alert: 15-minute cooling break after 90 minutes of work. No penalty and no pay cut.,,,
+ndma-reduced-radius,ndma-2025,SKIP_ORDER,Heat alert: orders are limited to 3 km.,,,
+union-rest-in-progress,union-demand,FORCE_REST,Your cooling break is still running. No penalty.,,,
+union-rest-due,union-demand,FORCE_REST,Heatwave day: paid 20-minute cooling break after 2 hours of work. Nearest shade and water below. No penalty.,,,
+fair-rest-in-progress,heatgate-fair,FORCE_REST,Your paid cooling break is still running.,,,
+fair-rest-early-in-lull,heatgate-fair,FORCE_REST,Orders are slow right now. Take a paid 20-minute break in the shade.,,,
+fair-rest-due,heatgate-fair,FORCE_REST,Paid 20-minute cooling break. Nearest shade and water below.,,,
+fair-rest-hard-limit,heatgate-fair,FORCE_REST,Paid 20-minute cooling break. Nearest shade and water below.,,,
+fair-short-trips-only,heatgate-fair,SKIP_ORDER,This order is too far for this heat. You stay online for nearer orders.,,,
+fair-extreme-heat-stop,heatgate-fair,DENY,Extreme heat. Deliveries paused. Your incentive target is reduced for this time.,,,

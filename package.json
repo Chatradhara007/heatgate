@@ -14,6 +14,7 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json && tsc -p engine && tsc -p sim && tsc -p api",
     "check-policies": "tsx scripts/check-policies.ts",
+    "export-messages": "tsx scripts/export-messages.ts",
     "sim:full": "tsx sim/scripts/full.ts",
     "smoke": "tsx api/scripts/smoke.ts"
   },
