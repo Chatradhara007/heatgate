@@ -2,7 +2,7 @@ import * as cedar from "@cedar-policy/cedar-wasm/nodejs";
 import type { DecideRequest, Decision, Outcome, PolicyVersion } from "@heatgate/contracts";
 import { heatIndexC } from "./heatIndex.ts";
 import { newDecisionId } from "./ids.ts";
-import { POLICY_SETS, schema } from "./policies.ts";
+import { POLICY_SETS, SCHEMA_NAME } from "./policies.ts";
 
 const STRENGTH: Record<Outcome, number> = { ALLOW: 0, SKIP_ORDER: 1, DENY: 2, FORCE_REST: 3 };
 const DEFAULT_REST_MINUTES = 20;
@@ -40,14 +40,14 @@ export function decideWithHeatIndex(
     { uid: resource, attrs: { zone: request.order.zone, distanceKm }, parents: [] },
   ];
   const check = (action: string) => {
-    const answer = cedar.isAuthorized({
+    const answer = cedar.statefulIsAuthorized({
       principal,
       action: { type: "HeatGate::Action", id: action },
       resource,
       context,
-      schema,
+      preparsedSchemaName: SCHEMA_NAME,
       validateRequest: true,
-      policies: { staticPolicies: set.policies },
+      preparsedPolicySetId: policy,
       entities,
     });
     if (answer.type === "failure") throw new Error(`Cedar: ${answer.errors.map((e) => e.message).join("; ")}`);
