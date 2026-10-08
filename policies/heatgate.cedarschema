@@ -1,0 +1,25 @@
+namespace HeatGate {
+  entity Rider = {
+    vehicle: String, // "bike" | "cycle" | "ev"
+  };
+  entity Order = {
+    zone: String,
+    distanceKm: Long, // drop distance, rounded UP to a whole km
+  };
+  type HeatContext = {
+    heatIndexC: Long,            // rounded heat index at rider location, °C
+    hourOfDay: Long,             // 0-23, local time
+    minutesSinceBreak: Long,     // minutes worked since the last completed rest
+    exposureMinutesToday: Long,  // total outdoor minutes today
+    restMinutesRemaining: Long,  // > 0 while a forced rest is running
+    tripMinutes: Long,           // estimated outdoor minutes for this order
+    demandLevel: Long,           // 0 = quiet, 1 = normal, 2 = rush (share of riders busy)
+    alertLevel: Long,            // 0 = none, 1 = IMD orange, 2 = IMD red (assumed in the demo)
+  };
+  action AssignOrder appliesTo {
+    principal: Rider, resource: Order, context: HeatContext
+  };
+  action DeclineWithoutPenalty appliesTo {
+    principal: Rider, resource: Order, context: HeatContext
+  };
+}

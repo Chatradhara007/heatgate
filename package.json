@@ -1,0 +1,26 @@
+{
+  "name": "heatgate-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HeatGate: Heat-safety rules for delivery riders",
+  "workspaces": [
+    "contracts",
+    "engine",
+    "sim",
+    "api",
+    "web"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "check-policies": "node ./scripts/check-policies.mjs"
+  },
+  "keywords": [
+    "cedar",
+    "policy",
+    "safety",
+    "gig-economy",
+    "heatwave"
+  ],
+  "author": "",
+  "license": "MIT"
+}
