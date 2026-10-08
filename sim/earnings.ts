@@ -1,8 +1,19 @@
+// ===================================================================================================
+// MONEY MODEL: READ BEFORE QUOTING ANY RUPEE FIGURE (see docs/money-model.md)
+//
+// Every rupee amount is a PLACEHOLDER. The amounts (pay per order and per km, bonus, rest pay per minute,
+// heat fee) live in SimParams.economics, with defaults in sim/params.ts. Which rule set gets paid rest and
+// incentive protection is DEFAULT_PAY in contracts/types.ts, which is an assumption too. All of them
+// must be replaced with numbers from rider interviews. Never hard-code rupees here.
+//
+// The headline result is the BREAK-EVEN REST PAY (npm run sim:sensitivity): the smallest rest pay per
+// minute at which a rule set's riders earn at least as much as today (no-rules). It is NOT the earnings
+// percentage at the default rate. That percentage moves with every placeholder, and at the default
+// ₹1.5/min a rest pays more per hour than delivering does.
+// ===================================================================================================
+//
 // Rider earnings, the daily target and the pay protections (docs/spec/simulator.md,
 // "Fair features and rider earnings"). These apply to every rule set so they can be compared.
-//
-// All rupee amounts come from SimParams.economics and are PLACEHOLDERS for the demo,
-// to be replaced with numbers from rider interviews. Never hard-code rupees here.
 import type { Economics, PayProtections } from "@heatgate/contracts";
 
 export const PROTECTED_MIN_PER_ORDER = 30; // every 30 min of forced rest or pause lowers the target by 1 order
