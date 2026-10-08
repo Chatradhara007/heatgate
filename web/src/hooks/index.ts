@@ -7,4 +7,5 @@ export { useGetSimulation } from "./useGetSimulation.ts";
 export { usePolicies } from "./usePolicies.ts";
 export { useSimulation, type SimulationState } from "./useSimulation.ts";
 export type { AsyncState } from "./useAsync.ts";
+export { auditRowKey } from "../api.ts";
 export type { AuditPage, AuditQuery, PolicyInfo } from "../api.ts";
