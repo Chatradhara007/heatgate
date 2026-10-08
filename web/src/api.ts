@@ -31,6 +31,7 @@ export interface AuditQuery {
   rider?: string; // pseudonymous ID like "rider-014"
   outcome?: Outcome;
   policy?: PolicyVersion;
+  simulationId?: string; // only decisions logged by this simulation run
   limit?: number; // 1-200, default 50
   cursor?: string; // nextCursor from the previous page
 }
@@ -38,6 +39,13 @@ export interface AuditQuery {
 export interface AuditPage {
   items: Decision[]; // newest first
   nextCursor?: string;
+}
+
+// React key / Map key for one audit row. Decision ids repeat across simulations, so a row is only
+// unique by simulationId plus decisionId. Rows from live /decide calls have no simulationId.
+// Simulation ids are letters, digits and dashes, so ":" cannot appear inside one.
+export function auditRowKey(d: Pick<Decision, "simulationId" | "decisionId">): string {
+  return `${d.simulationId ?? ""}:${d.decisionId}`;
 }
 
 export interface SimulationAccepted {
@@ -127,7 +135,7 @@ export async function decide(req: DecideRequest, signal?: AbortSignal): Promise<
   return request("POST", "/decide", req, signal);
 }
 
-// GET /audit: logged decisions, newest first, one page at a time.
+// GET /audit: logged decisions, newest first, one page at a time. query.simulationId narrows it to one run.
 export async function audit(query: AuditQuery = {}, signal?: AbortSignal): Promise<AuditPage> {
   if (USE_FIXTURES) {
     const page = await fixtures.audit();
@@ -135,7 +143,8 @@ export async function audit(query: AuditQuery = {}, signal?: AbortSignal): Promi
       (d) =>
         (query.rider === undefined || d.riderId === query.rider) &&
         (query.outcome === undefined || d.outcome === query.outcome) &&
-        (query.policy === undefined || d.policyVersion === query.policy),
+        (query.policy === undefined || d.policyVersion === query.policy) &&
+        (query.simulationId === undefined || d.simulationId === query.simulationId),
     );
     return { items: items.slice(0, query.limit ?? 50) };
   }
