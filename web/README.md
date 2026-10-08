@@ -1,0 +1,56 @@
+# HeatGate web app
+
+Vite + React + TypeScript + Tailwind. It shows the HeatGate API: the Simulator (sandbox),
+Compare, Audit and Rider phone pages.
+
+## Run it
+
+From the repo root:
+
+```sh
+npm install                       # once, installs every workspace
+npm start --workspace api         # the API on http://localhost:3001 (the api workspace has no "dev" script yet)
+npm run dev --workspace web       # the web app on http://localhost:5173
+```
+
+Settings (copy `web/.env.example` to `web/.env`):
+
+| Variable            | Default                 | Meaning                                                    |
+| ------------------- | ----------------------- | ---------------------------------------------------------- |
+| `VITE_API_URL`      | `http://localhost:3001` | Where the API runs                                         |
+| `VITE_USE_FIXTURES` | `false`                 | `true` = no API needed; data comes from `web/fixtures/*.json` |
+
+The header shows which one is in use ("Data: http://localhost:3001" or "Data: fixtures").
+
+Other scripts (`--workspace web`):
+
+- `npm run build --workspace web`: typecheck, then a production build in `web/dist/`
+- `npm run typecheck --workspace web`
+- `npm run fixtures --workspace web`: regenerate `web/fixtures/` from a real 1-seed, 20-rider,
+  08:00–21:00 simulation plus real engine decisions. Only needed when the contracts change.
+
+## Teammate zone
+
+**You edit only `web/src/pages/` and `web/src/components/`.** Everything else is plumbing that
+must stay in step with `contracts/types.ts` and the API; ask before changing it.
+
+- **Data: use the hooks** from `src/hooks/index.ts`. Never call `fetch` (or import `api.ts`) in a
+  page or component. `src/api.ts` is the only file that talks to the network.
+  - `usePolicies()`, `useDefaults()`, `useAudit(query)`, `useGetSimulation(id)`: load on mount and
+    return `{ data, loading, error, reload }`.
+  - `useDecide()`, `useCreateSimulation()`: run on demand. They return `{ data, loading, error, run }`.
+  - `useSimulation()`: `run(params)` starts a simulation and polls it every second (120 s timeout).
+    It returns `{ data, loading, error, status, simulationId, elapsedMs, run, cancel }`, and
+    `status` goes `idle` → `queued` → `running` → `done` or `failed`.
+  - Always handle all three states. `components/AsyncView.tsx` does loading and error for you.
+- **Look: use the tokens** in `src/theme.ts` through Tailwind classes (`bg-surface`, `text-ink-muted`,
+  `p-md`, `gap-lg`, `rounded-lg`, `font-display`, …). Outcome colours: `bg-outcome-allow`,
+  `bg-outcome-skip-order`, `bg-outcome-deny`, `bg-outcome-force-rest` (or `outcomeColors` from
+  `theme.ts` for recharts). Do not hard-code hex colours.
+- **Types** come from `@heatgate/contracts` (`SimResult`, `Decision`, `Metrics`, …).
+- **Money** is a placeholder (`SimParams.economics`); show it as such. Heat index is a proxy for
+  outdoor heat stress, not a medical measure.
+- Rider IDs are pseudonymous. Never show or ask for names or phone numbers.
+- Charts: `recharts` is installed. No other new dependencies without asking.
+- Each page in `src/pages/` is a placeholder that already calls its hooks. Replace the markup freely,
+  keep the hooks.
