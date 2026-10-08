@@ -42,3 +42,14 @@ export const POLICY_SETS = Object.fromEntries(VERSIONS.map((v) => [v, load(v)]))
   PolicyVersion,
   LoadedPolicySet
 >;
+
+// Parse the schema and each rule set once into cedar-wasm's cache (per thread), so decide()
+// does not re-parse them on every call. The cache keys are the names below.
+export const SCHEMA_NAME = "heatgate";
+
+function preparse(what: string, answer: cedar.CheckParseAnswer) {
+  if (answer.type === "failure") throw new Error(`${what}: ${answer.errors.map((e) => e.message).join("; ")}`);
+}
+
+preparse("schema", cedar.preparseSchema(SCHEMA_NAME, schema));
+for (const v of VERSIONS) preparse(v, cedar.preparsePolicySet(v, { staticPolicies: POLICY_SETS[v].policies }));
