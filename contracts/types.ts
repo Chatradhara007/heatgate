@@ -190,3 +190,15 @@ export interface ApiError {
     message: string;
   };
 }
+
+// Added on core-api for async simulations
+export type SimulationStatus = "queued" | "running" | "done" | "failed";
+
+export interface SimulationJob {
+  simulationId: string;
+  status: SimulationStatus;
+  createdAt: string; // ISO
+  finishedAt?: string; // ISO, set when done or failed
+  result?: SimResult; // only when status === "done"
+  error?: ApiError["error"]; // only when status === "failed"
+}
