@@ -1,0 +1,18 @@
+[
+ {
+  "id": "no-rules",
+  "label": "Today: voluntary measures only (nothing enforced)"
+ },
+ {
+  "id": "ndma-2025",
+  "label": "NDMA advisory rules"
+ },
+ {
+  "id": "union-demand",
+  "label": "Union demand (IFAT)"
+ },
+ {
+  "id": "heatgate-fair",
+  "label": "HeatGate Fair"
+ }
+]
