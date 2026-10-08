@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+.env.local
+.aws-sam
+coverage
+*.log

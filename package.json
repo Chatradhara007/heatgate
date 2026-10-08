@@ -12,7 +12,8 @@
   ],
   "scripts": {
     "test": "vitest run",
-    "check-policies": "node ./scripts/check-policies.mjs"
+    "typecheck": "tsc -p tsconfig.json && tsc -p engine && tsc -p sim && tsc -p api",
+    "check-policies": "tsx scripts/check-policies.ts"
   },
   "keywords": [
     "cedar",
@@ -22,5 +23,11 @@
     "heatwave"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
 }
