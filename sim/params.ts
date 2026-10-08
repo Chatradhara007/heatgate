@@ -5,11 +5,15 @@ export function defaultSimParams(overrides: Partial<SimParams> = {}): SimParams 
   return {
     seeds: [1, 2, 3, 4, 5],
     riders: 50,
-    peakTempC: 42,
-    humidityPct: 45,
+    // Proposed demo day, NOT the contract's humidity default of 45%: at 45% the heat index passes
+    // heatgate-fair's extreme-heat stop (46) all afternoon from a 40 °C peak, so Fair delivers almost nothing.
+    peakTempC: 40,
+    humidityPct: 25,
     alertLevel: "auto",
     startHour: 8,
     endHour: 20,
+    // Tuned on a 34 °C no-rules day (5 seeds): 50 gives 21 / 29 / 50 quiet / normal / rush, the closest
+    // any value gets to the 20 / 50 / 30 target. Staggered shifts leave mornings and evenings short of riders.
     ordersPerHour: 50,
     shiftHours: { min: 6, max: 8 },
     multiAppPct: 40,

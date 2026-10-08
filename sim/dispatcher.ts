@@ -1,15 +1,16 @@
 // One simulated day for one rule set and one seed, one step per minute (docs/spec/simulator.md).
 import type { DecideRequest, Frame, Metrics, Outcome, PolicyVersion, RiderState, SimParams } from "@heatgate/contracts";
 import { decide, heatIndexC } from "@heatgate/engine";
-import { cityLayout, dayAlertLevel, demandLevelFor, distance, nearest, temperatureAt, type Point } from "./city.ts";
-import { between, poisson, stream } from "./rng.ts";
+import { CITY_KM, cityLayout, dayAlertLevel, demandLevelFor, distance, nearest, temperatureAt, type Point } from "./city.ts";
+import { between, poisson, stream, type Rng } from "./rng.ts";
 
 const HANDOVER_MIN = 5;
 const PAUSE_MIN = 15;
 const LATE_AFTER_MIN = 45;
 const CANDIDATES_PER_ORDER = 5;
 const FRAME_EVERY_MIN = 5;
-const DROP_RADIUS_KM = 5;
+const MAX_DROP_KM = 5;
+const EXPIRE_AFTER_MIN = 30;
 const SPEED_KM_PER_MIN = { bike: 18 / 60, ev: 18 / 60, cycle: 12 / 60 } as const;
 
 interface Leg {
@@ -50,11 +51,12 @@ export interface DayResult {
   metrics: Metrics;
   frames: Frame[];
   demandMinutes: [number, number, number]; // minutes spent quiet / normal / rush
+  expiredOrders: number; // also inside ordersLate and missing from ordersDelivered
 }
 
 const legMinutes = (from: Point, to: Point, speed: number) => Math.ceil(distance(from, to) / speed);
 
-function makeRiders(params: SimParams, seed: number): SimRider[] {
+export function makeRiders(params: SimParams, seed: number): SimRider[] {
   const rng = stream(seed, "riders");
   return Array.from({ length: params.riders }, (_, i) => {
     const v = rng();
@@ -90,16 +92,36 @@ function makeOrders(params: SimParams, seed: number, hubs: Point[]): SimOrder[] 
     const count = poisson(rng, ((busy ? 1.5 : 1) * params.ordersPerHour) / 60);
     for (let k = 0; k < count; k++) {
       const hub = hubs[Math.floor(rng() * hubs.length)];
-      const r = DROP_RADIUS_KM * Math.sqrt(rng());
-      const angle = rng() * 2 * Math.PI;
-      const drop = {
-        x: Math.min(10, Math.max(0, hub.x + r * Math.cos(angle))),
-        y: Math.min(10, Math.max(0, hub.y + r * Math.sin(angle))),
-      };
+      const drop = dropPoint(rng, hub);
       orders.push({ id: `order-${orders.length + 1}`, createdMin: minute, hub, drop, distanceKm: distance(hub, drop) });
     }
   }
   return orders;
+}
+
+// ASSUMPTION: drop distances are short-skewed (log-normal, median about 2.5 km, capped at 5 km).
+// Not measured; replace with real order data when we have it.
+const DROP_MEDIAN_KM = 2.6; // before the cap; the capped median comes out at about 2.5 km
+const DROP_SIGMA = 0.5;
+
+export function dropDistanceKm(rng: Rng): number {
+  for (;;) {
+    const normal = Math.sqrt(-2 * Math.log(1 - rng())) * Math.cos(2 * Math.PI * rng());
+    const d = DROP_MEDIAN_KM * Math.exp(DROP_SIGMA * normal);
+    if (d <= MAX_DROP_KM) return d;
+  }
+}
+
+// A drop point at a sampled distance from the hub, inside the city (tries a few directions first).
+function dropPoint(rng: Rng, hub: Point): Point {
+  const d = dropDistanceKm(rng);
+  let p = hub;
+  for (let tries = 0; tries < 8; tries++) {
+    const angle = rng() * 2 * Math.PI;
+    p = { x: hub.x + d * Math.cos(angle), y: hub.y + d * Math.sin(angle) };
+    if (p.x >= 0 && p.x <= CITY_KM && p.y >= 0 && p.y <= CITY_KM) return p;
+  }
+  return { x: Math.min(CITY_KM, Math.max(0, p.x)), y: Math.min(CITY_KM, Math.max(0, p.y)) };
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -132,6 +154,7 @@ export function runDay(params: SimParams, policy: PolicyVersion, seed: number, s
   let unsafe120 = 0;
   let restsForced = 0;
   let pausedRiderMinutes = 0;
+  let expired = 0;
 
   for (let minute = params.startHour * 60; minute < params.endHour * 60; minute++) {
     const hour = minute / 60;
@@ -186,6 +209,11 @@ export function runDay(params: SimParams, policy: PolicyVersion, seed: number, s
 
     // 5. Dispatch waiting orders, oldest first.
     while (nextOrder < orders.length && orders[nextOrder].createdMin === minute) waiting.push(orders[nextOrder++]);
+    // Orders unassigned for 30 minutes expire: undelivered, and counted as late.
+    while (waiting.length > 0 && minute - waiting[0].createdMin >= EXPIRE_AFTER_MIN) {
+      waiting.shift();
+      expired++;
+    }
     for (let i = 0; i < waiting.length; i++) {
       const order = waiting[i];
       const candidates = onShift
@@ -286,7 +314,7 @@ export function runDay(params: SimParams, policy: PolicyVersion, seed: number, s
     ordersDelivered: sorted.length,
     avgDeliveryMinutes: sorted.length ? sorted.reduce((a, b) => a + b, 0) / sorted.length : 0,
     p90DeliveryMinutes: percentile(sorted, 0.9),
-    ordersLate: sorted.filter((m) => m > LATE_AFTER_MIN).length,
+    ordersLate: sorted.filter((m) => m > LATE_AFTER_MIN).length + expired, // expired orders count as late
     // Money metrics come with sim/earnings.ts and sim/fair.ts (not built yet).
     avgEarningsPerRiderInr: 0,
     minEarningsPerRiderInr: 0,
@@ -295,5 +323,5 @@ export function runDay(params: SimParams, policy: PolicyVersion, seed: number, s
     heatFeeCollectedInr: 0,
     decisions,
   };
-  return { metrics, frames, demandMinutes };
+  return { metrics, frames, demandMinutes, expiredOrders: expired };
 }

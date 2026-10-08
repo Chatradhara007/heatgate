@@ -13,7 +13,8 @@
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json && tsc -p engine && tsc -p sim && tsc -p api",
-    "check-policies": "tsx scripts/check-policies.ts"
+    "check-policies": "tsx scripts/check-policies.ts",
+    "sim:full": "tsx sim/scripts/full.ts"
   },
   "keywords": [
     "cedar",
