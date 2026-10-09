@@ -1,6 +1,6 @@
 // One-off: writes web/fixtures/*.json from a short real simulation and real engine decisions.
 // Run from the repo root: npx tsx web/scripts/make-fixtures.ts
-import { mkdirSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { POLICY_LABELS, type DecideRequest, type Decision, type PolicyVersion } from "@heatgate/contracts";
@@ -22,6 +22,12 @@ write("policies.json", policies);
 
 // defaults.json: what GET /defaults returns.
 write("defaults.json", defaultSimParams());
+
+// breakEven.json: what GET /break-even returns, minus the stale flag the API adds. A byte-for-byte copy
+// of sim/results/break-even.json, so run npm run sim:breakeven first if that file is out of date.
+const breakEvenFile = join(OUT, "breakEven.json");
+copyFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "sim", "results", "break-even.json"), breakEvenFile);
+console.log(`breakEven.json: ${(statSync(breakEvenFile).size / 1024).toFixed(0)} KB (copied from sim/results/break-even.json)`);
 
 // simResult.json: a short real run. 1 seed, 20 riders, 08:00-21:00 (13 hours), all four rule sets.
 const params = defaultSimParams({ seeds: [1], riders: 20, startHour: 8, endHour: 21 });

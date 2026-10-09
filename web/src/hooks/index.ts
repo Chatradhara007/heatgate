@@ -1,5 +1,6 @@
 // Every way the web app gets data. Pages and components import from here, never from api.ts directly.
 export { useAudit } from "./useAudit.ts";
+export { useBreakEven } from "./useBreakEven.ts";
 export { useCreateSimulation } from "./useCreateSimulation.ts";
 export { useDecide } from "./useDecide.ts";
 export { useDefaults } from "./useDefaults.ts";
