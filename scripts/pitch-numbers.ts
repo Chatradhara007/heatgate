@@ -7,7 +7,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { BreakEvenReport, Decision, NumericMetric, PolicyVersion, SimParams, SimResult } from "@heatgate/contracts";
-import { auditRecord } from "../engine/src/index.ts";
+import { auditRecord, heatIndexC } from "../engine/src/index.ts";
 import { AUDIT_CAP_PER_RULE_SET, WEATHER_DAYS, dayAlertLevel, weatherDay, defaultSimParams, simulate, simulateWithAudit, weatherDaySummary, type ReplayDay } from "../sim/src/index.ts";
 
 const ROOT = join(import.meta.dirname, "..");
@@ -210,6 +210,27 @@ function auditClaim(audit: Partial<Record<PolicyVersion, Decision[]>>): Claim {
   };
 }
 
+// heatgate-fair's extreme-heat stop (policies/heatgate-fair.cedar: DENY at heatIndexC >= 46, rounded as sent to Cedar).
+const FAIR_STOP_HI = 46;
+// Whole hours of the working day (startHour to endHour) whose hourly heat index is at or above FAIR_STOP_HI.
+function hoursAtFairStop(params: SimParams, id: string): number {
+  return weatherDay(id)!.hourly.filter((h) => h.hour >= params.startHour && h.hour < params.endHour && Math.round(heatIndexC(h.tempC, h.humidityPct)) >= FAIR_STOP_HI).length;
+}
+
+// Weather days of the same city less than SPELL_GAP_DAYS apart (chained) count as one heat spell.
+const SPELL_GAP_DAYS = 30;
+function heatSpells(list: Scenario[]): string[][] {
+  const days = list.filter((s) => s.id !== "default").map((s) => weatherDay(s.id)!).sort((a, b) => a.city.localeCompare(b.city) || a.date.localeCompare(b.date));
+  const spells: string[][] = [];
+  days.forEach((d, i) => {
+    const prev = days[i - 1];
+    const near = prev && prev.city === d.city && (Date.parse(d.date) - Date.parse(prev.date)) / 86_400_000 < SPELL_GAP_DAYS;
+    if (near) spells[spells.length - 1].push(d.id);
+    else spells.push([d.id]);
+  });
+  return spells;
+}
+
 const LABEL: Partial<Record<NumericMetric, string>> = {
   unsafeExposureMin120: "unsafe min >120",
   unsafeExposureMin90: "unsafe min >90",
@@ -303,13 +324,40 @@ function caveats(params: SimParams, list: Scenario[]): string[] {
     "Idle riders do not move toward hubs (only with shade waiting, which is off by default).",
     ...(fairFewer.length
       ? [
-          "On the very humid Delhi and Lucknow days heatgate-fair delivers less than NDMA: " +
-            fairFewer
-              .map((s) => `${s.id} ${cell(s, "heatgate-fair", "ordersDelivered")} vs ${cell(s, "ndma-2025", "ordersDelivered")} (peak heat index ${weatherDaySummary(weatherDay(s.id)!).peakHeatIndexC} °C)`)
-              .join("; ") +
-            ". The pacing claim above holds for the default day, not for every real day.",
+          (() => {
+            const alertDays = list.filter((s) => s.id !== "default" && s.alert >= 1);
+            const hours = (s: Scenario) => hoursAtFairStop(params, s.id);
+            const fairMore = alertDays.filter((s) => !fairFewer.includes(s));
+            const maxMore = Math.max(...fairMore.map(hours));
+            const minFewer = Math.min(...fairFewer.map(hours));
+            const days = fairFewer
+              .map(
+                (s) =>
+                  `${s.id} ${cell(s, "heatgate-fair", "ordersDelivered")} vs ${cell(s, "ndma-2025", "ordersDelivered")}, ` +
+                  `${hours(s)} h at heat index ≥ ${FAIR_STOP_HI} °C, ${run(s, "heatgate-fair").metrics.decisions.DENY.toFixed(0)} DENY`,
+              )
+              .join("; ");
+            const range = `${Math.min(...fairMore.map(hours))}–${maxMore} h`;
+            return minFewer >= maxMore
+              ? `On days with a long stretch of heat index above ${FAIR_STOP_HI} °C, when Fair's extreme-heat stop halts deliveries, heatgate-fair delivers less than NDMA ` +
+                  `(hours counted ${params.startHour}:00–${params.endHour}:00): ${days}. On the ${fairMore.length} other alert days, where Fair delivers more, the heat index is at or above ${FAIR_STOP_HI} °C for ${range}. ` +
+                  "The pacing claim above holds for the default day, not for every real day."
+              : `On some alert days heatgate-fair delivers less than NDMA (hours counted ${params.startHour}:00–${params.endHour}:00): ${days}. ` +
+                  `The hours at heat index ≥ ${FAIR_STOP_HI} °C do not separate these days from the ${fairMore.length} alert days where Fair delivers more (${range}), so Fair's extreme-heat stop alone does not explain it. ` +
+                  "The pacing claim above holds for the default day, not for every real day.";
+          })(),
         ]
       : []),
+    (() => {
+      const spells = heatSpells(list);
+      const shared = spells.filter((sp) => sp.length > 1);
+      const days = list.length - 1;
+      return (
+        `Several weather days come from the same heat event: ${shared.map((sp) => sp.join(", ")).join("; ")}. ` +
+        `Counting days of the same city less than ${SPELL_GAP_DAYS} days apart as one spell, the ${days} weather days are ${spells.length} separate heat spells, ` +
+        `not ${days} independent events, so the day counts in the claims overstate how independent the evidence is.`
+      );
+    })(),
     "Heat index is a proxy for outdoor heat stress, not a medical measure. Unsafe minutes are rider-minutes (all riders, one day) outdoors at heat index ≥ 38 °C beyond 90 or 120 minutes since the last rest.",
   ];
 }
