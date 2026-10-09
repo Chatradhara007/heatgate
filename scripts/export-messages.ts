@@ -155,6 +155,7 @@ if (!args.includes("--check")) {
   process.exit(0);
 }
 
+const lf = (text: string) => text.replace(/\r\n/g, "\n");
 const problems: string[] = [];
 for (const lang of parseRequired(args)) {
   for (const r of rows) {
@@ -173,7 +174,8 @@ for (const [path, want] of [
 ] as const) {
   const current = existsSync(path) ? readFileSync(path, "utf8") : null;
   if (current === null) problems.push(`${rel(path)} is missing. Run npm run export-messages.`);
-  else if (current !== want) problems.push(`${rel(path)} is out of date. Run npm run export-messages.`);
+  // Ignore line endings: Git on Windows may check the files out with CRLF.
+  else if (lf(current) !== lf(want)) problems.push(`${rel(path)} is out of date. Run npm run export-messages.`);
 }
 
 if (problems.length === 0) {

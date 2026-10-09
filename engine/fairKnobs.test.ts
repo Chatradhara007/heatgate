@@ -15,7 +15,7 @@ import {
   summarizeFairPolicy,
 } from "./src/index.ts";
 
-const COMMITTED = readFileSync(join(import.meta.dirname, "..", "policies", "heatgate-fair.cedar"), "utf8");
+const COMMITTED = readFileSync(join(import.meta.dirname, "..", "policies", "heatgate-fair.cedar"), "utf8").replace(/\r\n/g, "\n"); // CRLF on a Windows checkout
 
 interface Row {
   heat: number;

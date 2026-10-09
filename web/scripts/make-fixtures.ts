@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { POLICY_LABELS, type DecideRequest, type Decision, type PolicyVersion } from "@heatgate/contracts";
 import { DEFAULT_FAIR_KNOBS, auditRecord, checkPolicyText, decide, policySchema, renderFairPolicy, summarizeFairPolicy } from "@heatgate/engine";
-import { between, cityLayout, dayAlertLevel, defaultSimParams, dropDistanceKm, simulate, stream, temperatureAt } from "@heatgate/sim";
+import { WEATHER_DAYS, between, cityLayout, dayAlertLevel, defaultSimParams, dropDistanceKm, simulate, stream, temperatureAt, weatherDaySummary } from "@heatgate/sim";
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
 mkdirSync(OUT, { recursive: true });
@@ -33,6 +33,9 @@ write("renderPolicy.json", {
   errors: fairErrors,
   rules: summarizeFairPolicy(DEFAULT_FAIR_KNOBS),
 });
+
+// weatherDays.json: what GET /weather-days returns (the committed real days in sim/data/weather).
+write("weatherDays.json", WEATHER_DAYS.map(weatherDaySummary));
 
 // breakEven.json: what GET /break-even returns, minus the stale flag the API adds. A byte-for-byte copy
 // of sim/results/break-even.json, so run npm run sim:breakeven first if that file is out of date.

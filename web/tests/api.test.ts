@@ -68,5 +68,6 @@ test("VITE_USE_FIXTURES=true returns the fixture without touching the network", 
 
 test("the fixture is a copy of sim/results/break-even.json (npm run fixtures --workspace web)", () => {
   const results = readFileSync(new URL("../../sim/results/break-even.json", import.meta.url), "utf8");
-  expect(readFileSync(fixtureFile, "utf8")).toBe(results);
+  const lf = (text: string) => text.replace(/\r\n/g, "\n"); // either file may be CRLF on a Windows checkout
+  expect(lf(readFileSync(fixtureFile, "utf8"))).toBe(lf(results));
 });
