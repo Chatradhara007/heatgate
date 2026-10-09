@@ -117,49 +117,110 @@ async function fixtureDecision(req: DecideRequest): Promise<Decision> {
   return { ...match, riderId: req.rider.id, orderId: req.order.id, policyVersion: req.policyVersion, simulationId: req.simulationId };
 }
 
-// ---- the API -----------------------------------------------------------------------------------
+// State tracking for live connection health (consumed by Layout & UI indicators)
+export let isBackendConnected = false;
+let hasLoggedHybridNotice = false;
+
+function logHybridFallback(endpoint: string, err: unknown) {
+  if (!hasLoggedHybridNotice) {
+    console.info(
+      `[HeatGate Hybrid Mode] Backend at ${API_URL} is offline or unreachable (${(err as Error)?.message || err}). Seamlessly falling back to verified local fixtures.`
+    );
+    hasLoggedHybridNotice = true;
+  }
+}
 
 // GET /policies: the four rule sets with their on-screen labels.
 export async function policies(signal?: AbortSignal): Promise<PolicyInfo[]> {
   if (USE_FIXTURES) return fixtures.policies();
-  return request("GET", "/policies", undefined, signal);
+  try {
+    const res = await request<PolicyInfo[]>("GET", "/policies", undefined, signal);
+    isBackendConnected = true;
+    return res;
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    isBackendConnected = false;
+    logHybridFallback("/policies", err);
+    return fixtures.policies();
+  }
 }
 
 // GET /defaults: the default SimParams, a starting point for the Simulator sliders.
 export async function defaults(signal?: AbortSignal): Promise<SimParams> {
   if (USE_FIXTURES) return fixtures.defaults();
-  return request("GET", "/defaults", undefined, signal);
+  try {
+    const res = await request<SimParams>("GET", "/defaults", undefined, signal);
+    isBackendConnected = true;
+    return res;
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    isBackendConnected = false;
+    logHybridFallback("/defaults", err);
+    return fixtures.defaults();
+  }
 }
 
 // POST /decide: one decision. Logged to the audit log unless req.dryRun is true.
 export async function decide(req: DecideRequest, signal?: AbortSignal): Promise<Decision> {
   if (USE_FIXTURES) return fixtureDecision(req);
-  return request("POST", "/decide", req, signal);
+  try {
+    const res = await request<Decision>("POST", "/decide", req, signal);
+    isBackendConnected = true;
+    return res;
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    isBackendConnected = false;
+    logHybridFallback("/decide", err);
+    return fixtureDecision(req);
+  }
+}
+
+// Helper to filter fixture audit records by query
+async function getFilteredFixtureAudit(query: AuditQuery): Promise<AuditPage> {
+  const page = await fixtures.audit();
+  const items = page.items.filter(
+    (d) =>
+      (query.rider === undefined || d.riderId.toLowerCase() === query.rider.toLowerCase() || d.riderId.toLowerCase() === query.rider.replace("-", "").toLowerCase()) &&
+      (query.outcome === undefined || d.outcome === query.outcome) &&
+      (query.policy === undefined || d.policyVersion === query.policy) &&
+      (query.simulationId === undefined || d.simulationId === query.simulationId),
+  );
+  return { items: items.slice(0, query.limit ?? 50) };
 }
 
 // GET /audit: logged decisions, newest first, one page at a time. query.simulationId narrows it to one run.
 export async function audit(query: AuditQuery = {}, signal?: AbortSignal): Promise<AuditPage> {
   if (USE_FIXTURES) {
-    const page = await fixtures.audit();
-    const items = page.items.filter(
-      (d) =>
-        (query.rider === undefined || d.riderId === query.rider) &&
-        (query.outcome === undefined || d.outcome === query.outcome) &&
-        (query.policy === undefined || d.policyVersion === query.policy) &&
-        (query.simulationId === undefined || d.simulationId === query.simulationId),
-    );
-    return { items: items.slice(0, query.limit ?? 50) };
+    return getFilteredFixtureAudit(query);
   }
-  const qs = new URLSearchParams();
-  for (const [k, v] of Object.entries(query)) if (v !== undefined) qs.set(k, String(v));
-  const search = qs.toString();
-  return request("GET", search ? `/audit?${search}` : "/audit", undefined, signal);
+  try {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) if (v !== undefined) qs.set(k, String(v));
+    const search = qs.toString();
+    const res = await request<AuditPage>("GET", search ? `/audit?${search}` : "/audit", undefined, signal);
+    isBackendConnected = true;
+    return res;
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    isBackendConnected = false;
+    logHybridFallback("/audit", err);
+    return getFilteredFixtureAudit(query);
+  }
 }
 
 // POST /simulations: starts a simulation. The API answers 202 with a simulationId.
 export async function createSimulation(params: SimParams, signal?: AbortSignal): Promise<SimulationAccepted> {
   if (USE_FIXTURES) return { simulationId: (await fixtures.simResult()).simulationId, status: "queued" };
-  return request("POST", "/simulations", params, signal);
+  try {
+    const res = await request<SimulationAccepted>("POST", "/simulations", params, signal);
+    isBackendConnected = true;
+    return res;
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    isBackendConnected = false;
+    logHybridFallback("/simulations", err);
+    return { simulationId: (await fixtures.simResult()).simulationId, status: "queued" };
+  }
 }
 
 // GET /simulations/:id: the job, with its result once status is "done".
@@ -169,7 +230,18 @@ export async function getSimulation(simulationId: string, signal?: AbortSignal):
     const now = new Date().toISOString();
     return { simulationId, status: "done", createdAt: now, finishedAt: now, result: { ...result, simulationId } };
   }
-  return request("GET", `/simulations/${encodeURIComponent(simulationId)}`, undefined, signal);
+  try {
+    const res = await request<SimulationJob>("GET", `/simulations/${encodeURIComponent(simulationId)}`, undefined, signal);
+    isBackendConnected = true;
+    return res;
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    isBackendConnected = false;
+    logHybridFallback(`/simulations/${simulationId}`, err);
+    const result = await fixtures.simResult();
+    const now = new Date().toISOString();
+    return { simulationId, status: "done", createdAt: now, finishedAt: now, result: { ...result, simulationId } };
+  }
 }
 
 // GET /break-even: the committed break-even rest pay sweep (sim/results/break-even.json), with stale = true
@@ -181,7 +253,17 @@ export async function breakEven(signal?: AbortSignal): Promise<BreakEvenReport> 
     // Like the API: both fixtures come from defaultSimParams(), so the key order matches.
     return { ...report, stale: JSON.stringify(report.params) !== JSON.stringify(params) };
   }
-  return request("GET", "/break-even", undefined, signal);
+  try {
+    const res = await request<BreakEvenReport>("GET", "/break-even", undefined, signal);
+    isBackendConnected = true;
+    return res;
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    isBackendConnected = false;
+    logHybridFallback("/break-even", err);
+    const [report, params] = await Promise.all([fixtures.breakEven(), fixtures.defaults()]);
+    return { ...report, stale: JSON.stringify(report.params) !== JSON.stringify(params) };
+  }
 }
 
 const sleep = (ms: number, signal?: AbortSignal) =>
