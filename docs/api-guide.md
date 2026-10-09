@@ -351,8 +351,14 @@ heat index is a proxy for outdoor heat stress, not a medical measure.
 curl http://localhost:3001/weather-days
 ```
 
-There is no helper in `web/src/api.ts` yet; `fetch(`${API}/weather-days`)` works. The fixture is
-`web/fixtures/weatherDays.json`.
+```ts
+import { weatherDays } from "./api";       // hook: useWeatherDays()
+const days = await weatherDays();          // WeatherDaySummary[], for the Simulator's weather-day picker
+// In fixture mode weatherDays() returns web/fixtures/weatherDays.json without the network.
+```
+
+`WeatherDaySummary` is a web type in `api.ts` (a copy of the one in `sim/weather.ts`, because the web app
+only depends on contracts).
 
 Response (200, real, first 3 of 9):
 
@@ -376,7 +382,8 @@ curl -X POST http://localhost:3001/simulations \
 With a weather day, the simulator reads that day's hourly series (a straight line between hours) and
 ignores `peakTempC` and `humidityPct`. `alertLevel: "auto"` uses the day's highest hourly temperature
 (1 at 40 °C, 2 at 45 °C): an assumed level, not the real IMD alert for that day. Everything else is
-the same. An unknown id is a `400`:
+the same. In the web app: `useSimulation().run({ ...params, weather: { kind: "replay", weatherDayId: day.id } })`
+(`SimParams.weather` is typed as `WeatherSource` in contracts). An unknown id is a `400`:
 
 ```json
 { "error": { "code": "INVALID_REQUEST", "message": "weather.weatherDayId: no weather day \"delhi-2024-06-19\" (see GET /weather-days)" } }
@@ -642,7 +649,15 @@ const result = await waitForSimulation(simulationId, { onStatus: (job) => consol
 ```
 
 `createSimulation` is typed to take a full `SimParams`; the easy way is to spread the `/defaults`
-response and change what the sliders changed.
+response and change what the sliders changed. To replay a real day, add
+`weather: { kind: "replay", weatherDayId }` with an id from `weatherDays()`; `{ kind: "slider" }` (or no
+`weather`) uses the sliders.
+
+Fixture mode (`VITE_USE_FIXTURES=true`) has one simulation result and returns it for every request. For a
+replay it still returns that result (its `params` are the fixture's slider day), and the result carries
+`fixtureNote`: "Fixture mode ignores the weather day: this is the fixture's slider-day result, not a replay
+of `<id>`. Run against the live API to replay a real day." Show `fixtureNote` whenever it is set. An unknown
+`weatherDayId` fails with the same `400 INVALID_REQUEST` message as the API.
 
 Response (**202**, real):
 
@@ -1118,7 +1133,7 @@ These are not optional. Judges and riders will read the numbers.
 
 | Page / mode         | Route (web)  | Endpoints                                                                 | Hooks                                         |
 | ------------------- | ------------ | ------------------------------------------------------------------------- | --------------------------------------------- |
-| **Simulator** (sandbox) | `/simulator` | `GET /defaults` (slider starts), `GET /policies` (labels), `POST /policies/render` (knobs), `POST /simulations` + `GET /simulations/:id` (run) | `useDefaults`, `usePolicies`, `useRenderPolicy`, `useSimulation` |
+| **Simulator** (sandbox) | `/simulator` | `GET /defaults` (slider starts), `GET /policies` (labels), `POST /policies/render` (knobs), `POST /simulations` + `GET /simulations/:id` (run), `GET /weather-days` (weather-day picker) | `useDefaults`, `usePolicies`, `useRenderPolicy`, `useSimulation`, `useWeatherDays` |
 | **Compare**         | `/compare`   | `GET /policies`, `POST /simulations` + `GET /simulations/:id` (or a finished id), `GET /break-even` (headline money result) | `usePolicies`, `useSimulation` / `useGetSimulation`, `useBreakEven` |
 | **Audit**           | `/audit`     | `GET /audit` (filters + cursor), `GET /policies` (labels)                 | `useAudit`, `usePolicies`, `auditRowKey`      |
 | **Rider phone**     | `/rider`     | `POST /decide` (one decision for the shown rider), `GET /audit?rider=…` (their recent decisions), `GET /policies` | `useDecide`, `useAudit`, `usePolicies` |

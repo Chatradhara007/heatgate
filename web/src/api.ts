@@ -15,6 +15,7 @@ import type {
   SimResult,
   SimulationJob,
   SimulationStatus,
+  WeatherSource,
 } from "@heatgate/contracts";
 
 export const API_URL: string = (import.meta.env.VITE_API_URL || "http://localhost:3001").replace(/\/+$/, "");
@@ -74,6 +75,22 @@ export interface AuditPage {
 export function auditRowKey(d: Pick<Decision, "simulationId" | "decisionId">): string {
   return `${d.simulationId ?? ""}:${d.decisionId}`;
 }
+
+// GET /weather-days: one real hot day a simulation can replay. Mirrors WeatherDaySummary in sim/weather.ts
+// (copied here because the web app depends only on contracts). Peaks are the highest of the 24 hourly
+// values; the heat index is a proxy for outdoor heat stress, not a medical measure.
+export interface WeatherDaySummary {
+  id: string; // send as weather: { kind: "replay", weatherDayId: id } to POST /simulations
+  city: string;
+  date: string; // YYYY-MM-DD
+  peakTempC: number;
+  peakHeatIndexC: number;
+  source: string; // "Open-Meteo historical weather API"
+}
+
+// A SimResult as the web app gets it. fixtureNote is only set in fixture mode, when the fixture result
+// stands in for a run the fixtures cannot make (a weather day replay). Show it next to the result.
+export type WebSimResult = SimResult & { fixtureNote?: string };
 
 export interface SimulationAccepted {
   simulationId: string;
@@ -137,7 +154,40 @@ const fixtures = {
   decide: async () => (await import("../fixtures/decide.json")).default as unknown as AuditPage, // full POST /decide answers
   simResult: async () => (await import("../fixtures/simResult.json")).default as unknown as SimResult,
   breakEven: async () => (await import("../fixtures/breakEven.json")).default as unknown as BreakEvenReport,
+  weatherDays: async () => (await import("../fixtures/weatherDays.json")).default as WeatherDaySummary[],
 };
+
+// Fixture mode has one simulation result. A replay request gets that result under an id that remembers the
+// weather day ("<fixture id>-replay-<weatherDayId>"), so getSimulation can say the day was ignored.
+const FIXTURE_REPLAY = "-replay-";
+
+async function fixtureCreateSimulation(weather: WeatherSource | undefined): Promise<SimulationAccepted> {
+  const { simulationId } = await fixtures.simResult();
+  if (weather?.kind !== "replay") return { simulationId, status: "queued" };
+  const days = await fixtures.weatherDays();
+  if (!days.some((d) => d.id === weather.weatherDayId)) {
+    // The same answer the API gives for an unknown id.
+    throw new ApiRequestError(
+      `weather.weatherDayId: no weather day "${weather.weatherDayId}" (see GET /weather-days) (INVALID_REQUEST)`,
+      400,
+      "INVALID_REQUEST",
+    );
+  }
+  return { simulationId: simulationId + FIXTURE_REPLAY + weather.weatherDayId, status: "queued" };
+}
+
+async function fixtureSimulation(simulationId: string): Promise<SimulationJob & { result: WebSimResult }> {
+  const result: WebSimResult = { ...(await fixtures.simResult()), simulationId };
+  const at = simulationId.indexOf(FIXTURE_REPLAY);
+  if (at >= 0) {
+    const weatherDayId = simulationId.slice(at + FIXTURE_REPLAY.length);
+    result.fixtureNote =
+      `Fixture mode ignores the weather day: this is the fixture's slider-day result, not a replay of ${weatherDayId}. ` +
+      "Run against the live API to replay a real day.";
+  }
+  const now = new Date().toISOString();
+  return { simulationId, status: "done", createdAt: now, finishedAt: now, result };
+}
 
 async function fixtureDecision(req: DecideRequest): Promise<Decision> {
   const { items } = await fixtures.decide();
@@ -202,19 +252,24 @@ export async function audit(query: AuditQuery = {}, signal?: AbortSignal): Promi
   return request("GET", search ? `/audit?${search}` : "/audit", undefined, signal);
 }
 
+// GET /weather-days: the real hot days a simulation can replay (committed in sim/data/weather; nothing is fetched).
+export async function weatherDays(signal?: AbortSignal): Promise<WeatherDaySummary[]> {
+  if (USE_FIXTURES) return fixtures.weatherDays();
+  return request("GET", "/weather-days", undefined, signal);
+}
+
 // POST /simulations: starts a simulation. The API answers 202 with a simulationId.
+// params.weather is { kind: "slider" } (the default: peakTempC + humidityPct) or
+// { kind: "replay", weatherDayId } with an id from weatherDays(). An unknown id is a 400 INVALID_REQUEST.
+// Fixture mode returns the one fixture result for every request; for a replay, result.fixtureNote says so.
 export async function createSimulation(params: SimParams, signal?: AbortSignal): Promise<SimulationAccepted> {
-  if (USE_FIXTURES) return { simulationId: (await fixtures.simResult()).simulationId, status: "queued" };
+  if (USE_FIXTURES) return fixtureCreateSimulation(params.weather);
   return request("POST", "/simulations", params, signal);
 }
 
 // GET /simulations/:id: the job, with its result once status is "done".
-export async function getSimulation(simulationId: string, signal?: AbortSignal): Promise<SimulationJob> {
-  if (USE_FIXTURES) {
-    const result = await fixtures.simResult();
-    const now = new Date().toISOString();
-    return { simulationId, status: "done", createdAt: now, finishedAt: now, result: { ...result, simulationId } };
-  }
+export async function getSimulation(simulationId: string, signal?: AbortSignal): Promise<SimulationJob & { result?: WebSimResult }> {
+  if (USE_FIXTURES) return fixtureSimulation(simulationId);
   return request("GET", `/simulations/${encodeURIComponent(simulationId)}`, undefined, signal);
 }
 
@@ -244,7 +299,7 @@ const sleep = (ms: number, signal?: AbortSignal) =>
 export async function waitForSimulation(
   simulationId: string,
   opts: { signal?: AbortSignal; onStatus?: (job: SimulationJob) => void } = {},
-): Promise<SimResult> {
+): Promise<WebSimResult> {
   const deadline = Date.now() + SIMULATION_TIMEOUT_MS;
   for (;;) {
     const job = await getSimulation(simulationId, opts.signal);

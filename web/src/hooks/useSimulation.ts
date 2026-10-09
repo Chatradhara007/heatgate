@@ -2,14 +2,15 @@
 //
 //   const sim = useSimulation();
 //   sim.run(params);          // starts; status goes queued -> running -> done | failed
-//   sim.data                  // the SimResult once done
+//   sim.data                  // the SimResult once done (fixture mode: data.fixtureNote on a weather replay)
 //   sim.cancel();             // stops polling (the server run carries on)
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { SimParams, SimResult, SimulationStatus } from "@heatgate/contracts";
+import type { SimParams, SimulationStatus } from "@heatgate/contracts";
 import * as api from "../api.ts";
+import type { WebSimResult } from "../api.ts";
 import type { AsyncState } from "./useAsync.ts";
 
-export interface SimulationState extends AsyncState<SimResult> {
+export interface SimulationState extends AsyncState<WebSimResult> {
   status: SimulationStatus | "idle";
   simulationId: string | undefined;
   elapsedMs: number; // since run() was called, updated on every poll
@@ -28,7 +29,7 @@ export function useSimulation() {
     setState((s) => ({ ...s, loading: false }));
   }, []);
 
-  const run = useCallback(async (params: SimParams): Promise<SimResult | undefined> => {
+  const run = useCallback(async (params: SimParams): Promise<WebSimResult | undefined> => {
     controllerRef.current?.abort();
     const controller = new AbortController();
     controllerRef.current = controller;
