@@ -7,8 +7,8 @@ Description: >
 Globals:
   Function:
     Runtime: nodejs20.x
-    MemorySize: 512
-    Timeout: 10
+    MemorySize: 1024
+    Timeout: 29 # just under the HTTP API 30 s integration limit
 
 Resources:
   # The Express app (api/src/app.ts) through the adapter in api/src/lambda.ts.
