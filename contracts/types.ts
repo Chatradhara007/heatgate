@@ -169,6 +169,7 @@ export interface Metrics {
   incentiveHitRatePct: number; // % of riders who reached their (adjusted) target
   restPayTotalInr: number;
   heatFeeCollectedInr: number;
+  earningsPctOfNoRules: number; // avgEarningsPerRiderInr as a % of the no-rules run on the same seed
   decisions: Record<Outcome, number>;
 }
 

@@ -1,7 +1,6 @@
 // Runs every rule set on the same seeds and reports the mean and the min-max range.
 import type { Decision, Metrics, NumericMetric, Outcome, PolicyVersion, SimParams, SimResult } from "@heatgate/contracts";
 import { runDay, type DayResult } from "./dispatcher.ts";
-import { pctOfBaseline } from "./earnings.ts";
 
 const OUTCOMES: Outcome[] = ["ALLOW", "SKIP_ORDER", "DENY", "FORCE_REST"];
 
@@ -12,9 +11,10 @@ export interface SimOutput {
   audit: Partial<Record<PolicyVersion, Decision[]>>;
 }
 
-// SimOutput plus numbers that are not in contracts' Metrics.
+// SimOutput plus a per-rule-set summary of earnings vs no-rules.
 export interface SimReport extends SimOutput {
   // Average earnings as a % of the no-rules ("today") run, paired by seed: mean and range over the seeds.
+  // The same numbers as runs[policy].metrics/range.earningsPctOfNoRules, kept for existing callers.
   earningsPctOfNoRules: Partial<Record<PolicyVersion, { mean: number; min: number; max: number }>>;
 }
 
@@ -33,6 +33,7 @@ export function simulateWithAudit(params: SimParams, simulationId = `sim-${param
             runDay(params, policy, seed, simulationId, {
               audit: i === 0,
               noRulesOrdersPerRider: baseline[i].riders.map((r) => r.ordersDelivered),
+              noRulesAvgEarningsInr: baseline[i].metrics.avgEarningsPerRiderInr,
             }),
           );
     const all = days.map((d) => d.metrics);
@@ -47,8 +48,7 @@ export function simulateWithAudit(params: SimParams, simulationId = `sim-${param
     for (const o of OUTCOMES) mean.decisions[o] = all.reduce((a, m) => a + m.decisions[o], 0) / all.length;
     runs[policy] = { metrics: mean, range, frames: days[0].frames };
     audit[policy] = days[0].audit ?? [];
-    const pct = days.map((d, i) => pctOfBaseline(d.metrics.avgEarningsPerRiderInr, baseline[i].metrics.avgEarningsPerRiderInr));
-    earningsPctOfNoRules[policy] = { mean: pct.reduce((a, b) => a + b, 0) / pct.length, min: Math.min(...pct), max: Math.max(...pct) };
+    earningsPctOfNoRules[policy] = { mean: mean.earningsPctOfNoRules, ...range.earningsPctOfNoRules };
   }
   return { result: { simulationId, params, runs }, audit, earningsPctOfNoRules };
 }

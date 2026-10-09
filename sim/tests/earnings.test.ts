@@ -92,6 +92,16 @@ describe("one real day (11:00-16:00, 40 °C, alert 1)", () => {
     expect(runDay(params, "union-demand", 2, "t", { noRulesOrdersPerRider: orders }).metrics).toEqual(union.metrics);
   }, 30_000);
 
+  test("earningsPctOfNoRules: average earnings as a % of the no-rules run on the same seed", () => {
+    expect(noRules.metrics.earningsPctOfNoRules).toBe(100);
+    expect(union.metrics.earningsPctOfNoRules).toBeCloseTo((100 * union.metrics.avgEarningsPerRiderInr) / noRules.metrics.avgEarningsPerRiderInr);
+    const passedIn = runDay(params, "union-demand", 2, "t", {
+      noRulesOrdersPerRider: noRules.riders.map((r) => r.ordersDelivered),
+      noRulesAvgEarningsInr: noRules.metrics.avgEarningsPerRiderInr,
+    });
+    expect(passedIn.metrics).toEqual(union.metrics);
+  }, 30_000);
+
   test("money metrics add up from the riders' tallies", () => {
     for (const [policy, day] of [["no-rules", noRules], ["union-demand", union]] as const) {
       const m = day.metrics;
