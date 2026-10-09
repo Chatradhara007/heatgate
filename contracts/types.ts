@@ -129,8 +129,8 @@ export interface SimParams {
   alertLevel: AlertSetting;
   startHour: number; // default 8
   endHour: number; // default 20
-  ordersPerHour: number; // default 50; x1.5 at lunch (12-14) and dinner (19-21). Tune so demand is quiet ~20%, normal ~50%, rush ~30% of the day
-  shiftHours: { min: number; max: number }; // default 6 and 8; riders log in at staggered times
+  ordersPerHour: number; // default 34 (tuned with the two login waves in sim/dispatcher.ts); x1.5 at lunch (12-14) and dinner (19-21). Tune so demand is quiet ~20%, normal ~50%, rush ~30% of the day
+  shiftHours: { min: number; max: number }; // default 6 and 8; riders log in in two waves, 08:00-09:00 and 15:00-18:00 (an assumption, sim/dispatcher.ts)
   multiAppPct: number; // default 40 (to confirm with riders): share of riders who keep working on another app while resting here
   feeDemandDropPctPerInr: number; // default 1: % of new orders lost per rupee of heat fee
   policyVersions: PolicyVersion[]; // usually all four
@@ -169,6 +169,7 @@ export interface Metrics {
   incentiveHitRatePct: number; // % of riders who reached their (adjusted) target
   restPayTotalInr: number;
   heatFeeCollectedInr: number;
+  earningsPctOfNoRules: number; // avgEarningsPerRiderInr as a % of the no-rules run on the same seed
   decisions: Record<Outcome, number>;
 }
 

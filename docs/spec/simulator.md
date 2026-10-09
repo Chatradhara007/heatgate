@@ -10,17 +10,17 @@ A 10 × 10 km square. 6 restaurant hubs and 8 cooling points (shade + water), at
 
 50 riders: 70% bike (18 km/h), 20% EV (18 km/h), 10% cycle (12 km/h). Random start positions.
 
-Shifts. Each rider logs in at a random time between 8:00 and 13:00 and works shiftHours (6 to 8 hours), so the number of riders on duty rises and falls through the day.
+Shifts (assumption, not measured). Riders log in in two waves: half at a random time between 8:00 and 9:00, half between 15:00 and 18:00 (on the 5-minute frame clock). Each works shiftHours (6 to 8 hours); the second wave's shifts are cut off at the end of the day. The waves were tuned together with ordersPerHour = 34 to hit the demand mix below. Replace them with real login data when we have it.
 
 Multi-app riders. multiAppPct of riders (picked by the seed, default 40%) keep working on another app while they rest or are paused here. For them, minutesSinceBreak and exposure keep running during the rest and are not reset when it ends, and they cannot take our orders until it ends.
 
-Orders arrive randomly at ordersPerHour (default 50), 1.5× busier from 12-2 PM and 7-9 PM. Pickup at a hub, drop within 5 km.
+Orders arrive randomly at ordersPerHour (default 34), 1.5× busier from 12-2 PM and 7-9 PM. Pickup at a hub, drop within 5 km.
 
 tripMinutes = travel to pickup + travel to drop + 5 minutes handover.
 
 Use a seeded random generator (for example mulberry32). Never Math.random, or the rule sets will not see the same day.
 
-Tune on Day 1. Print the demand level on the no-rules run. Aim for about 20% quiet, 50% normal and 30% rush. With staggered shifts, 50 riders on 25-minute trips deliver roughly 70 orders an hour, so a demand of 150 an hour would be overload all day and the "quiet time" rules would never fire.
+Tune on Day 1. Print the demand level on the no-rules run. Aim for about 20% quiet, 50% normal and 30% rush. With the two login waves and 34 orders an hour, a 34 °C no-rules day over 5 seeds gives 21 / 51 / 28 (single seeds range widely, rush 16-42%). With staggered shifts, 50 riders on 25-minute trips deliver roughly 70 orders an hour, so a demand of 150 an hour would be overload all day and the "quiet time" rules would never fire.
 
 The dispatch loop (sim/dispatcher.ts), one step per simulated minute
 Log in riders whose shift starts now and log out riders whose shift has ended. Set the day's alert level.
@@ -59,7 +59,7 @@ Incentive protection (where on): every 30 minutes of forced rest or pause lowers
 
 Paid rest (where on): rest minutes are paid at restPayPerMinuteInr.
 
-Show each rule set's average earnings as a % of the "today" baseline, and the lowest-earning rider. That answers "does safety cost riders money?"
+Show each rule set's average earnings as a % of the "today" baseline, and the lowest-earning rider (among riders with at least 2 hours on shift, so a rider who logs in just before the day ends does not count as worst off). That answers "does safety cost riders money?"
 
 Fair features (heatgate-fair only)
 Heat fee (heatgate-fair only). Every order placed while the heat index is 38 or more adds heatFeePerOrderInr to a heat fund that pays the rest minutes. Each rupee of fee also cancels feeDemandDropPctPerInr % of new orders (default 1%), because customers may order less. The metrics show whether the fund covers the rest pay. This is a hypothesis, not a result, and it may stack with state welfare fees we have not checked.

@@ -72,4 +72,10 @@ test("money metrics are deterministic for the same seed", () => {
   expect(second.earningsPctOfNoRules).toEqual(first.earningsPctOfNoRules);
   expect(first.result.runs["heatgate-fair"]!.metrics.heatFeeCollectedInr).toBeGreaterThan(0);
   expect(first.earningsPctOfNoRules["no-rules"]).toEqual({ mean: 100, min: 100, max: 100 });
+  // Mean and min-max range over the seeds, like every other numeric metric, and the same as SimReport.
+  const fair = first.result.runs["heatgate-fair"]!;
+  const perSeed = params.seeds.map((seed) => runDay(params, "heatgate-fair", seed, "t").metrics.earningsPctOfNoRules);
+  expect(fair.metrics.earningsPctOfNoRules).toBeCloseTo((perSeed[0] + perSeed[1]) / 2);
+  expect(fair.range.earningsPctOfNoRules).toEqual({ min: Math.min(...perSeed), max: Math.max(...perSeed) });
+  expect(first.earningsPctOfNoRules["heatgate-fair"]).toEqual({ mean: fair.metrics.earningsPctOfNoRules, ...fair.range.earningsPctOfNoRules });
 }, 60_000);
