@@ -128,19 +128,26 @@ Peak air temperature 44.5 °C, peak heat index 48.2 °C, humidity 17–51% (8:00
    - Over 7 alert days (the default day and 6 real weather days with alert level ≥ 1), each rule set's mean unsafe minutes, on both measures, are this share of no-rules': ndma-2025 41%–44%, union-demand 42%–56%, heatgate-fair 42%–48%.
    - Reproduce: `npm run sim:full; npm run sim:weather`
 
-2. **Heat-index rules protect riders on humid days where temperature-based alerts stay silent: on 2024-05-27 in Hyderabad (peak air temperature 38 °C) heatgate-fair cut unsafe minutes by about 55%, while NDMA and union rules never fired.**
+2. **Heat-index rules protect riders on humid days where temperature-based alerts stay silent: on 2024-05-27 in Hyderabad heatgate-fair cut unsafe minutes by about 53-55% (53% on >90, 55% on >120), while rules keyed to an air-temperature alert stay silent at a 38 °C peak (alert level assumed 0, not the real IMD alert).**
    - Peak air temperature 38 °C, peak heat index 43 °C, humidity 39–64% (8:00–20:00). Alert level 0 (assumed from peak temperature, not the real IMD alert). Open-Meteo historical weather API, grid cell 17.398945, 78.457085.
    - Unsafe min >120: no-rules 7945 (7668–8402), ndma-2025 7945 (7668–8402), union-demand 7945 (7668–8402), heatgate-fair 3550 (2981–4421).
    - Unsafe min >90: no-rules 8365 (8015–8832), heatgate-fair 3941 (3468–4887).
    - heatgate-fair decisions (mean per day): 239 FORCE_REST, 0 DENY, 584 SKIP_ORDER; delivered 341 (323–365) vs no-rules 451 (430–468).
    - Reproduce: `npm run sim:weather`
 
-3. **The audit trail records what each rider was told, but never where they were.**
-   - 4175 audit records from the default day (first seed of each rule set; every non-ALLOW decision plus 1 in 20 ALLOWs).
+3. **In the audit trail we log what each rider was told and do not store the rider's position.**
+   - 4175 audit records from the default day, first seed of each rule set (no-rules 23, ndma-2025 3000, union-demand 399, heatgate-fair 753): every non-ALLOW decision plus 1 in 20 ALLOWs, thinned evenly to at most 3000 per rule set (ndma-2025 hits that cap).
    - 4175 of 4175 carry the English message the rider saw; 4175 also carry the Hindi, Telugu and Urdu text.
    - 1219 decisions showed the rider a nearest cooling point; after auditRecord (engine/src/messages.ts, what both stores write) 0 records hold a location field (checked: x, y, lat, lng, pos, location, coolingPoint, hub, drop).
    - Rider IDs are pseudonymous (rider-NNN) in all records; 0 records hold a name, phone or email field.
    - Reproduce: `npm run pitch-numbers`
+
+4. **On the default day an NDMA-style hard stop keeps 35% of today's deliveries (158 vs 451), while the paced rules keep 68-73% (union 308, Fair 331), at similar unsafe minutes.**
+   - Delivered: no-rules 451 (430–468), ndma-2025 158 (138–173), union-demand 308 (265–323), heatgate-fair 331 (313–345).
+   - Unsafe min >90: ndma-2025 3825 (3115–5076), union-demand 4710 (4186–5715), heatgate-fair 4175 (3587–5362).
+   - Unsafe min >120: ndma-2025 3544 (2957–4637), union-demand 3576 (2992–4658), heatgate-fair 3734 (3198–4836).
+   - The seed ranges of union-demand and heatgate-fair overlap ndma-2025's on both unsafe measures: yes.
+   - Reproduce: `npm run sim:full`
 
 ## Claims we must NOT make
 
@@ -169,4 +176,5 @@ Peak air temperature 44.5 °C, peak heat index 48.2 °C, humidity 17–51% (8:00
 - Weather days are reanalysis data on a grid of about 25 km (Open-Meteo historical API). They read a few degrees below station peaks, so check each date against news reports before quoting it.
 - The model has no demand response to heat: customers order the same on a 46 °C day as on a 34 °C day (only heatgate-fair's heat fee removes some orders).
 - Idle riders do not move toward hubs (only with shade waiting, which is off by default).
+- On the very humid Delhi and Lucknow days heatgate-fair delivers less than NDMA: delhi-2025-06-13 115 (99–144) vs 158 (138–173) (peak heat index 47.3 °C); lucknow-2024-06-19 155 (138–173) vs 158 (138–173) (peak heat index 48.2 °C). The pacing claim above holds for the default day, not for every real day.
 - Heat index is a proxy for outdoor heat stress, not a medical measure. Unsafe minutes are rider-minutes (all riders, one day) outdoors at heat index ≥ 38 °C beyond 90 or 120 minutes since the last rest.

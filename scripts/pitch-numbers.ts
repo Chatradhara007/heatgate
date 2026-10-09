@@ -8,7 +8,7 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import type { BreakEvenReport, Decision, NumericMetric, PolicyVersion, SimParams, SimResult } from "@heatgate/contracts";
 import { auditRecord } from "../engine/src/index.ts";
-import { WEATHER_DAYS, dayAlertLevel, weatherDay, defaultSimParams, simulate, simulateWithAudit, weatherDaySummary, type ReplayDay } from "../sim/src/index.ts";
+import { AUDIT_CAP_PER_RULE_SET, WEATHER_DAYS, dayAlertLevel, weatherDay, defaultSimParams, simulate, simulateWithAudit, weatherDaySummary, type ReplayDay } from "../sim/src/index.ts";
 
 const ROOT = join(import.meta.dirname, "..");
 export const SHEET_PATH = join(ROOT, "docs", "pitch-numbers.md");
@@ -117,6 +117,30 @@ function halvingClaim(list: Scenario[]): Claim {
   };
 }
 
+function pacingClaim(list: Scenario[]): Claim {
+  const d = list[0];
+  const k = "ordersDelivered";
+  const share = (p: PolicyVersion) => mean(d, p, k) / mean(d, "no-rules", k);
+  const paced = ["union-demand", "heatgate-fair"] as const;
+  const shares = paced.map(share);
+  const unsafe = ["unsafeExposureMin90", "unsafeExposureMin120"] as const;
+  const similar = paced.every((p) => unsafe.every((u) => overlaps(d, p, "ndma-2025", u)));
+  return {
+    text:
+      `On the default day an NDMA-style hard stop keeps ${pct(share("ndma-2025"), 1)} of today's deliveries ` +
+      `(${mean(d, "ndma-2025", k).toFixed(0)} vs ${mean(d, "no-rules", k).toFixed(0)}), while the paced rules keep ` +
+      `${pct(Math.min(...shares), 1).slice(0, -1)}-${pct(Math.max(...shares), 1)} (union ${mean(d, "union-demand", k).toFixed(0)}, Fair ${mean(d, "heatgate-fair", k).toFixed(0)}), at similar unsafe minutes.`,
+    numbers: [
+      `Delivered: ${ALL.map((p) => `${p} ${cell(d, p, k)}`).join(", ")}.`,
+      `Unsafe min >90: ${RULE_SETS.map((p) => `${p} ${cell(d, p, "unsafeExposureMin90")}`).join(", ")}.`,
+      `Unsafe min >120: ${RULE_SETS.map((p) => `${p} ${cell(d, p, "unsafeExposureMin120")}`).join(", ")}.`,
+      `The seed ranges of union-demand and heatgate-fair overlap ndma-2025's on both unsafe measures: ${similar ? "yes" : "NO"}.`,
+    ],
+    command: "npm run sim:full",
+    supported: d.alert >= 1 && share("ndma-2025") < 0.45 && shares.every((x) => x >= 0.6) && similar,
+  };
+}
+
 const HUMID_DAY = "hyderabad-2024-05-27";
 
 function humidClaim(list: Scenario[]): Claim {
@@ -128,11 +152,16 @@ function humidClaim(list: Scenario[]): Claim {
     (p) => mean(s, p, k) === nr && mean(s, p, "unsafeExposureMin90") === mean(s, "no-rules", "unsafeExposureMin90"),
   );
   const fair = mean(s, "heatgate-fair", k);
+  const cut90 = 1 - mean(s, "heatgate-fair", "unsafeExposureMin90") / mean(s, "no-rules", "unsafeExposureMin90");
+  const cut120 = 1 - fair / nr;
   const d = run(s, "heatgate-fair").metrics.decisions;
+  const peak = weatherDaySummary(weatherDay(HUMID_DAY)!).peakTempC;
   return {
     text:
       "Heat-index rules protect riders on humid days where temperature-based alerts stay silent: " +
-      `on ${s.id.slice(-10)} in Hyderabad (peak air temperature ${weatherDaySummary(weatherDay(HUMID_DAY)!).peakTempC} °C) heatgate-fair cut unsafe minutes by about ${pct(nr - fair, nr)}, while NDMA and union rules never fired.`,
+      `on ${s.id.slice(-10)} in Hyderabad heatgate-fair cut unsafe minutes by about ${pct(Math.min(cut90, cut120), 1).slice(0, -1)}-${pct(Math.max(cut90, cut120), 1)} ` +
+      `(${pct(cut90, 1)} on >90, ${pct(cut120, 1)} on >120), while rules keyed to an air-temperature alert stay silent at a ${peak} °C peak ` +
+      "(alert level assumed 0, not the real IMD alert).",
     numbers: [
       s.about,
       `Unsafe min >120: no-rules ${cell(s, "no-rules", k)}, ndma-2025 ${cell(s, "ndma-2025", k)}, union-demand ${cell(s, "union-demand", k)}, heatgate-fair ${cell(s, "heatgate-fair", k)}.`,
@@ -156,6 +185,7 @@ function keysMatching(value: unknown, re: RegExp, path = ""): string[] {
 
 function auditClaim(audit: Partial<Record<PolicyVersion, Decision[]>>): Claim {
   const decisions = Object.values(audit).flat();
+  const capped = Object.entries(audit).filter(([, ds]) => ds!.length >= AUDIT_CAP_PER_RULE_SET).map(([p]) => p);
   const logged = decisions.map(auditRecord);
   const withMessage = logged.filter((d) => typeof d.message === "string" && d.message.length > 0).length;
   const translated = logged.filter((d) => d.messages?.hi && d.messages?.te && d.messages?.ur).length;
@@ -164,9 +194,12 @@ function auditClaim(audit: Partial<Record<PolicyVersion, Decision[]>>): Claim {
   const pseudonymous = logged.every((d) => /^rider-\d+$/.test(d.riderId));
   const personal = logged.flatMap((d) => keysMatching(d, /name|phone|mobile|email/i));
   return {
-    text: "The audit trail records what each rider was told, but never where they were.",
+    text: "In the audit trail we log what each rider was told and do not store the rider's position.",
     numbers: [
-      `${logged.length} audit records from the default day (first seed of each rule set; every non-ALLOW decision plus 1 in 20 ALLOWs).`,
+      `${logged.length} audit records from the default day, first seed of each rule set (` +
+        Object.entries(audit).map(([p, ds]) => `${p} ${ds!.length}`).join(", ") +
+        `): every non-ALLOW decision plus 1 in 20 ALLOWs, thinned evenly to at most ${AUDIT_CAP_PER_RULE_SET} per rule set` +
+        (capped.length ? ` (${capped.join(", ")} ${capped.length === 1 ? "hits" : "hit"} that cap).` : "."),
       `${withMessage} of ${logged.length} carry the English message the rider saw; ${translated} also carry the Hindi, Telugu and Urdu text.`,
       `${shownCooling} decisions showed the rider a nearest cooling point; after auditRecord (engine/src/messages.ts, what both stores write) ` +
         `${leaks.length} records hold a location field (checked: x, y, lat, lng, pos, location, coolingPoint, hub, drop).`,
@@ -259,14 +292,24 @@ function mustNot(list: Scenario[], params: SimParams, be: BreakEvenReport): { te
   ];
 }
 
-function caveats(params: SimParams): string[] {
+function caveats(params: SimParams, list: Scenario[]): string[] {
   const e = params.economics;
+  const fairFewer = list.filter((s) => s.id !== "default" && s.alert >= 1 && mean(s, "heatgate-fair", "ordersDelivered") < mean(s, "ndma-2025", "ordersDelivered"));
   return [
     `${params.multiAppPct}% of riders keep working on another app while resting here (an assumption to confirm with riders). Their breaks do not cool them, so this sets a floor on unsafe minutes that no rule set can remove.`,
     `All rupee amounts are placeholders until rider interviews: ₹${e.payPerOrderInr}/order, ₹${e.payPerKmInr}/km, ₹${e.dailyBonusInr} daily bonus, ₹${e.restPayPerMinuteInr}/min rest pay, ₹${e.heatFeePerOrderInr} heat fee.`,
     "Weather days are reanalysis data on a grid of about 25 km (Open-Meteo historical API). They read a few degrees below station peaks, so check each date against news reports before quoting it.",
     "The model has no demand response to heat: customers order the same on a 46 °C day as on a 34 °C day (only heatgate-fair's heat fee removes some orders).",
     "Idle riders do not move toward hubs (only with shade waiting, which is off by default).",
+    ...(fairFewer.length
+      ? [
+          "On the very humid Delhi and Lucknow days heatgate-fair delivers less than NDMA: " +
+            fairFewer
+              .map((s) => `${s.id} ${cell(s, "heatgate-fair", "ordersDelivered")} vs ${cell(s, "ndma-2025", "ordersDelivered")} (peak heat index ${weatherDaySummary(weatherDay(s.id)!).peakHeatIndexC} °C)`)
+              .join("; ") +
+            ". The pacing claim above holds for the default day, not for every real day.",
+        ]
+      : []),
     "Heat index is a proxy for outdoor heat stress, not a medical measure. Unsafe minutes are rider-minutes (all riders, one day) outdoors at heat index ≥ 38 °C beyond 90 or 120 minutes since the last rest.",
   ];
 }
@@ -275,7 +318,7 @@ export function renderPitchNumbers(): string {
   const params = defaultSimParams();
   const be = JSON.parse(readFileSync(join(ROOT, "sim", "results", "break-even.json"), "utf8")) as BreakEvenReport;
   const { list, audit } = scenarios(params);
-  const claims = [halvingClaim(list), humidClaim(list), auditClaim(audit)];
+  const claims = [halvingClaim(list), humidClaim(list), auditClaim(audit), pacingClaim(list)];
   const kept = claims.filter((c) => c.supported);
   const dropped = claims.filter((c) => !c.supported);
   const claimBlock = (c: Claim, i: number) => [`${i + 1}. **${c.text}**`, ...c.numbers.map((n) => `   - ${n}`), `   - Reproduce: \`${c.command}\``, ""];
@@ -306,7 +349,7 @@ export function renderPitchNumbers(): string {
     ...mustNot(list, params, be).flatMap((m, i) => [`${i + 1}. **${m.text}**`, `   - Why not: ${m.reason}`, ""]),
     "## Caveats to say out loud",
     "",
-    ...caveats(params).map((c) => `- ${c}`),
+    ...caveats(params, list).map((c) => `- ${c}`),
     "",
   ];
   return out.join("\n");
