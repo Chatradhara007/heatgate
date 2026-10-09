@@ -7,9 +7,10 @@ import {
   type Outcome,
   type PolicyVersion,
   type SimParams,
+  type WeatherSource,
 } from "@heatgate/contracts";
 import { DEFAULT_FAIR_KNOBS, FAIR_KNOB_NAMES, fairKnobErrors } from "@heatgate/engine";
-import { defaultSimParams } from "@heatgate/sim";
+import { defaultSimParams, weatherDay } from "@heatgate/sim";
 
 export class ApiFailure extends Error {
   constructor(
@@ -182,9 +183,20 @@ export function simParams(body: unknown): SimParams {
     }
   }
   if (b.fairKnobs !== undefined) p.fairKnobs = fairKnobs(b.fairKnobs, "fairKnobs");
-  // In the contract but not read by the simulator yet: refuse rather than silently ignore.
-  if (b.weather !== undefined) throw new ApiFailure(400, "NOT_SUPPORTED", "weather is not supported by the simulator yet");
+  if (b.weather !== undefined) p.weather = weatherSource(b.weather);
   return p;
+}
+
+// { kind: "slider" } (peakTempC + humidityPct) or { kind: "replay", weatherDayId } with an id from GET /weather-days.
+function weatherSource(v: unknown): WeatherSource {
+  const w = obj(v, "weather");
+  const kind = oneOf(w.kind, ["slider", "replay"] as const, "weather.kind");
+  const allowed = kind === "replay" ? ["kind", "weatherDayId"] : ["kind"];
+  for (const key of Object.keys(w)) if (!allowed.includes(key)) throw bad(`unknown field: weather.${key}`);
+  if (kind === "slider") return { kind };
+  const id = str(w.weatherDayId, "weather.weatherDayId");
+  if (!weatherDay(id)) throw bad(`weather.weatherDayId: no weather day ${JSON.stringify(id)} (see GET /weather-days)`);
+  return { kind, weatherDayId: id };
 }
 
 // Partial FairKnobs in, full FairKnobs out (defaults from engine/src/fairKnobs.ts). Whole numbers in the

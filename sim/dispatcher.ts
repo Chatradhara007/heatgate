@@ -1,7 +1,8 @@
 // One simulated day for one rule set and one seed, one step per minute (docs/spec/simulator.md).
 import type { DecideRequest, Decision, Frame, Metrics, Outcome, PolicyVersion, RiderState, SimParams } from "@heatgate/contracts";
 import { decide, heatIndexC } from "@heatgate/engine";
-import { CITY_KM, cityLayout, dayAlertLevel, demandLevelFor, distance, nearest, temperatureAt, type Point } from "./city.ts";
+import { CITY_KM, cityLayout, dayAlertLevel, demandLevelFor, distance, nearest, type Point } from "./city.ts";
+import { dayWeather } from "./weather.ts";
 import { between, poisson, stream, type Rng } from "./rng.ts";
 import { AuditSampler } from "./audit.ts";
 import { dailyTarget, earningsSummary, orderPayInr, pctOfBaseline, type RiderTally } from "./earnings.ts";
@@ -196,11 +197,15 @@ export function runDay(
 ): DayResult {
   const { hubs, coolingPoints } = cityLayout();
   const riders = makeRiders(params, seed);
-  const heatIndexAt = (minute: number) =>
-    Math.round(heatIndexC(temperatureAt(params.peakTempC, minute / 60), params.humidityPct));
+  // The slider curve, or a real day's hourly series (sim/weather.ts).
+  const weather = dayWeather(params);
+  const heatIndexAt = (minute: number) => {
+    const w = weather.at(minute / 60);
+    return Math.round(heatIndexC(w.tempC, w.humidityPct));
+  };
   const fee = applyHeatFee(makeOrders(params, seed, hubs), heatIndexAt, params, policy, seed);
   const orders = fee.orders;
-  const alertLevel = dayAlertLevel(params.alertLevel, params.peakTempC);
+  const alertLevel = dayAlertLevel(params.alertLevel, weather.peakTempC);
   const shade = shadeWaitOn(params, policy);
   const atHub = (p: Point) => distance(p, nearest(p, hubs)) < 1e-9;
 
@@ -226,7 +231,7 @@ export function runDay(
   for (let minute = params.startHour * 60; minute < endMin || riders.some((r) => r.state === "delivering"); minute++) {
     const open = minute < endMin;
     const hour = minute / 60;
-    const tempC = temperatureAt(params.peakTempC, hour);
+    const { tempC, humidityPct } = weather.at(hour);
     const hi = heatIndexAt(minute);
     const now = new Date(Date.UTC(2026, 4, 20, 0, minute)); // simulated time
 
@@ -328,7 +333,7 @@ export function runDay(
             distanceKm: order.distanceKm,
             tripMinutes: route.reduce((sum, leg) => sum + leg.minutesLeft, 0),
           },
-          conditions: { tempC, humidityPct: params.humidityPct, hourOfDay: Math.floor(hour), demandLevel, alertLevel },
+          conditions: { tempC, humidityPct, hourOfDay: Math.floor(hour), demandLevel, alertLevel },
           riderState: {
             minutesSinceBreak: r.minutesSinceBreak,
             exposureMinutesToday: r.exposureMinutesToday,

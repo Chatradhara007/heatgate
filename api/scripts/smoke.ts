@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { POLICY_LABELS, type BreakEvenReport, type DecideRequest, type Decision, type SimulationJob } from "@heatgate/contracts";
 import { DEFAULT_FAIR_KNOBS } from "@heatgate/engine";
-import { defaultSimParams } from "@heatgate/sim";
+import { WEATHER_DAYS, defaultSimParams, weatherDaySummary } from "@heatgate/sim";
 
 function urlArg(): string | undefined {
   const i = process.argv.indexOf("--url");
@@ -251,6 +251,16 @@ async function run() {
   const badOutcome = await call("GET", "/audit?outcome=MAYBE");
   check("GET /audit?outcome=MAYBE -> 400", badOutcome.status === 400 && isError(badOutcome.json, "INVALID_REQUEST"), badOutcome);
 
+  // real weather days (sim/data/weather, committed)
+  const days = await call("GET", "/weather-days");
+  check(
+    "GET /weather-days -> every committed day with peak temperature, peak heat index and source",
+    days.status === 200 && isDeepStrictEqual(days.json, WEATHER_DAYS.map(weatherDaySummary)),
+    days.json,
+  );
+  const badDay = await call("POST", "/simulations", { weather: { kind: "replay", weatherDayId: "atlantis-2024-01-01" } });
+  check("POST /simulations unknown weather day -> 400", badDay.status === 400 && isError(badDay.json, "INVALID_REQUEST"), badDay);
+
   // simulations
   const badSim = await call("POST", "/simulations", { startHour: 14, endHour: 12 });
   check("POST /simulations invalid hours -> 400", badSim.status === 400 && isError(badSim.json, "INVALID_REQUEST"), badSim);
@@ -319,6 +329,20 @@ async function run() {
       (["no-rules", "ndma-2025", "union-demand"] as const).every((p) => hash(kr?.[p]) === hash(runs[p])) &&
       hash(kr?.["heatgate-fair"]) !== hash(runs["heatgate-fair"]),
     withKnobs.status === 202 ? knobJob && { ...knobJob, result: undefined } : withKnobs,
+  );
+
+  // A real hot day: the same seed and hours on Lucknow's 29 May 2024 changes the runs; asking twice gives the same runs.
+  const replay = { ...SMALL_SIM, weather: { kind: "replay", weatherDayId: "lucknow-2024-05-29" } };
+  const [r1, r2] = [await call("POST", "/simulations", replay), await call("POST", "/simulations", replay)];
+  const [j1, j2] = [r1, r2].map((r) => (r.status === 202 ? waitForJob(r.json.simulationId) : undefined));
+  const [replayJob, replayJob2] = [await j1, await j2];
+  check(
+    "POST /simulations with a weather day -> done, params echo the day, runs differ from the slider day, same runs twice",
+    replayJob?.status === "done" &&
+      isDeepStrictEqual(replayJob.result?.params.weather, replay.weather) &&
+      hash(replayJob.result?.runs) !== hash(runs) &&
+      hash(replayJob.result?.runs) === hash(replayJob2?.result?.runs),
+    r1.status === 202 ? replayJob && { ...replayJob, result: undefined } : r1,
   );
 }
 

@@ -82,16 +82,13 @@ test("POST /simulations -> 429 TOO_MANY_RUNNING while 3 jobs are queued or runni
   expect((await call("POST", "/simulations", {})).status).toBe(202);
 });
 
-test("unknown simulation id -> 404 with the standard error body; unsupported fields -> 400", async () => {
+test("unknown simulation id -> 404 with the standard error body", async () => {
   const call = await start(async () => {
     throw new Error("not called");
   });
   const r = await call("GET", "/simulations/nope");
   expect(r.status).toBe(404);
   expect(r.json).toEqual({ error: { code: "NOT_FOUND", message: expect.any(String) } });
-  const w = await call("POST", "/simulations", { weather: { kind: "slider" } }); // fairKnobs is supported now (knobs.test.ts)
-  expect(w.status).toBe(400);
-  expect(w.json.error.code).toBe("NOT_SUPPORTED");
 });
 
 const decision = (simulationId: string, riderId: string, minute: number, outcome: Outcome = "ALLOW"): Decision => ({

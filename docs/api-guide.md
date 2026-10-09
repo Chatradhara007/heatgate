@@ -90,6 +90,7 @@ To check every route at once: `npm run smoke` (starts its own server on port 310
 | GET    | `/policies`         | The four rule sets with their on-screen labels                 |
 | GET    | `/defaults`         | Default simulation settings and default knobs (slider starts)  |
 | GET    | `/break-even`       | The pre-computed break-even rest pay report                    |
+| GET    | `/weather-days`     | Real hot days a simulation can replay                          |
 | GET    | `/audit`            | Logged decisions, filtered and paged                           |
 | GET    | `/simulations/:id`  | A simulation job and, when done, its result                    |
 | POST   | `/decide`           | One dispatch decision (logged unless `dryRun`)                 |
@@ -109,7 +110,6 @@ Every error from the API has the same shape:
 | 400  | `INVALID_REQUEST`   | A field is missing, the wrong type, out of range, or unknown              |
 | 400  | `INVALID_JSON`      | The body is not valid JSON                                                |
 | 400  | `INVALID_POLICY`    | Knobs render rules that fail the Cedar schema check (should not happen)   |
-| 400  | `NOT_SUPPORTED`     | `weather` in a simulation request (not built yet)                         |
 | 404  | `NOT_FOUND`         | Unknown route, unknown simulation id, or no break-even file               |
 | 413  | `TOO_LARGE`         | Body over 100 KB                                                          |
 | 429  | `TOO_MANY_RUNNING`  | 3 simulations are already queued or running                               |
@@ -336,6 +336,51 @@ Errors:
 | ---- | ----------------- | ----------------------------------------------------------- |
 | 404  | `NOT_FOUND`       | `No break-even results yet: run npm run sim:breakeven`      |
 | 500  | `INVALID_RESULTS` | The file is not valid JSON                                  |
+
+---
+
+### GET /weather-days
+
+**Purpose:** the real hot days a simulation can replay instead of the slider day. Each is the real
+hourly temperature and humidity of one city on one day, from the Open-Meteo historical weather API
+(saved once by `npm run fetch-weather` and committed in `sim/data/weather/`; the API and the simulator
+never fetch weather). `peakTempC` and `peakHeatIndexC` are the highest of the 24 hourly values. The
+heat index is a proxy for outdoor heat stress, not a medical measure.
+
+```sh
+curl http://localhost:3001/weather-days
+```
+
+There is no helper in `web/src/api.ts` yet; `fetch(`${API}/weather-days`)` works. The fixture is
+`web/fixtures/weatherDays.json`.
+
+Response (200, real, first 3 of 9):
+
+```json
+[
+  { "id": "delhi-2020-06-19", "city": "Delhi", "date": "2020-06-19", "peakTempC": 40.3, "peakHeatIndexC": 47.3, "source": "Open-Meteo historical weather API" },
+  { "id": "delhi-2024-06-18", "city": "Delhi", "date": "2024-06-18", "peakTempC": 44.2, "peakHeatIndexC": 46.9, "source": "Open-Meteo historical weather API" },
+  { "id": "delhi-2025-06-13", "city": "Delhi", "date": "2025-06-13", "peakTempC": 41.1, "peakHeatIndexC": 47.3, "source": "Open-Meteo historical weather API" }
+]
+```
+
+To replay one, send its id to `POST /simulations`:
+
+```sh
+curl -X POST http://localhost:3001/simulations \
+  -H 'content-type: application/json' \
+  -d '{"seeds":[1],"weather":{"kind":"replay","weatherDayId":"lucknow-2024-05-29"}}'
+# 202 {"simulationId":"sim-01M4G3MZ3X0000000000000001","status":"queued"}
+```
+
+With a weather day, the simulator reads that day's hourly series (a straight line between hours) and
+ignores `peakTempC` and `humidityPct`. `alertLevel: "auto"` uses the day's highest hourly temperature
+(1 at 40 °C, 2 at 45 °C): an assumed level, not the real IMD alert for that day. Everything else is
+the same. An unknown id is a `400`:
+
+```json
+{ "error": { "code": "INVALID_REQUEST", "message": "weather.weatherDayId: no weather day \"delhi-2024-06-19\" (see GET /weather-days)" } }
+```
 
 ---
 
@@ -578,7 +623,7 @@ send only what changed. An empty body (`{}`) runs the default day.
 | `pay.<policy>.paidRest`, `.protectIncentive` | boolean  | per rule set                                                          |
 | `fairFeatures.heatFee`, `.shadeWaitCountsAsRest` | boolean | defaults `true`, `false`                                         |
 | `fairKnobs.*`              | whole numbers              | section 4                                                             |
-| `weather`                  | —                          | refused with `NOT_SUPPORTED` (not built yet)                          |
+| `weather`                  | object                     | `{"kind":"slider"}` (the default: `peakTempC` + `humidityPct`) or `{"kind":"replay","weatherDayId":"<id from GET /weather-days>"}` |
 
 Unknown fields are refused. Changing `fairKnobs` changes only the `heatgate-fair` run; all chosen rule
 sets are still run.
@@ -615,7 +660,8 @@ Errors (real messages):
 | 400  | `INVALID_REQUEST`  | `policyVersions must be a non-empty list`                                   |
 | 400  | `INVALID_REQUEST`  | `fairKnobs.workLimitMin must be between 60 and 120`                         |
 | 400  | `INVALID_REQUEST`  | `unknown field: color`, `unknown field: economics.tipInr`                   |
-| 400  | `NOT_SUPPORTED`    | `weather is not supported by the simulator yet`                             |
+| 400  | `INVALID_REQUEST`  | `weather.weatherDayId: no weather day "delhi-2024-06-19" (see GET /weather-days)` |
+| 400  | `INVALID_REQUEST`  | `weather.kind must be one of "slider", "replay"`                            |
 | 429  | `TOO_MANY_RUNNING` | `3 simulations are already queued or running; try again when one has finished` |
 
 ---

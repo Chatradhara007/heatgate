@@ -6,7 +6,7 @@ import cors from "cors";
 import express, { type ErrorRequestHandler, type Request } from "express";
 import { POLICY_LABELS, type ApiError, type BreakEvenReport, type Decision } from "@heatgate/contracts";
 import { DEFAULT_FAIR_KNOBS, checkPolicyText, decide, newDecisionId, policySchema, renderFairPolicy, summarizeFairPolicy } from "@heatgate/engine";
-import { cityLayout, defaultSimParams } from "@heatgate/sim";
+import { WEATHER_DAYS, cityLayout, defaultSimParams, weatherDaySummary } from "@heatgate/sim";
 import { BadCursorError, MAX_ACTIVE_SIMULATIONS, SIMULATION_STALE_MS, type AuditFilter, type Store } from "../store/types.ts";
 import { SimulationQueue, workerRunner, type SimRunner, type SimulationSubmitter } from "./simulations.ts";
 import { ApiFailure, OUTCOMES, POLICY_VERSIONS, decideRequest, renderRequest, riderId, simParams, simulationId } from "./validate.ts";
@@ -45,6 +45,12 @@ export function createApp({ store, runSimulation = workerRunner, simulations, br
 
   app.get("/policies", (_req, res) => {
     res.json(POLICY_VERSIONS.map((id) => ({ id, label: POLICY_LABELS[id] })));
+  });
+
+  // The real hot days a simulation can replay (sim/data/weather, committed; nothing is fetched).
+  // Send an id as weather: { kind: "replay", weatherDayId } to POST /simulations.
+  app.get("/weather-days", (_req, res) => {
+    res.json(WEATHER_DAYS.map(weatherDaySummary));
   });
 
   // Default SimParams plus the default heatgate-fair knobs, so the sandbox sliders start at the right values.

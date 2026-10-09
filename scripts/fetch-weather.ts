@@ -107,4 +107,4 @@ for (const c of CITIES) {
     console.log(`  ${id}: peak ${d.peakTempC.toFixed(1)} °C, peak heat index ${d.peakHeatIndexC.toFixed(1)} °C`);
   }
 }
-console.log(`Saved to ${OUT}. Commit these files; the simulator reads them offline.`);
+console.log(`Saved to ${OUT}. List any new file in sim/data/weather/index.ts and commit them; the simulator reads them offline.`);
