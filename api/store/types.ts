@@ -12,6 +12,12 @@ export interface AuditFilter {
 // Simulation audit trails kept in the store. Older simulations' entries are dropped.
 export const MAX_AUDITED_SIMULATIONS = 5;
 
+// POST /simulations answers 429 TOO_MANY_RUNNING when this many jobs are already queued or running.
+export const MAX_ACTIVE_SIMULATIONS = 3;
+// Jobs older than this are not counted as active: a cloud run stops at 600 s, so a job still queued or
+// running after this has crashed (the DynamoDB store then reports it as failed).
+export const SIMULATION_STALE_MS = 15 * 60_000;
+
 export interface Page<T> {
   items: T[];
   nextCursor?: string; // opaque; pass back as `cursor` for the next page
@@ -28,6 +34,8 @@ export interface Store {
   // Async simulation jobs.
   putSimulation(job: SimulationJob): Promise<void>; // create or replace
   getSimulation(simulationId: string): Promise<SimulationJob | undefined>;
+  // Jobs queued or running that were created after `since`.
+  countActiveSimulations(since: Date): Promise<number>;
 }
 
 export class BadCursorError extends Error {}

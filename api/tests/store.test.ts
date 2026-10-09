@@ -4,10 +4,10 @@ import { GetCommand, PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { describe, expect, test } from "vitest";
 import type { Decision, Outcome, SimResult } from "@heatgate/contracts";
 import { newDecisionId } from "@heatgate/engine";
-import { DynamoStore, LIVE, STALE_AFTER_MS, TRAILS_ID, type ObjectStore } from "../store/dynamo.ts";
+import { ACTIVE_INDEX, DynamoStore, LIVE, TRAILS_ID, type ObjectStore } from "../store/dynamo.ts";
 import { createStore } from "../store/index.ts";
 import { MemoryStore } from "../store/memory.ts";
-import { BadCursorError, MAX_AUDITED_SIMULATIONS, type AuditFilter, type Store } from "../store/types.ts";
+import { BadCursorError, MAX_AUDITED_SIMULATIONS, SIMULATION_STALE_MS, type AuditFilter, type Store } from "../store/types.ts";
 
 type Item = Record<string, any>;
 
@@ -38,6 +38,18 @@ class FakeDb {
       const { TableName, Key } = command.input;
       const item = this.table(TableName!).get(`${Key!.simulationId}|${Key!.decisionId ?? ""}`);
       return { Item: item && structuredClone(item) };
+    }
+    if (command instanceof QueryCommand && command.input.IndexName !== undefined) {
+      // The sparse active-jobs index: only items that have `active`.
+      const { TableName, IndexName, KeyConditionExpression, ExpressionAttributeNames, ExpressionAttributeValues: v, Select } = command.input;
+      expect([IndexName, KeyConditionExpression, ExpressionAttributeNames, Select]).toEqual([
+        ACTIVE_INDEX,
+        "#active = :yes AND createdAt > :since",
+        { "#active": "active" },
+        "COUNT",
+      ]);
+      const count = [...this.table(TableName!).values()].filter((i) => i.active === v![":yes"] && i.createdAt > v![":since"]).length;
+      return { Count: count };
     }
     if (command instanceof QueryCommand) {
       const { TableName, KeyConditionExpression, ExpressionAttributeValues: v, ScanIndexForward, ExclusiveStartKey, Limit } = command.input;
@@ -227,7 +239,7 @@ describe("DynamoStore storage", () => {
 
   test("a job stuck in queued or running past the limit reads as failed; the trails list is not a job", async () => {
     const { store } = dynamo();
-    const old = new Date(Date.now() - STALE_AFTER_MS - 1000).toISOString();
+    const old = new Date(Date.now() - SIMULATION_STALE_MS - 1000).toISOString();
     await store.putSimulation({ simulationId: "sim-old", status: "running", createdAt: old });
     await store.putSimulation({ simulationId: "sim-new", status: "queued", createdAt: new Date().toISOString() });
     expect(await store.getSimulation("sim-old")).toMatchObject({ status: "failed", error: { code: "SIMULATION_FAILED" } });
@@ -235,6 +247,32 @@ describe("DynamoStore storage", () => {
     await store.putSimulationDecisions("sim-new", []);
     expect(await store.getSimulation(TRAILS_ID)).toBeUndefined();
   });
+});
+
+test.each([
+  ["memory", () => new MemoryStore()],
+  ["dynamo", () => dynamo().store],
+] as const)("%s store counts queued and running jobs created after a time", async (_name, make) => {
+  const store: Store = make();
+  const now = Date.now();
+  const at = (minutesAgo: number) => new Date(now - minutesAgo * 60_000).toISOString();
+  await store.putSimulation({ simulationId: "sim-q", status: "queued", createdAt: at(1) });
+  await store.putSimulation({ simulationId: "sim-r", status: "running", createdAt: at(2) });
+  await store.putSimulation({ simulationId: "sim-old", status: "running", createdAt: at(20) }); // stuck: not counted
+  await store.putSimulation({ simulationId: "sim-f", status: "failed", createdAt: at(1), finishedAt: at(0) });
+  await store.putSimulation({ simulationId: "sim-d", status: "running", createdAt: at(3) });
+  await store.putSimulation({ simulationId: "sim-d", status: "done", createdAt: at(3), finishedAt: at(0), result: { simulationId: "sim-d", params: {} as SimResult["params"], runs: {} } });
+  expect(await store.countActiveSimulations(new Date(now - SIMULATION_STALE_MS))).toBe(2);
+  expect(await store.countActiveSimulations(new Date(now - 90_000))).toBe(1);
+});
+
+test("dynamo: only queued and running job items carry the active flag", async () => {
+  const { store, db } = dynamo();
+  await store.putSimulation({ simulationId: "sim-1", status: "queued", createdAt: new Date().toISOString() });
+  expect(db.table("jobs").get("sim-1|")!.active).toBe("yes");
+  await store.putSimulation({ simulationId: "sim-1", status: "failed", createdAt: new Date().toISOString(), finishedAt: new Date().toISOString() });
+  expect(db.table("jobs").get("sim-1|")!.active).toBeUndefined();
+  expect(await store.getSimulation("sim-1")).not.toHaveProperty("active");
 });
 
 test("createStore: memory by default, dynamo needs its environment, anything else is refused", () => {

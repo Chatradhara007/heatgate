@@ -5,7 +5,7 @@ import type { Decision, Outcome, SimResult, SimulationJob } from "@heatgate/cont
 import { createApp } from "../src/app.ts";
 import type { SimRunner } from "../src/simulations.ts";
 import { MemoryStore } from "../store/memory.ts";
-import { MAX_AUDITED_SIMULATIONS } from "../store/types.ts";
+import { MAX_ACTIVE_SIMULATIONS, MAX_AUDITED_SIMULATIONS } from "../store/types.ts";
 
 let server: Server | undefined;
 afterEach(() => server?.close());
@@ -57,6 +57,29 @@ test("simulation job: a crash in the run gives status failed with an error and n
   expect(job.status).toBe("failed");
   expect(job.error).toEqual({ code: "SIMULATION_FAILED", message: expect.any(String) });
   expect(job.result).toBeUndefined();
+});
+
+test("POST /simulations -> 429 TOO_MANY_RUNNING while 3 jobs are queued or running", async () => {
+  let release!: () => void;
+  const gate = new Promise<void>((r) => (release = r));
+  const call = await start(async (params, simulationId) => {
+    await gate;
+    return { result: { simulationId, params, runs: {} }, audit: {} };
+  });
+  const ids: string[] = [];
+  for (let i = 0; i < MAX_ACTIVE_SIMULATIONS; i++) {
+    const r = await call("POST", "/simulations", {});
+    expect(r.status).toBe(202);
+    ids.push(r.json.simulationId);
+  }
+  const busy = await call("POST", "/simulations", {});
+  expect(busy.status).toBe(429);
+  expect(busy.json).toEqual({ error: { code: "TOO_MANY_RUNNING", message: expect.any(String) } });
+  const invalid = await call("POST", "/simulations", { startHour: 14, endHour: 12 });
+  expect(invalid.status).toBe(400); // bad params are still a 400, busy or not
+  release();
+  for (const id of ids) expect((await poll(call, id)).status).toBe("done");
+  expect((await call("POST", "/simulations", {})).status).toBe(202);
 });
 
 test("unknown simulation id -> 404 with the standard error body; unsupported fields -> 400", async () => {

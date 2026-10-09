@@ -37,7 +37,13 @@ function check(name: string, ok: boolean, detail?: unknown) {
   if (!ok) failures++;
 }
 
+// The deployed API is throttled (template.yaml: 10 requests/s, burst 20), so space calls out there.
+let lastCall = 0;
 async function call(method: string, path: string, body?: unknown, raw?: string) {
+  if (REMOTE) {
+    await sleep(Math.max(0, lastCall + 150 - Date.now()));
+    lastCall = Date.now();
+  }
   const res = await fetch(BASE + path, {
     method,
     headers: { "content-type": "application/json", origin: "http://localhost:5173" },

@@ -7,7 +7,7 @@ import express, { type ErrorRequestHandler, type Request } from "express";
 import { POLICY_LABELS, type ApiError, type BreakEvenReport, type Decision } from "@heatgate/contracts";
 import { decide, newDecisionId } from "@heatgate/engine";
 import { defaultSimParams } from "@heatgate/sim";
-import { BadCursorError, type AuditFilter, type Store } from "../store/types.ts";
+import { BadCursorError, MAX_ACTIVE_SIMULATIONS, SIMULATION_STALE_MS, type AuditFilter, type Store } from "../store/types.ts";
 import { SimulationQueue, workerRunner, type SimRunner, type SimulationSubmitter } from "./simulations.ts";
 import { ApiFailure, OUTCOMES, POLICY_VERSIONS, decideRequest, riderId, simParams, simulationId } from "./validate.ts";
 
@@ -81,6 +81,12 @@ export function createApp({ store, runSimulation = workerRunner, simulations, br
 
   app.post("/simulations", async (req, res) => {
     const params = simParams(req.body);
+    // A cheap guard against runaway cost in the cloud (each job is its own Lambda run). Not atomic: two
+    // requests at the same moment can both pass.
+    const active = await store.countActiveSimulations(new Date(Date.now() - SIMULATION_STALE_MS));
+    if (active >= MAX_ACTIVE_SIMULATIONS) {
+      throw new ApiFailure(429, "TOO_MANY_RUNNING", `${active} simulations are already queued or running; try again when one has finished`);
+    }
     const job = await jobs.submit(`sim-${newDecisionId(new Date())}`, params);
     res.status(202).json({ simulationId: job.simulationId, status: job.status });
   });

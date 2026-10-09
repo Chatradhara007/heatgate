@@ -131,6 +131,11 @@ Resources:
         AllowHeaders:
           - content-type
         MaxAge: 600
+      # A cheap cost guard for a public API: past this API Gateway answers 429 {"message":"Too Many Requests"}
+      # without calling Lambda. Applies to every route.
+      DefaultRouteSettings:
+        ThrottlingRateLimit: 10 # requests per second, steady
+        ThrottlingBurstLimit: 20
 
   # Static website for web/dist. Only the objects are publicly readable (bucket policy below);
   # ACLs stay blocked and nobody can list the bucket.
@@ -228,6 +233,8 @@ Resources:
 
   # Simulation jobs: status and a pointer to the result in ResultsBucket, plus one item listing the
   # simulations whose audit trails are kept. Same 30-day expiresAt.
+  # active-jobs: a sparse index of the queued and running jobs (only they have `active`), so the
+  # POST /simulations guard (at most 3 at once) counts them without reading the whole table.
   SimulationsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -235,9 +242,22 @@ Resources:
       AttributeDefinitions:
         - AttributeName: simulationId
           AttributeType: S
+        - AttributeName: active
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
       KeySchema:
         - AttributeName: simulationId
           KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: active-jobs
+          KeySchema:
+            - AttributeName: active
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: KEYS_ONLY
       TimeToLiveSpecification:
         AttributeName: expiresAt
         Enabled: true
