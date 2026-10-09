@@ -23,6 +23,7 @@ const tally = (t: Partial<RiderTally>): RiderTally => ({
   orderPayInr: 0,
   restMinutes: 0,
   restOrPauseMinutes: 0,
+  shiftMinutes: 480,
   ...t,
 });
 
@@ -78,6 +79,18 @@ describe("hand-computed", () => {
     });
     expect(pctOfBaseline(330, 300)).toBeCloseTo(110);
   });
+
+  test("lowest rider leaves out riders with less than 2 hours on shift; the average keeps them", () => {
+    const pay = DEFAULT_PAY["no-rules"];
+    const full = tally({ id: "rider-001", ordersDelivered: 8, orderPayInr: 320, shiftMinutes: 480 });
+    const twoHours = tally({ id: "rider-002", ordersDelivered: 2, orderPayInr: 80, shiftMinutes: 120 });
+    const late = tally({ id: "rider-003", ordersDelivered: 0, orderPayInr: 0, shiftMinutes: 119 });
+    // Target 7.2: only rider-001 hits it (320 + 150 = 470). rider-002: 80. rider-003: 0, but < 2 h.
+    const s = earningsSummary([full, twoHours, late], 7.2, econ, pay);
+    expect(s.minEarningsPerRiderInr).toBe(80);
+    expect(s.avgEarningsPerRiderInr).toBeCloseTo((470 + 80 + 0) / 3);
+    expect(earningsSummary([late], 7.2, econ, pay).minEarningsPerRiderInr).toBe(0); // nobody qualifies
+  });
 });
 
 describe("one real day (11:00-16:00, 40 °C, alert 1)", () => {
@@ -92,6 +105,16 @@ describe("one real day (11:00-16:00, 40 °C, alert 1)", () => {
     expect(runDay(params, "union-demand", 2, "t", { noRulesOrdersPerRider: orders }).metrics).toEqual(union.metrics);
   }, 30_000);
 
+  test("earningsPctOfNoRules: average earnings as a % of the no-rules run on the same seed", () => {
+    expect(noRules.metrics.earningsPctOfNoRules).toBe(100);
+    expect(union.metrics.earningsPctOfNoRules).toBeCloseTo((100 * union.metrics.avgEarningsPerRiderInr) / noRules.metrics.avgEarningsPerRiderInr);
+    const passedIn = runDay(params, "union-demand", 2, "t", {
+      noRulesOrdersPerRider: noRules.riders.map((r) => r.ordersDelivered),
+      noRulesAvgEarningsInr: noRules.metrics.avgEarningsPerRiderInr,
+    });
+    expect(passedIn.metrics).toEqual(union.metrics);
+  }, 30_000);
+
   test("money metrics add up from the riders' tallies", () => {
     for (const [policy, day] of [["no-rules", noRules], ["union-demand", union]] as const) {
       const m = day.metrics;
@@ -99,7 +122,10 @@ describe("one real day (11:00-16:00, 40 °C, alert 1)", () => {
       expect(day.riders.reduce((s, r) => s + r.ordersDelivered, 0)).toBe(m.ordersDelivered);
       const each = day.riders.map((r) => riderEarnings(r, day.targetOrders, params.economics, params.pay[policy]));
       expect(m.avgEarningsPerRiderInr * params.riders).toBeCloseTo(each.reduce((s, e) => s + e.totalInr, 0));
-      expect(m.minEarningsPerRiderInr).toBe(Math.min(...each.map((e) => e.totalInr)));
+      const counted = each.filter((_, i) => day.riders[i].shiftMinutes >= 120);
+      expect(m.minEarningsPerRiderInr).toBe(Math.min(...counted.map((e) => e.totalInr)));
+      expect(day.riders.some((r) => r.shiftMinutes < 120)).toBe(true); // second-wave riders log in late
+      expect(day.riders.every((r) => r.shiftMinutes <= (params.endHour - params.startHour) * 60)).toBe(true);
       expect(m.avgEarningsPerRiderInr).toBeGreaterThan(0);
       expect(m.heatFeeCollectedInr).toBe(0); // heat fee is heatgate-fair only
     }

@@ -4,7 +4,7 @@ import { decide, heatIndexC } from "@heatgate/engine";
 import { CITY_KM, cityLayout, dayAlertLevel, demandLevelFor, distance, nearest, temperatureAt, type Point } from "./city.ts";
 import { between, poisson, stream, type Rng } from "./rng.ts";
 import { AuditSampler } from "./audit.ts";
-import { dailyTarget, earningsSummary, orderPayInr, type RiderTally } from "./earnings.ts";
+import { dailyTarget, earningsSummary, orderPayInr, pctOfBaseline, type RiderTally } from "./earnings.ts";
 import { applyHeatFee, shadeWaitOn, waitInShade } from "./fair.ts";
 
 const HANDOVER_MIN = 5;
@@ -54,6 +54,7 @@ interface SimRider {
   restMinutes: number;
   restOrPauseMinutes: number;
   shadeMinutes: number; // continuous minutes idle at a hub (shade waiting, sim/fair.ts)
+  shiftMinutes: number; // minutes on shift in this run
 }
 
 export interface DayResult {
@@ -122,6 +123,7 @@ export function makeRiders(params: SimParams, seed: number): SimRider[] {
       restMinutes: 0,
       restOrPauseMinutes: 0,
       shadeMinutes: 0,
+      shiftMinutes: 0,
     };
   });
 }
@@ -180,14 +182,15 @@ const FRAME_STATE: Record<Exclude<InternalState, "offline">, RiderState> = {
   paused: "paused",
 };
 
-// options.noRulesOrdersPerRider: orders per rider in the no-rules run on the same seed, for the daily
-// target. Left out, it comes from this run (no-rules) or from an extra no-rules run.
+// options.noRulesOrdersPerRider: orders per rider in the no-rules run on the same seed, for the daily target.
+// options.noRulesAvgEarningsInr: that run's average earnings, for earningsPctOfNoRules.
+// Left out, they come from this run (no-rules) or from an extra no-rules run.
 export function runDay(
   params: SimParams,
   policy: PolicyVersion,
   seed: number,
   simulationId: string,
-  options: { audit?: boolean; noRulesOrdersPerRider?: number[] } = {},
+  options: { audit?: boolean; noRulesOrdersPerRider?: number[]; noRulesAvgEarningsInr?: number } = {},
 ): DayResult {
   const { hubs, coolingPoints } = cityLayout();
   const riders = makeRiders(params, seed);
@@ -226,6 +229,7 @@ export function runDay(
       else if (r.state !== "offline" && minute >= r.logoutMin && r.state !== "delivering") r.state = "offline";
     }
     const onShift = riders.filter((r) => r.state !== "offline");
+    for (const r of onShift) r.shiftMinutes++;
 
     // 2. Demand level.
     const demandLevel = demandLevelFor(onShift.filter((r) => r.state === "delivering").length, onShift.length);
@@ -394,12 +398,18 @@ export function runDay(
     orderPayInr: r.orderPayInr,
     restMinutes: r.restMinutes,
     restOrPauseMinutes: r.restOrPauseMinutes,
+    shiftMinutes: r.shiftMinutes,
   }));
+  let noRulesRun: DayResult | undefined;
+  const noRulesDay = () => (noRulesRun ??= runDay(params, "no-rules", seed, simulationId));
   const noRulesOrders =
-    options.noRulesOrdersPerRider ??
-    (policy === "no-rules" ? tallies : runDay(params, "no-rules", seed, simulationId).riders).map((t) => t.ordersDelivered);
+    options.noRulesOrdersPerRider ?? (policy === "no-rules" ? tallies : noRulesDay().riders).map((t) => t.ordersDelivered);
   const targetOrders = dailyTarget(noRulesOrders, params.economics);
   const money = earningsSummary(tallies, targetOrders, params.economics, params.pay[policy]);
+  const noRulesAvg =
+    policy === "no-rules"
+      ? money.avgEarningsPerRiderInr
+      : (options.noRulesAvgEarningsInr ?? noRulesDay().metrics.avgEarningsPerRiderInr);
 
   const sorted = [...deliveryMinutes].sort((a, b) => a - b);
   const metrics: Metrics = {
@@ -415,6 +425,7 @@ export function runDay(
     // Money: placeholder rupee amounts from params.economics (sim/earnings.ts, sim/fair.ts).
     ...money,
     heatFeeCollectedInr: fee.heatFeeCollectedInr,
+    earningsPctOfNoRules: pctOfBaseline(money.avgEarningsPerRiderInr, noRulesAvg),
     decisions,
   };
   const result: DayResult = {

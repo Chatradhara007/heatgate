@@ -129,8 +129,8 @@ export interface SimParams {
   alertLevel: AlertSetting;
   startHour: number; // default 8
   endHour: number; // default 20
-  ordersPerHour: number; // default 50; x1.5 at lunch (12-14) and dinner (19-21). Tune so demand is quiet ~20%, normal ~50%, rush ~30% of the day
-  shiftHours: { min: number; max: number }; // default 6 and 8; riders log in at staggered times
+  ordersPerHour: number; // default 34 (tuned with the two login waves in sim/dispatcher.ts); x1.5 at lunch (12-14) and dinner (19-21). Tune so demand is quiet ~20%, normal ~50%, rush ~30% of the day
+  shiftHours: { min: number; max: number }; // default 6 and 8; riders log in in two waves, 08:00-09:00 and 15:00-18:00 (an assumption, sim/dispatcher.ts)
   multiAppPct: number; // default 40 (to confirm with riders): share of riders who keep working on another app while resting here
   feeDemandDropPctPerInr: number; // default 1: % of new orders lost per rupee of heat fee
   policyVersions: PolicyVersion[]; // usually all four
@@ -169,6 +169,7 @@ export interface Metrics {
   incentiveHitRatePct: number; // % of riders who reached their (adjusted) target
   restPayTotalInr: number;
   heatFeeCollectedInr: number;
+  earningsPctOfNoRules: number; // avgEarningsPerRiderInr as a % of the no-rules run on the same seed
   decisions: Record<Outcome, number>;
 }
 
@@ -201,4 +202,42 @@ export interface SimulationJob {
   finishedAt?: string; // ISO, set when done or failed
   result?: SimResult; // only when status === "done"
   error?: ApiError["error"]; // only when status === "failed"
+}
+
+// Added on core-breakeven: npm run sim:breakeven writes sim/results/break-even.json; GET /break-even serves it.
+// ALL RUPEE AMOUNTS ARE PLACEHOLDERS from interview-pending economics (docs/money-model.md).
+// Break-even rest pay: the smallest economics.restPayPerMinuteInr at which a rule set's average rider earns
+// at least as much as in the no-rules run on the same seed, interpolated between sweep points.
+export interface BreakEvenReport {
+  note: "All rupee amounts are placeholders from interview-pending economics.";
+  generatedAt: string; // ISO
+  params: SimParams; // default SimParams the sweep ran from; the sweep overrides ordersPerHour and economics.restPayPerMinuteInr
+  restPayRatesInrPerMin: number[]; // the rest pay sweep, the same at every demand level
+  levels: {
+    ordersPerHour: number;
+    noRulesAvgEarningsInr: { mean: number; min: number; max: number }; // across the seeds
+    policies: Partial<Record<PolicyVersion, {
+      breakEven:
+        | {
+            status: "reached";
+            meanInrPerMin: number; // from the seed-mean earnings
+            perSeedMinInrPerMin: number; // over the seeds that reach it within the sweep
+            perSeedMaxInrPerMin: number;
+            seedsNotReached: number; // seeds still below no-rules at the top of the sweep
+          }
+        | {
+            status: "notReached"; // not reached within the sweep
+            bestEarningsPctOfNoRules: number; // highest seed-mean earnings % of no-rules in the sweep
+            atRestPayInrPerMin: number;
+          };
+      // One row per rest pay rate, for the chart. Mean over the seeds, min-max across them.
+      rows: {
+        restPayInrPerMin: number;
+        earningsPctOfNoRules: { mean: number; min: number; max: number };
+        avgEarningsInr: { mean: number; min: number; max: number };
+        lowestRiderInr: { mean: number; min: number; max: number };
+      }[];
+    }>>;
+  }[];
+  stale?: boolean; // set by GET /break-even only (never in the file): params differ from the current default SimParams
 }
