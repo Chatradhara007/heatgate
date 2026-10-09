@@ -17,6 +17,7 @@
     "export-messages": "tsx scripts/export-messages.ts",
     "sim:full": "tsx sim/scripts/full.ts",
     "sim:sensitivity": "tsx sim/scripts/sensitivity.ts",
+    "sim:breakeven": "tsx sim/scripts/breakeven.ts",
     "smoke": "tsx api/scripts/smoke.ts"
   },
   "keywords": [

@@ -3,7 +3,7 @@
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
-import { POLICY_LABELS, type DecideRequest, type Decision, type SimulationJob } from "@heatgate/contracts";
+import { POLICY_LABELS, type BreakEvenReport, type DecideRequest, type Decision, type SimulationJob } from "@heatgate/contracts";
 import { defaultSimParams } from "@heatgate/sim";
 
 const PORT = Number(process.env.SMOKE_PORT ?? 3101); // not 3001, so a running dev server does not clash
@@ -73,6 +73,24 @@ async function run() {
   check("GET /policies -> the four rule sets with POLICY_LABELS", policies.status === 200 && isDeepStrictEqual(policies.json, expectedPolicies), policies.json);
   const defaults = await call("GET", "/defaults");
   check("GET /defaults -> defaultSimParams()", defaults.status === 200 && isDeepStrictEqual(defaults.json, defaultSimParams()), defaults.json);
+
+  // break-even results (sim/results/break-even.json, from npm run sim:breakeven)
+  const be = await call("GET", "/break-even");
+  const report = be.json as BreakEvenReport;
+  check(
+    "GET /break-even -> labelled report, 3 demand levels x 2 rule sets, a row per rest pay rate",
+    be.status === 200 &&
+      /placeholders/.test(report.note) &&
+      typeof report.generatedAt === "string" &&
+      isDeepStrictEqual(report.levels?.map((l) => l.ordersPerHour), [25, 34, 50]) &&
+      report.levels.every((l) =>
+        (["union-demand", "heatgate-fair"] as const).every(
+          (p) => l.policies[p]?.rows.length === report.restPayRatesInrPerMin.length && ["reached", "notReached"].includes(l.policies[p]!.breakEven.status),
+        ),
+      ),
+    be,
+  );
+  check("GET /break-even is not stale (else run npm run sim:breakeven and commit the file)", report.stale === false, { stale: report.stale, params: report.params });
 
   // decide
   const cool = await call("POST", "/decide", coolRequest);

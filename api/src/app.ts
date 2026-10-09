@@ -1,7 +1,10 @@
 // The HeatGate HTTP API. Errors are always { error: { code, message } }.
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 import cors from "cors";
 import express, { type ErrorRequestHandler, type Request } from "express";
-import { POLICY_LABELS, type ApiError, type Decision } from "@heatgate/contracts";
+import { POLICY_LABELS, type ApiError, type BreakEvenReport, type Decision } from "@heatgate/contracts";
 import { decide, newDecisionId } from "@heatgate/engine";
 import { defaultSimParams } from "@heatgate/sim";
 import { BadCursorError, type AuditFilter, type Store } from "../store/types.ts";
@@ -11,7 +14,10 @@ import { ApiFailure, OUTCOMES, POLICY_VERSIONS, decideRequest, riderId, simParam
 export interface AppOptions {
   store: Store;
   runSimulation?: SimRunner; // default: worker thread
+  breakEvenPath?: string; // default: sim/results/break-even.json (npm run sim:breakeven)
 }
+
+export const BREAK_EVEN_FILE = fileURLToPath(new URL("../../sim/results/break-even.json", import.meta.url));
 
 const errorBody = (code: string, message: string): ApiError => ({ error: { code, message } });
 
@@ -22,7 +28,7 @@ function query(req: Request, name: string): string | undefined {
   return v;
 }
 
-export function createApp({ store, runSimulation = workerRunner }: AppOptions) {
+export function createApp({ store, runSimulation = workerRunner, breakEvenPath = BREAK_EVEN_FILE }: AppOptions) {
   const app = express();
   const simulations = new SimulationQueue(store, runSimulation);
 
@@ -39,6 +45,29 @@ export function createApp({ store, runSimulation = workerRunner }: AppOptions) {
 
   app.get("/defaults", (_req, res) => {
     res.json(defaultSimParams());
+  });
+
+  // The committed break-even sweep. All rupee amounts are placeholders from interview-pending economics.
+  // Read on every request so a re-run of npm run sim:breakeven shows up without a restart. stale: the file
+  // was made with params that differ from today's defaults, so re-run the sweep before quoting it.
+  app.get("/break-even", async (_req, res) => {
+    let text: string;
+    try {
+      text = await readFile(breakEvenPath, "utf8");
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+      throw new ApiFailure(404, "NOT_FOUND", "No break-even results yet: run npm run sim:breakeven");
+    }
+    let report: BreakEvenReport;
+    try {
+      report = JSON.parse(text);
+    } catch {
+      throw new ApiFailure(500, "INVALID_RESULTS", "The break-even results file is not valid JSON: run npm run sim:breakeven");
+    }
+    // Compare as JSON, which is how the params were written.
+    const defaults = JSON.parse(JSON.stringify(defaultSimParams()));
+    const body: BreakEvenReport = { ...report, stale: !isDeepStrictEqual(report.params, defaults) };
+    res.json(body);
   });
 
   app.post("/decide", async (req, res) => {
