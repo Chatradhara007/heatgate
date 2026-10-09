@@ -1,4 +1,4 @@
-// The one store interface. Two versions: memory (memory.ts) and DynamoDB (later).
+// The one store interface. Two versions: memory (memory.ts) and DynamoDB + S3 (dynamo.ts); index.ts picks one.
 // Everything is async so a DynamoDB version can drop in without changing the handlers.
 import type { Decision, Outcome, PolicyVersion, SimulationJob } from "@heatgate/contracts";
 

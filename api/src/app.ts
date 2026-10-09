@@ -8,12 +8,13 @@ import { POLICY_LABELS, type ApiError, type BreakEvenReport, type Decision } fro
 import { decide, newDecisionId } from "@heatgate/engine";
 import { defaultSimParams } from "@heatgate/sim";
 import { BadCursorError, type AuditFilter, type Store } from "../store/types.ts";
-import { SimulationQueue, workerRunner, type SimRunner } from "./simulations.ts";
+import { SimulationQueue, workerRunner, type SimRunner, type SimulationSubmitter } from "./simulations.ts";
 import { ApiFailure, OUTCOMES, POLICY_VERSIONS, decideRequest, riderId, simParams, simulationId } from "./validate.ts";
 
 export interface AppOptions {
   store: Store;
   runSimulation?: SimRunner; // default: worker thread
+  simulations?: SimulationSubmitter; // default: an in-process SimulationQueue using runSimulation
   breakEvenPath?: string; // default: sim/results/break-even.json (npm run sim:breakeven)
 }
 
@@ -28,9 +29,9 @@ function query(req: Request, name: string): string | undefined {
   return v;
 }
 
-export function createApp({ store, runSimulation = workerRunner, breakEvenPath = BREAK_EVEN_FILE }: AppOptions) {
+export function createApp({ store, runSimulation = workerRunner, simulations, breakEvenPath = BREAK_EVEN_FILE }: AppOptions) {
   const app = express();
-  const simulations = new SimulationQueue(store, runSimulation);
+  const jobs = simulations ?? new SimulationQueue(store, runSimulation);
 
   app.use(cors());
   app.use(express.json({ limit: "100kb" }));
@@ -80,7 +81,7 @@ export function createApp({ store, runSimulation = workerRunner, breakEvenPath =
 
   app.post("/simulations", async (req, res) => {
     const params = simParams(req.body);
-    const job = await simulations.submit(`sim-${newDecisionId(new Date())}`, params);
+    const job = await jobs.submit(`sim-${newDecisionId(new Date())}`, params);
     res.status(202).json({ simulationId: job.simulationId, status: job.status });
   });
 

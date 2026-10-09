@@ -1,8 +1,8 @@
-// npm start -w api: the HeatGate API on port 3001 (or $PORT), with the in-memory store.
+// npm start -w api: the HeatGate API on port 3001 (or $PORT). In-memory store unless STORE=dynamo.
 import { createApp } from "./app.ts";
-import { MemoryStore } from "../store/memory.ts";
+import { createStore } from "../store/index.ts";
 
 const port = Number(process.env.PORT ?? 3001);
-createApp({ store: new MemoryStore() }).listen(port, () => {
+createApp({ store: createStore() }).listen(port, () => {
   console.log(`HeatGate API listening on http://localhost:${port}`);
 });

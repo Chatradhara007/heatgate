@@ -1,6 +1,10 @@
-// AWS Lambda entry point (template.yaml): the Express app from app.ts behind an HTTP API (payload v2).
-// Tiny adapter, no new dependency: the app listens on a loopback port once per container and each
-// Lambda event is forwarded to it with fetch.
+// AWS Lambda entry points (template.yaml). One bundle, two functions:
+// - handler (ApiFunction): the Express app from app.ts behind an HTTP API (payload v2). Tiny adapter, no
+//   new dependency: the app listens on a loopback port once per container and each Lambda event is
+//   forwarded to it with fetch. POST /simulations stores a queued job and invokes SimFunction
+//   asynchronously (SIM_FUNCTION), because a Lambda is frozen as soon as it has answered.
+// - simHandler (SimFunction): runs one simulation job and stores its status, result and audit trail.
+// Both use the store picked by STORE (dynamo in template.yaml; see api/store/index.ts).
 //
 // esbuild bundles everything into one file, but at import time the engine reads policies/*.cedar and
 // cedar-wasm reads cedar_wasm_bg.wasm from disk next to their own source files. So this file embeds
@@ -10,6 +14,9 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { createRequire } from "node:module";
 import { join } from "node:path";
+import { gzipSync } from "node:zlib";
+import type { SimParams, SimulationJob } from "@heatgate/contracts";
+import type { SimRunner, SimulationSubmitter } from "./simulations.ts"; // types only: erased, so not loaded early
 // @ts-expect-error text loader (esbuild)
 import schemaText from "../../policies/heatgate.cedarschema";
 // @ts-expect-error text loader (esbuild)
@@ -63,16 +70,67 @@ import.meta.dirname = join(ROOT, "api", "src");
 Object.assign(globalThis, { __dirname: join(ROOT, "wasm"), require: createRequire(import.meta.url) });
 
 const { createApp } = await import("./app.ts");
-const { MemoryStore } = await import("../store/memory.ts");
+const { createStore } = await import("../store/index.ts");
+const { SimulationQueue, queuedJob, runSimulationJob } = await import("./simulations.ts");
+const { simulateWithAudit } = await import("@heatgate/sim");
 
-const app = createApp({ store: new MemoryStore(), breakEvenPath: join(ROOT, "sim/results/break-even.json") });
-const server = app.listen(0, "127.0.0.1");
-await new Promise((resolve) => server.once("listening", resolve));
-const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+// What ApiFunction sends to SimFunction.
+export interface SimEvent {
+  job: SimulationJob; // as stored, status "queued"
+  params: SimParams; // already checked by validate.ts
+}
+
+const store = createStore();
+// simWorker.ts is not in the bundle, so runs happen on the main thread; SimFunction does nothing else.
+const runHere: SimRunner = async (params, simulationId) => simulateWithAudit(params, simulationId);
+
+async function lambdaSubmitter(functionName: string): Promise<SimulationSubmitter> {
+  const { LambdaClient, InvokeCommand } = await import("@aws-sdk/client-lambda");
+  const lambda = new LambdaClient({});
+  return {
+    async submit(simulationId, params) {
+      const job = queuedJob(simulationId);
+      await store.putSimulation(job);
+      const event: SimEvent = { job, params };
+      try {
+        // "Event": queue the call and return at once (SimFunction has retries turned off in template.yaml).
+        await lambda.send(
+          new InvokeCommand({ FunctionName: functionName, InvocationType: "Event", Payload: new TextEncoder().encode(JSON.stringify(event)) }),
+        );
+      } catch (err) {
+        await store
+          .putSimulation({
+            ...job,
+            status: "failed",
+            finishedAt: new Date().toISOString(),
+            error: { code: "SIMULATION_FAILED", message: "The simulation could not be started" },
+          })
+          .catch((e) => console.error(`could not record failure of ${simulationId}:`, e));
+        throw err;
+      }
+      return job;
+    },
+  };
+}
+
+// Without SIM_FUNCTION (only sensible with STORE=memory) jobs run in this container, as before.
+const simFunction = process.env.SIM_FUNCTION;
+const simulations = simFunction ? await lambdaSubmitter(simFunction) : new SimulationQueue(store, runHere);
+const app = createApp({ store, simulations, breakEvenPath: join(ROOT, "sim/results/break-even.json") });
+
+const GZIP_OVER_BYTES = 1_000_000;
+
+// Started on the first API event, so SimFunction containers never open a port.
+let origin: Promise<string> | undefined;
+function listen(): Promise<string> {
+  const server = app.listen(0, "127.0.0.1");
+  return new Promise((resolve) => server.once("listening", () => resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`)));
+}
 
 export async function handler(event: HttpApiEvent): Promise<HttpApiResult> {
+  origin ??= listen();
   const method = event.requestContext.http.method;
-  const url = `${origin}${event.rawPath}${event.rawQueryString ? `?${event.rawQueryString}` : ""}`;
+  const url = `${await origin}${event.rawPath}${event.rawQueryString ? `?${event.rawQueryString}` : ""}`;
   let body: Buffer | undefined;
   if (event.body !== undefined && method !== "GET" && method !== "HEAD") {
     body = Buffer.from(event.body, event.isBase64Encoded ? "base64" : "utf8");
@@ -85,5 +143,17 @@ export async function handler(event: HttpApiEvent): Promise<HttpApiResult> {
       headers[name] = value;
     }
   });
-  return { statusCode: res.status, headers, body: await res.text(), isBase64Encoded: false };
+  const text = await res.text();
+  // Lambda answers at most 6 MB. A big SimResult (e.g. 10 seeds x 300 riders, about 8 MB of JSON) is
+  // more, so large bodies go out gzipped (JSON shrinks about tenfold) to clients that accept it.
+  const acceptsGzip = /\bgzip\b/.test(event.headers?.["accept-encoding"] ?? "");
+  if (acceptsGzip && text.length > GZIP_OVER_BYTES) {
+    headers["content-encoding"] = "gzip";
+    return { statusCode: res.status, headers, body: gzipSync(text).toString("base64"), isBase64Encoded: true };
+  }
+  return { statusCode: res.status, headers, body: text, isBase64Encoded: false };
+}
+
+export async function simHandler(event: SimEvent): Promise<void> {
+  await runSimulationJob(store, runHere, event.job, event.params);
 }
