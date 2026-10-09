@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  HeatGate skeleton (ap-south-1): one Lambda running the Express API behind an HTTP API,
+  an S3 static website for the web app, and two DynamoDB tables (defined, not used yet).
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    MemorySize: 512
+    Timeout: 10
+
+Resources:
+  # The Express app (api/src/app.ts) through the adapter in api/src/lambda.ts.
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: lambda.handler
+      Environment:
+        Variables:
+          NODE_OPTIONS: --enable-source-maps
+          AUDIT_TABLE: !Ref AuditTable
+          SIMULATIONS_TABLE: !Ref SimulationsTable
+      Events:
+        Health:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: GET, Path: /health }
+        Policies:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: GET, Path: /policies }
+        Defaults:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: GET, Path: /defaults }
+        BreakEven:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: GET, Path: /break-even }
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - api/src/lambda.ts
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        Target: node20
+        Minify: true
+        Sourcemap: true
+        # lambda.ts embeds the Cedar policies and the cedar-wasm binary (see its header comment).
+        Loader:
+          - .cedar=text
+          - .cedarschema=text
+          - .wasm=binary
+
+  # API Gateway v2. CORS is answered here, so browsers can call it from the S3 website.
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - content-type
+        MaxAge: 600
+
+  # Static website for web/dist. Only the objects are publicly readable (bucket policy below);
+  # ACLs stay blocked and nobody can list the bucket.
+  WebBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+
+  WebBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublicReadObjects
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${WebBucket.Arn}/*"
+
+  # Defined but unused yet: the DynamoDB version of api/store/types.ts will use them.
+  # Rider IDs here are pseudonymous; never store names or phone numbers.
+  AuditTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: decisionId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: decisionId
+          KeyType: HASH
+
+  SimulationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: simulationId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: simulationId
+          KeyType: HASH
+
+Outputs:
+  ApiUrl:
+    Description: HeatGate API URL (use as VITE_API_URL)
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
+  WebsiteUrl:
+    Description: Web app URL (S3 static website, http only)
+    Value: !GetAtt WebBucket.WebsiteURL
+  WebBucketName:
+    Description: Bucket to upload web/dist to
+    Value: !Ref WebBucket
