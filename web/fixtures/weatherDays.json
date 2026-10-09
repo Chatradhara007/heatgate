@@ -8,6 +8,22 @@
   "source": "Open-Meteo historical weather API"
  },
  {
+  "id": "delhi-2024-05-26",
+  "city": "Delhi",
+  "date": "2024-05-26",
+  "peakTempC": 46,
+  "peakHeatIndexC": 43.2,
+  "source": "Open-Meteo historical weather API"
+ },
+ {
+  "id": "delhi-2024-05-31",
+  "city": "Delhi",
+  "date": "2024-05-31",
+  "peakTempC": 45.9,
+  "peakHeatIndexC": 41.5,
+  "source": "Open-Meteo historical weather API"
+ },
+ {
   "id": "delhi-2024-06-18",
   "city": "Delhi",
   "date": "2024-06-18",
@@ -40,6 +56,22 @@
   "source": "Open-Meteo historical weather API"
  },
  {
+  "id": "hyderabad-2024-04-28",
+  "city": "Hyderabad",
+  "date": "2024-04-28",
+  "peakTempC": 40.5,
+  "peakHeatIndexC": 39.5,
+  "source": "Open-Meteo historical weather API"
+ },
+ {
+  "id": "hyderabad-2024-05-04",
+  "city": "Hyderabad",
+  "date": "2024-05-04",
+  "peakTempC": 41.4,
+  "peakHeatIndexC": 40,
+  "source": "Open-Meteo historical weather API"
+ },
+ {
   "id": "hyderabad-2024-05-27",
   "city": "Hyderabad",
   "date": "2024-05-27",
@@ -61,6 +93,22 @@
   "date": "2024-05-29",
   "peakTempC": 46,
   "peakHeatIndexC": 49.6,
+  "source": "Open-Meteo historical weather API"
+ },
+ {
+  "id": "lucknow-2024-05-31",
+  "city": "Lucknow",
+  "date": "2024-05-31",
+  "peakTempC": 46.4,
+  "peakHeatIndexC": 45.3,
+  "source": "Open-Meteo historical weather API"
+ },
+ {
+  "id": "lucknow-2024-06-18",
+  "city": "Lucknow",
+  "date": "2024-06-18",
+  "peakTempC": 45.7,
+  "peakHeatIndexC": 47.2,
   "source": "Open-Meteo historical weather API"
  },
  {

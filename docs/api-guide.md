@@ -344,7 +344,9 @@ Errors:
 **Purpose:** the real hot days a simulation can replay instead of the slider day. Each is the real
 hourly temperature and humidity of one city on one day, from the Open-Meteo historical weather API
 (saved once by `npm run fetch-weather` and committed in `sim/data/weather/`; the API and the simulator
-never fetch weather). `peakTempC` and `peakHeatIndexC` are the highest of the 24 hourly values. The
+never fetch weather). Per city (Delhi, Lucknow, Hyderabad, April-June 2020-2025) there are the 3 days with the
+highest peak heat index and the 2 days with the highest peak air temperature (the well-known hot days),
+15 days in all. `peakTempC` and `peakHeatIndexC` are the highest of the 24 hourly values. The
 heat index is a proxy for outdoor heat stress, not a medical measure.
 
 ```sh
@@ -360,13 +362,13 @@ const days = await weatherDays();          // WeatherDaySummary[], for the Simul
 `WeatherDaySummary` is a web type in `api.ts` (a copy of the one in `sim/weather.ts`, because the web app
 only depends on contracts).
 
-Response (200, real, first 3 of 9):
+Response (200, real, first 3 of 15):
 
 ```json
 [
   { "id": "delhi-2020-06-19", "city": "Delhi", "date": "2020-06-19", "peakTempC": 40.3, "peakHeatIndexC": 47.3, "source": "Open-Meteo historical weather API" },
-  { "id": "delhi-2024-06-18", "city": "Delhi", "date": "2024-06-18", "peakTempC": 44.2, "peakHeatIndexC": 46.9, "source": "Open-Meteo historical weather API" },
-  { "id": "delhi-2025-06-13", "city": "Delhi", "date": "2025-06-13", "peakTempC": 41.1, "peakHeatIndexC": 47.3, "source": "Open-Meteo historical weather API" }
+  { "id": "delhi-2024-05-26", "city": "Delhi", "date": "2024-05-26", "peakTempC": 46, "peakHeatIndexC": 43.2, "source": "Open-Meteo historical weather API" },
+  { "id": "delhi-2024-05-31", "city": "Delhi", "date": "2024-05-31", "peakTempC": 45.9, "peakHeatIndexC": 41.5, "source": "Open-Meteo historical weather API" }
 ]
 ```
 

@@ -32,6 +32,28 @@ Peak air temperature 40.3 °C, peak heat index 47.3 °C, humidity 34–60% (8:00
 | union-demand | 308 (265–323) | 6567 (5857–7908) | 4524 (3664–5982) | 113.9 (107.4–119.7) | 146 (134–162) |
 | heatgate-fair | 186 (166–210) | 5205 (4108–6902) | 4441 (3508–5932) | 95.1 (85.6–104.1) | 128 (102–144) |
 
+### Delhi, 2024-05-26 (real weather)
+
+Peak air temperature 46 °C, peak heat index 43.2 °C, humidity 9–22% (8:00–20:00). Alert level 2 (assumed from peak temperature, not the real IMD alert). Open-Meteo historical weather API, grid cell 28.576448, 77.18678.
+
+| Rule set | Delivered orders | Unsafe min >90 | Unsafe min >120 | Earnings, % of no-rules | Lowest-earning rider, ₹ (placeholder) |
+|---|---|---|---|---|---|
+| no-rules | 451 (430–468) | 10834 (10469–11142) | 9405 (9063–9679) | 100.0 (100.0–100.0) | 91 (48–131) |
+| ndma-2025 | 158 (138–173) | 4736 (3820–6308) | 4053 (3279–5407) | 70.0 (64.3–78.0) | 114 (81–149) |
+| union-demand | 308 (265–323) | 6051 (5485–7310) | 4130 (3430–5451) | 113.9 (107.4–119.7) | 146 (134–162) |
+| heatgate-fair | 296 (266–317) | 4947 (4068–6451) | 4055 (3279–5407) | 115.1 (106.5–123.6) | 156 (131–181) |
+
+### Delhi, 2024-05-31 (real weather)
+
+Peak air temperature 45.9 °C, peak heat index 41.5 °C, humidity 6–19% (8:00–20:00). Alert level 2 (assumed from peak temperature, not the real IMD alert). Open-Meteo historical weather API, grid cell 28.576448, 77.18678.
+
+| Rule set | Delivered orders | Unsafe min >90 | Unsafe min >120 | Earnings, % of no-rules | Lowest-earning rider, ₹ (placeholder) |
+|---|---|---|---|---|---|
+| no-rules | 451 (430–468) | 9631 (9358–9922) | 8483 (8266–8839) | 100.0 (100.0–100.0) | 91 (48–131) |
+| ndma-2025 | 158 (138–173) | 4138 (3479–5424) | 3605 (2971–4652) | 70.0 (64.3–78.0) | 114 (81–149) |
+| union-demand | 308 (265–323) | 5293 (4683–6309) | 3677 (3014–4693) | 113.9 (107.4–119.7) | 146 (134–162) |
+| heatgate-fair | 336 (309–361) | 4484 (3876–5854) | 3615 (2985–4680) | 115.1 (110.3–118.6) | 159 (146–184) |
+
 ### Delhi, 2024-06-18 (real weather)
 
 Peak air temperature 44.2 °C, peak heat index 46.9 °C, humidity 11–35% (8:00–20:00). Alert level 1 (assumed from peak temperature, not the real IMD alert). Open-Meteo historical weather API, grid cell 28.576448, 77.18678.
@@ -76,6 +98,28 @@ Peak air temperature 38.3 °C, peak heat index 42.4 °C, humidity 17–56% (8:00
 | union-demand | 451 (430–468) | 394 (251–720) | 260 (144–562) | 100.0 (100.0–100.0) | 91 (48–131) |
 | heatgate-fair | 447 (415–466) | 212 (149–306) | 117 (60–192) | 100.6 (98.9–101.6) | 95 (48–154) |
 
+### Hyderabad, 2024-04-28 (real weather)
+
+Peak air temperature 40.5 °C, peak heat index 39.5 °C, humidity 18–34% (8:00–20:00). Alert level 1 (assumed from peak temperature, not the real IMD alert). Open-Meteo historical weather API, grid cell 17.398945, 78.457085.
+
+| Rule set | Delivered orders | Unsafe min >90 | Unsafe min >120 | Earnings, % of no-rules | Lowest-earning rider, ₹ (placeholder) |
+|---|---|---|---|---|---|
+| no-rules | 451 (430–468) | 7916 (7595–8034) | 7681 (7449–7761) | 100.0 (100.0–100.0) | 91 (48–131) |
+| ndma-2025 | 158 (138–173) | 3451 (2849–4404) | 3325 (2697–4267) | 70.0 (64.3–78.0) | 114 (81–149) |
+| union-demand | 308 (265–323) | 4166 (3621–4922) | 3367 (2720–4296) | 113.9 (107.4–119.7) | 146 (134–162) |
+| heatgate-fair | 355 (331–382) | 3825 (3288–4671) | 3473 (2882–4398) | 113.4 (109.4–115.8) | 110 (45–144) |
+
+### Hyderabad, 2024-05-04 (real weather)
+
+Peak air temperature 41.4 °C, peak heat index 40 °C, humidity 14–53% (8:00–20:00). Alert level 1 (assumed from peak temperature, not the real IMD alert). Open-Meteo historical weather API, grid cell 17.398945, 78.457085.
+
+| Rule set | Delivered orders | Unsafe min >90 | Unsafe min >120 | Earnings, % of no-rules | Lowest-earning rider, ₹ (placeholder) |
+|---|---|---|---|---|---|
+| no-rules | 451 (430–468) | 8549 (8360–8704) | 7794 (7602–7953) | 100.0 (100.0–100.0) | 91 (48–131) |
+| ndma-2025 | 158 (138–173) | 3705 (3007–4783) | 3369 (2731–4353) | 70.0 (64.3–78.0) | 114 (81–149) |
+| union-demand | 308 (265–323) | 4691 (4016–5547) | 3436 (2763–4394) | 113.9 (107.4–119.7) | 146 (134–162) |
+| heatgate-fair | 345 (313–376) | 3921 (3236–4930) | 3369 (2731–4353) | 114.7 (110.0–117.8) | 95 (45–155) |
+
 ### Hyderabad, 2024-05-27 (real weather)
 
 Peak air temperature 38 °C, peak heat index 43 °C, humidity 39–64% (8:00–20:00). Alert level 0 (assumed from peak temperature, not the real IMD alert). Open-Meteo historical weather API, grid cell 17.398945, 78.457085.
@@ -109,6 +153,28 @@ Peak air temperature 46 °C, peak heat index 49.6 °C, humidity 11–53% (8:00�
 | union-demand | 308 (265–323) | 5735 (5172–6857) | 3989 (3401–5142) | 113.9 (107.4–119.7) | 146 (134–162) |
 | heatgate-fair | 183 (166–193) | 4763 (3924–6104) | 4031 (3362–5182) | 86.5 (77.0–96.0) | 125 (95–147) |
 
+### Lucknow, 2024-05-31 (real weather)
+
+Peak air temperature 46.4 °C, peak heat index 45.3 °C, humidity 8–41% (8:00–20:00). Alert level 2 (assumed from peak temperature, not the real IMD alert). Open-Meteo historical weather API, grid cell 26.81898, 80.93023.
+
+| Rule set | Delivered orders | Unsafe min >90 | Unsafe min >120 | Earnings, % of no-rules | Lowest-earning rider, ₹ (placeholder) |
+|---|---|---|---|---|---|
+| no-rules | 451 (430–468) | 9712 (9442–9986) | 8534 (8311–8883) | 100.0 (100.0–100.0) | 91 (48–131) |
+| ndma-2025 | 158 (138–173) | 4179 (3523–5490) | 3629 (2999–4693) | 70.0 (64.3–78.0) | 114 (81–149) |
+| union-demand | 308 (265–323) | 5348 (4731–6389) | 3702 (3042–4734) | 113.9 (107.4–119.7) | 146 (134–162) |
+| heatgate-fair | 303 (274–315) | 4271 (3582–5549) | 3629 (2999–4693) | 111.8 (103.9–117.3) | 139 (114–167) |
+
+### Lucknow, 2024-06-18 (real weather)
+
+Peak air temperature 45.7 °C, peak heat index 47.2 °C, humidity 18–38% (8:00–20:00). Alert level 2 (assumed from peak temperature, not the real IMD alert). Open-Meteo historical weather API, grid cell 26.81898, 80.93023.
+
+| Rule set | Delivered orders | Unsafe min >90 | Unsafe min >120 | Earnings, % of no-rules | Lowest-earning rider, ₹ (placeholder) |
+|---|---|---|---|---|---|
+| no-rules | 451 (430–468) | 12038 (11744–12249) | 10538 (10244–10749) | 100.0 (100.0–100.0) | 91 (48–131) |
+| ndma-2025 | 158 (138–173) | 5153 (4058–6853) | 4441 (3508–5932) | 70.0 (64.3–78.0) | 114 (81–149) |
+| union-demand | 308 (265–323) | 6567 (5857–7908) | 4524 (3664–5982) | 113.9 (107.4–119.7) | 146 (134–162) |
+| heatgate-fair | 81 (64–94) | 5152 (4018–6865) | 4441 (3508–5932) | 72.6 (63.9–83.8) | 114 (67–141) |
+
 ### Lucknow, 2024-06-19 (real weather)
 
 Peak air temperature 44.5 °C, peak heat index 48.2 °C, humidity 17–51% (8:00–20:00). Alert level 1 (assumed from peak temperature, not the real IMD alert). Open-Meteo historical weather API, grid cell 26.81898, 80.93023.
@@ -125,7 +191,7 @@ Peak air temperature 44.5 °C, peak heat index 48.2 °C, humidity 17–51% (8:00
 1. **When the heat alert fires, each of the three rule sets roughly halves riders' unsafe heat minutes compared with today.**
    - Default day, unsafe min >120: no-rules 8209 (7810–8610), ndma-2025 3544 (2957–4637), union-demand 3576 (2992–4658), heatgate-fair 3734 (3198–4836).
    - Default day, unsafe min >90: no-rules 8762 (8282–9154), ndma-2025 3825 (3115–5076), union-demand 4710 (4186–5715), heatgate-fair 4175 (3587–5362).
-   - Over 7 alert days (the default day and 6 real weather days with alert level ≥ 1), each rule set's mean unsafe minutes, on both measures, are this share of no-rules': ndma-2025 41%–44%, union-demand 42%–56%, heatgate-fair 42%–48%.
+   - Over 13 alert days (the default day and 12 real weather days with alert level ≥ 1), each rule set's mean unsafe minutes, on both measures, are this share of no-rules': ndma-2025 41%–44%, union-demand 42%–56%, heatgate-fair 42%–48%.
    - Reproduce: `npm run sim:full; npm run sim:weather`
 
 2. **Heat-index rules protect riders on humid days where temperature-based alerts stay silent: on 2024-05-27 in Hyderabad heatgate-fair cut unsafe minutes by about 53-55% (53% on >90, 55% on >120), while rules keyed to an air-temperature alert stay silent at a 38 °C peak (alert level assumed 0, not the real IMD alert).**
@@ -152,10 +218,10 @@ Peak air temperature 44.5 °C, peak heat index 48.2 °C, humidity 17–51% (8:00
 ## Claims we must NOT make
 
 1. **heatgate-fair is safer than NDMA across the board.**
-   - Why not: Across 10 scenarios, heatgate-fair has more / the same / fewer unsafe minutes than ndma-2025 in 7 / 0 / 3 on the >90 measure and 3 / 4 / 3 on the >120 measure (default day >90: ndma-2025 3825 (3115–5076) vs heatgate-fair 4175 (3587–5362)). Of the scenarios where Fair is lower, 0 (>90) and 0 (>120) are alert days; the rest are days when the NDMA rules never fire.
+   - Why not: Across 16 scenarios, heatgate-fair has more / the same / fewer unsafe minutes than ndma-2025 in 12 / 0 / 4 on the >90 measure and 6 / 7 / 3 on the >120 measure (default day >90: ndma-2025 3825 (3115–5076) vs heatgate-fair 4175 (3587–5362)). Of the scenarios where Fair is lower, 1 (>90) and 0 (>120) are alert days; the rest are days when the NDMA rules never fire.
 
 2. **heatgate-fair beats union-demand.**
-   - Why not: Default day: unsafe min >120 union-demand 3576 (2992–4658) vs heatgate-fair 3734 (3198–4836) (ranges overlap); unsafe min >90 union-demand 4710 (4186–5715) vs heatgate-fair 4175 (3587–5362) (ranges overlap); earnings % of no-rules union-demand 113.9 (107.4–119.7) vs heatgate-fair 112.1 (107.3–119.1) (ranges overlap); delivered union-demand 308 (265–323) vs heatgate-fair 331 (313–345) (ranges overlap). Fewer unsafe minutes >120 AND higher earnings: heatgate-fair in 3 of 10 scenarios, union-demand in 2.
+   - Why not: Default day: unsafe min >120 union-demand 3576 (2992–4658) vs heatgate-fair 3734 (3198–4836) (ranges overlap); unsafe min >90 union-demand 4710 (4186–5715) vs heatgate-fair 4175 (3587–5362) (ranges overlap); earnings % of no-rules union-demand 113.9 (107.4–119.7) vs heatgate-fair 112.1 (107.3–119.1) (ranges overlap); delivered union-demand 308 (265–323) vs heatgate-fair 331 (313–345) (ranges overlap). Fewer unsafe minutes >120 AND higher earnings: heatgate-fair in 6 of 16 scenarios, union-demand in 3.
 
 3. **Any single rupee figure for break-even.**
    - Why not: Break-even rest pay (₹/min, mean and per-seed range, sim/results/break-even.json) moves with order volume and seed: 25 orders/h union-demand: ₹0.38 (0.25–0.55)/min; 25 orders/h heatgate-fair: ₹0.48 (0.29–0.72)/min; 34 orders/h union-demand: ₹0.96 (0.64–1.17)/min; 34 orders/h heatgate-fair: ₹0.94 (0.77–1.12)/min; 50 orders/h union-demand: not reached (best 90.3% of no-rules at ₹1.5/min); 50 orders/h heatgate-fair: not reached (best 90.6% of no-rules at ₹1.5/min). Every rupee input is a placeholder, so these are shapes, not prices.
@@ -176,5 +242,5 @@ Peak air temperature 44.5 °C, peak heat index 48.2 °C, humidity 17–51% (8:00
 - Weather days are reanalysis data on a grid of about 25 km (Open-Meteo historical API). They read a few degrees below station peaks, so check each date against news reports before quoting it.
 - The model has no demand response to heat: customers order the same on a 46 °C day as on a 34 °C day (only heatgate-fair's heat fee removes some orders).
 - Idle riders do not move toward hubs (only with shade waiting, which is off by default).
-- On the very humid Delhi and Lucknow days heatgate-fair delivers less than NDMA: delhi-2025-06-13 115 (99–144) vs 158 (138–173) (peak heat index 47.3 °C); lucknow-2024-06-19 155 (138–173) vs 158 (138–173) (peak heat index 48.2 °C). The pacing claim above holds for the default day, not for every real day.
+- On the very humid Delhi and Lucknow days heatgate-fair delivers less than NDMA: delhi-2025-06-13 115 (99–144) vs 158 (138–173) (peak heat index 47.3 °C); lucknow-2024-06-18 81 (64–94) vs 158 (138–173) (peak heat index 47.2 °C); lucknow-2024-06-19 155 (138–173) vs 158 (138–173) (peak heat index 48.2 °C). The pacing claim above holds for the default day, not for every real day.
 - Heat index is a proxy for outdoor heat stress, not a medical measure. Unsafe minutes are rider-minutes (all riders, one day) outdoors at heat index ≥ 38 °C beyond 90 or 120 minutes since the last rest.

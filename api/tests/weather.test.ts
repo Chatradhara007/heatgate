@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import type { Server } from "node:http";
 import { afterEach, expect, test } from "vitest";
 import type { SimParams, SimResult } from "@heatgate/contracts";
-import { WEATHER_DAYS } from "@heatgate/sim";
+import { WEATHER_DAYS, weatherDay, weatherDaySummary } from "@heatgate/sim";
 import { createApp } from "../src/app.ts";
 import { MemoryStore } from "../store/memory.ts";
 
@@ -38,7 +38,9 @@ test("GET /weather-days: every committed day with its peaks and source", async (
   for (const d of r.json) {
     expect(Object.keys(d).sort()).toEqual(["city", "date", "id", "peakHeatIndexC", "peakTempC", "source"]);
     expect(d.source).toBe("Open-Meteo historical weather API");
-    expect(d.peakHeatIndexC).toBeGreaterThanOrEqual(d.peakTempC);
+    // Exactly the engine's peaks. Not "heat index >= temperature": on a dry day (Delhi 2024-05-26, 46 °C at
+    // 9% humidity) the heat index is below the air temperature.
+    expect(d).toEqual(weatherDaySummary(weatherDay(d.id)!));
   }
   expect(r.json.map((d: { id: string }) => d.id)).toContain("lucknow-2024-05-29");
 });

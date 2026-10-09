@@ -17,6 +17,22 @@ describe("committed weather days", () => {
     expect(Object.keys(WEATHER_FILES).sort()).toEqual(files.sort());
   });
 
+  // 3 per city ranked by heat index, then 2 per city ranked by peak air temperature (npm run fetch-weather).
+  // Adding days never renames or drops one: results already published for a day id stay reproducible.
+  test("the heat-index days and the air-temperature days are all committed", () => {
+    const byHeatIndex = [
+      "delhi-2020-06-19", "delhi-2024-06-18", "delhi-2025-06-13",
+      "hyderabad-2022-05-01", "hyderabad-2023-05-13", "hyderabad-2024-05-27",
+      "lucknow-2022-05-16", "lucknow-2024-05-29", "lucknow-2024-06-19",
+    ];
+    const byAirTemp = [
+      "delhi-2024-05-26", "delhi-2024-05-31",
+      "hyderabad-2024-04-28", "hyderabad-2024-05-04",
+      "lucknow-2024-05-31", "lucknow-2024-06-18",
+    ];
+    expect(WEATHER_DAYS.map((d) => d.id).sort()).toEqual([...byHeatIndex, ...byAirTemp].sort());
+  });
+
   for (const day of WEATHER_DAYS) {
     test(`${day.id}: source info and 24 plausible hourly values`, () => {
       expect(day.source).toBe("Open-Meteo historical weather API");
