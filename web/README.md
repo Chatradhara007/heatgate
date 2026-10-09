@@ -43,6 +43,8 @@ must stay in step with `contracts/types.ts` and the API; ask before changing it.
   - `usePolicies()`, `useDefaults()`, `useAudit(query)`, `useGetSimulation(id)`: load on mount and
     return `{ data, loading, error, reload }`.
   - `useDefaults()` returns the default `SimParams` plus `fairKnobs`, the starting values for the knob sliders.
+  - `useWeatherDays()` loads the real hot days a simulation can replay (`GET /weather-days`), for the
+    Simulator's weather-day picker. Each has `id`, `city`, `date`, `peakTempC`, `peakHeatIndexC`, `source`.
   - `useDecide()`, `useCreateSimulation()`, `useRenderPolicy()`: run on demand. They return
     `{ data, loading, error, run }`. `useRenderPolicy().run(knobs)` renders the heatgate-fair rules for
     those knobs (debounce slider moves). In fixture mode only the default knobs render; any other knobs
@@ -50,6 +52,9 @@ must stay in step with `contracts/types.ts` and the API; ask before changing it.
   - `useSimulation()`: `run(params)` starts a simulation and polls it every second (120 s timeout).
     It returns `{ data, loading, error, status, simulationId, elapsedMs, run, cancel }`, and
     `status` goes `idle` → `queued` → `running` → `done` or `failed`.
+    To replay a real day, pass `weather: { kind: "replay", weatherDayId: day.id }` in `params`;
+    `{ kind: "slider" }` (the default) uses `peakTempC` and `humidityPct`. In fixture mode a replay returns
+    the one fixture result with `data.fixtureNote` saying the weather day was ignored: show it.
   - Always handle all three states. `components/AsyncView.tsx` does loading and error for you.
 - **Look: use the tokens** in `src/theme.ts` through Tailwind classes (`bg-surface`, `text-ink-muted`,
   `p-md`, `gap-lg`, `rounded-lg`, `font-display`, …). Outcome colours: `bg-outcome-allow`,
