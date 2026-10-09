@@ -69,12 +69,37 @@ export interface DayResult {
 
 const legMinutes = (from: Point, to: Point, speed: number) => Math.ceil(distance(from, to) / speed);
 
+// ASSUMPTION: riders log in in two waves, half between 8 and 9 AM and half between 3 and 6 PM (not
+// measured; replace with real login data when we have it). Each rider then works shiftHours; the
+// second wave's shifts are cut off at endHour. The windows were tuned with ordersPerHour so the
+// no-rules demand mix on a 34 °C day is close to 20 / 50 / 30 (it comes out at 21 / 51 / 28).
+export interface LoginWave {
+  share: number; // share of riders in this wave; the last wave takes the rest
+  fromMin: number; // minute of day
+  toMin: number;
+}
+export const LOGIN_WAVES: LoginWave[] = [
+  { share: 0.5, fromMin: 8 * 60, toMin: 9 * 60 },
+  { share: 0.5, fromMin: 15 * 60, toMin: 18 * 60 },
+];
+
+function loginWave(i: number, riders: number): LoginWave {
+  let upTo = 0;
+  for (const wave of LOGIN_WAVES) {
+    upTo += wave.share * riders;
+    if (i < Math.round(upTo)) return wave;
+  }
+  return LOGIN_WAVES[LOGIN_WAVES.length - 1];
+}
+
 export function makeRiders(params: SimParams, seed: number): SimRider[] {
   const rng = stream(seed, "riders");
   return Array.from({ length: params.riders }, (_, i) => {
     const v = rng();
     const vehicle = v < 0.7 ? "bike" : v < 0.9 ? "ev" : "cycle";
-    const loginMin = Math.floor(between(rng, 8 * 60, 13 * 60));
+    const wave = loginWave(i, params.riders);
+    // On the 5-minute frame clock, so every rider is in a frame from their first minute on shift.
+    const loginMin = Math.floor(between(rng, wave.fromMin, wave.toMin) / FRAME_EVERY_MIN) * FRAME_EVERY_MIN;
     const shiftMin = Math.round(between(rng, params.shiftHours.min, params.shiftHours.max) * 60);
     return {
       id: `rider-${String(i + 1).padStart(3, "0")}`, // pseudonymous
@@ -194,9 +219,10 @@ export function runDay(
     const hi = heatIndexAt(minute);
     const now = new Date(Date.UTC(2026, 4, 20, 0, minute)); // simulated time
 
-    // 1. Log riders in and out (a rider on a delivery finishes it first).
+    // 1. Log riders in and out (a rider on a delivery finishes it first). A run that starts after a
+    //    rider's login time (a short test day) starts with that rider already on shift.
     for (const r of riders) {
-      if (r.state === "offline" && minute === r.loginMin) r.state = "idle";
+      if (r.state === "offline" && minute >= r.loginMin && minute < r.logoutMin) r.state = "idle";
       else if (r.state !== "offline" && minute >= r.logoutMin && r.state !== "delivering") r.state = "offline";
     }
     const onShift = riders.filter((r) => r.state !== "offline");
