@@ -1,12 +1,14 @@
 // Hand-written request checks. Each returns the clean value or throws ApiFailure (400).
 import {
   DEFAULT_PAY,
+  type FairKnobs,
   POLICY_LABELS,
   type DecideRequest,
   type Outcome,
   type PolicyVersion,
   type SimParams,
 } from "@heatgate/contracts";
+import { DEFAULT_FAIR_KNOBS, FAIR_KNOB_NAMES, fairKnobErrors } from "@heatgate/engine";
 import { defaultSimParams } from "@heatgate/sim";
 
 export class ApiFailure extends Error {
@@ -124,6 +126,7 @@ export function simParams(body: unknown): SimParams {
   const b = obj(body ?? {}, "body");
   const p = defaultSimParams();
   const known = new Set(Object.keys(p).concat("fairKnobs", "weather"));
+  // fairKnobs: numbers only, merged over the defaults. The worker renders heatgate-fair from them.
   for (const key of Object.keys(b)) if (!known.has(key)) throw bad(`unknown field: ${key}`);
 
   if (b.seeds !== undefined) {
@@ -178,9 +181,26 @@ export function simParams(body: unknown): SimParams {
       p.fairFeatures.shadeWaitCountsAsRest = bool(f.shadeWaitCountsAsRest, "fairFeatures.shadeWaitCountsAsRest");
     }
   }
+  if (b.fairKnobs !== undefined) p.fairKnobs = fairKnobs(b.fairKnobs, "fairKnobs");
   // In the contract but not read by the simulator yet: refuse rather than silently ignore.
-  for (const key of ["fairKnobs", "weather"]) {
-    if (b[key] !== undefined) throw new ApiFailure(400, "NOT_SUPPORTED", `${key} is not supported by the simulator yet`);
-  }
+  if (b.weather !== undefined) throw new ApiFailure(400, "NOT_SUPPORTED", "weather is not supported by the simulator yet");
   return p;
+}
+
+// Partial FairKnobs in, full FairKnobs out (defaults from engine/src/fairKnobs.ts). Whole numbers in the
+// contract ranges only; never text, so a client can change the numbers in heatgate-fair but not its rules.
+export function fairKnobs(v: unknown, path: string): FairKnobs {
+  const k = obj(v, path);
+  for (const key of Object.keys(k)) if (!(FAIR_KNOB_NAMES as string[]).includes(key)) throw bad(`unknown field: ${path}.${key}`);
+  const knobs = { ...DEFAULT_FAIR_KNOBS, ...k } as FairKnobs;
+  const errors = fairKnobErrors(knobs).map((e) => e.replace(/^fairKnobs\./, `${path}.`).replace(/ fairKnobs\./g, ` ${path}.`));
+  if (errors.length > 0) throw bad(errors.join("; "));
+  return knobs;
+}
+
+// POST /policies/render: { knobs: Partial<FairKnobs> }.
+export function renderRequest(body: unknown): FairKnobs {
+  const b = obj(body ?? {}, "body");
+  for (const key of Object.keys(b)) if (key !== "knobs") throw bad(`unknown field: ${key}`);
+  return fairKnobs(b.knobs ?? {}, "knobs");
 }

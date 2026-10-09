@@ -5,11 +5,11 @@ import { isDeepStrictEqual } from "node:util";
 import cors from "cors";
 import express, { type ErrorRequestHandler, type Request } from "express";
 import { POLICY_LABELS, type ApiError, type BreakEvenReport, type Decision } from "@heatgate/contracts";
-import { decide, newDecisionId } from "@heatgate/engine";
+import { DEFAULT_FAIR_KNOBS, checkPolicyText, decide, newDecisionId, policySchema, renderFairPolicy, summarizeFairPolicy } from "@heatgate/engine";
 import { defaultSimParams } from "@heatgate/sim";
 import { BadCursorError, MAX_ACTIVE_SIMULATIONS, SIMULATION_STALE_MS, type AuditFilter, type Store } from "../store/types.ts";
 import { SimulationQueue, workerRunner, type SimRunner, type SimulationSubmitter } from "./simulations.ts";
-import { ApiFailure, OUTCOMES, POLICY_VERSIONS, decideRequest, riderId, simParams, simulationId } from "./validate.ts";
+import { ApiFailure, OUTCOMES, POLICY_VERSIONS, decideRequest, renderRequest, riderId, simParams, simulationId } from "./validate.ts";
 
 export interface AppOptions {
   store: Store;
@@ -44,8 +44,18 @@ export function createApp({ store, runSimulation = workerRunner, simulations, br
     res.json(POLICY_VERSIONS.map((id) => ({ id, label: POLICY_LABELS[id] })));
   });
 
+  // Default SimParams plus the default heatgate-fair knobs, so the sandbox sliders start at the right values.
+  // Sending these knobs back gives the same result as sending none.
   app.get("/defaults", (_req, res) => {
-    res.json(defaultSimParams());
+    res.json({ ...defaultSimParams(), fairKnobs: DEFAULT_FAIR_KNOBS });
+  });
+
+  // heatgate-fair rendered from number knobs, checked against the schema. Nothing is logged or run.
+  app.post("/policies/render", (req, res) => {
+    const knobs = renderRequest(req.body);
+    const text = renderFairPolicy(knobs);
+    const errors = checkPolicyText(text, policySchema);
+    res.json({ knobs, text, valid: errors.length === 0, errors, rules: summarizeFairPolicy(knobs) });
   });
 
   // The committed break-even sweep. All rupee amounts are placeholders from interview-pending economics.
@@ -81,6 +91,11 @@ export function createApp({ store, runSimulation = workerRunner, simulations, br
 
   app.post("/simulations", async (req, res) => {
     const params = simParams(req.body);
+    // Knobs are range-checked already; still never queue a run whose rendered rules fail the schema.
+    if (params.fairKnobs) {
+      const errors = checkPolicyText(renderFairPolicy(params.fairKnobs), policySchema);
+      if (errors.length > 0) throw new ApiFailure(400, "INVALID_POLICY", `fairKnobs give rules that fail the schema check: ${errors.join("; ")}`);
+    }
     // A cheap guard against runaway cost in the cloud (each job is its own Lambda run). Not atomic: two
     // requests at the same moment can both pass.
     const active = await store.countActiveSimulations(new Date(Date.now() - SIMULATION_STALE_MS));

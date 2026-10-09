@@ -4,9 +4,12 @@
 // A deployed audit log already holds other decisions, so there the audit checks use rider ids made for
 // this run and only look at the newest entries.
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 import { POLICY_LABELS, type BreakEvenReport, type DecideRequest, type Decision, type SimulationJob } from "@heatgate/contracts";
+import { DEFAULT_FAIR_KNOBS } from "@heatgate/engine";
 import { defaultSimParams } from "@heatgate/sim";
 
 function urlArg(): string | undefined {
@@ -74,6 +77,25 @@ const hotRequest: DecideRequest = {
   riderState: { minutesSinceBreak: 80, exposureMinutesToday: 200, restMinutesRemaining: 0 },
 };
 
+const SMALL_SIM = { seeds: [1], startHour: 12, endHour: 14, riders: 20 };
+const hash = (v: unknown) => createHash("sha256").update(JSON.stringify(v)).digest("hex");
+
+async function waitForJob(id: string, started = Date.now()): Promise<SimulationJob | undefined> {
+  const seen = new Set<string>();
+  let job: SimulationJob | undefined;
+  while (Date.now() - started < SIM_TIMEOUT_MS) {
+    const r = await call("GET", `/simulations/${id}`);
+    job = r.json as SimulationJob;
+    seen.add(job.status);
+    if (r.status !== 200 || job.status === "done" || job.status === "failed") break;
+    // The server must keep answering while the run is in progress.
+    if ((await call("GET", "/health")).status !== 200) check("server answers during a run", false);
+    await sleep(POLL_MS);
+  }
+  console.log(`      statuses seen while polling: ${[...seen].join(" -> ")} (${((Date.now() - started) / 1000).toFixed(1)} s)`);
+  return job;
+}
+
 async function waitForServer() {
   for (let i = 0; i < 100; i++) {
     try {
@@ -99,7 +121,30 @@ async function run() {
   const expectedPolicies = Object.entries(POLICY_LABELS).map(([id, label]) => ({ id, label }));
   check("GET /policies -> the four rule sets with POLICY_LABELS", policies.status === 200 && isDeepStrictEqual(policies.json, expectedPolicies), policies.json);
   const defaults = await call("GET", "/defaults");
-  check("GET /defaults -> defaultSimParams()", defaults.status === 200 && isDeepStrictEqual(defaults.json, defaultSimParams()), defaults.json);
+  check(
+    "GET /defaults -> defaultSimParams() + default fairKnobs",
+    defaults.status === 200 && isDeepStrictEqual(defaults.json, { ...defaultSimParams(), fairKnobs: DEFAULT_FAIR_KNOBS }),
+    defaults.json,
+  );
+
+  // rule knobs: render only (nothing logged, nothing run)
+  const committedFair = readFileSync(fileURLToPath(new URL("../../policies/heatgate-fair.cedar", import.meta.url)), "utf8");
+  const rendered = await call("POST", "/policies/render", { knobs: DEFAULT_FAIR_KNOBS });
+  check(
+    "POST /policies/render (default knobs) -> the committed heatgate-fair.cedar, valid, 8 rule summaries",
+    rendered.status === 200 && rendered.json.text === committedFair && rendered.json.valid === true && rendered.json.rules?.length === 8,
+    rendered,
+  );
+  const tighter = await call("POST", "/policies/render", { knobs: { workLimitMin: 90 } });
+  check(
+    "POST /policies/render (workLimitMin 90) -> valid, the number changed",
+    tighter.status === 200 && tighter.json.valid === true && /tripMinutes > 90\n/.test(tighter.json.text),
+    tighter,
+  );
+  const outOfRange = await call("POST", "/policies/render", { knobs: { restHeatC: 60 } });
+  check("POST /policies/render out of range -> 400", outOfRange.status === 400 && isError(outOfRange.json, "INVALID_REQUEST"), outOfRange);
+  const rawCedar = await call("POST", "/policies/render", { knobs: {}, text: "permit (principal, action, resource);" });
+  check("POST /policies/render with raw Cedar text -> 400", rawCedar.status === 400 && isError(rawCedar.json, "INVALID_REQUEST"), rawCedar);
 
   // break-even results (sim/results/break-even.json, from npm run sim:breakeven)
   const be = await call("GET", "/break-even");
@@ -198,28 +243,19 @@ async function run() {
   // simulations
   const badSim = await call("POST", "/simulations", { startHour: 14, endHour: 12 });
   check("POST /simulations invalid hours -> 400", badSim.status === 400 && isError(badSim.json, "INVALID_REQUEST"), badSim);
+  const badKnobs = await call("POST", "/simulations", { fairKnobs: { workLimitMin: 59 } });
+  check("POST /simulations fairKnobs out of range -> 400", badKnobs.status === 400 && isError(badKnobs.json, "INVALID_REQUEST"), badKnobs);
   const notFound = await call("GET", "/simulations/sim-does-not-exist");
   check("GET /simulations/<unknown> -> 404 error body", notFound.status === 404 && isError(notFound.json, "NOT_FOUND"), notFound);
 
   const started = Date.now();
-  const sim = await call("POST", "/simulations", { seeds: [1], startHour: 12, endHour: 14, riders: 20 });
+  const sim = await call("POST", "/simulations", SMALL_SIM);
   check(
     "POST /simulations -> 202 { simulationId, status: queued }",
     sim.status === 202 && typeof sim.json.simulationId === "string" && sim.json.status === "queued" && Object.keys(sim.json).length === 2,
     sim,
   );
-  const seen = new Set<string>();
-  let job: SimulationJob | undefined;
-  while (Date.now() - started < SIM_TIMEOUT_MS) {
-    const r = await call("GET", `/simulations/${sim.json.simulationId}`);
-    job = r.json as SimulationJob;
-    seen.add(job.status);
-    if (r.status !== 200 || job.status === "done" || job.status === "failed") break;
-    // The server must keep answering while the run is in progress.
-    if ((await call("GET", "/health")).status !== 200) check("server answers during a run", false);
-    await sleep(POLL_MS);
-  }
-  console.log(`      statuses seen while polling: ${[...seen].join(" -> ")} (${((Date.now() - started) / 1000).toFixed(1)} s)`);
+  const job = await waitForJob(sim.json.simulationId, started);
   check("GET /simulations/:id reaches done", job?.status === "done", job && { ...job, result: undefined });
   const runs = job?.result?.runs ?? {};
   check(
@@ -253,6 +289,25 @@ async function run() {
     `a rider id from a frame (${frameRider}) has at least one audit entry`,
     !!riderTrail && riderTrail.status === 200 && riderTrail.json.items.length > 0 && riderTrail.json.items.every((d: Decision) => d.riderId === frameRider),
     riderTrail && riderTrail.json,
+  );
+
+  // rule knobs in a simulation: default knobs repeat the plain run exactly; changed knobs change Fair only.
+  const withDefaults = await call("POST", "/simulations", { ...SMALL_SIM, fairKnobs: DEFAULT_FAIR_KNOBS });
+  const defJob = withDefaults.status === 202 ? await waitForJob(withDefaults.json.simulationId) : undefined;
+  check(
+    "POST /simulations with default fairKnobs -> done, same runs hash as no knobs",
+    defJob?.status === "done" && hash(defJob.result?.runs) === hash(job?.result?.runs),
+    withDefaults.status === 202 ? defJob && { ...defJob, result: undefined } : withDefaults,
+  );
+  const withKnobs = await call("POST", "/simulations", { ...SMALL_SIM, fairKnobs: { shortTripHeatC: 36, shortTripMaxKm: 1 } });
+  const knobJob = withKnobs.status === 202 ? await waitForJob(withKnobs.json.simulationId) : undefined;
+  const kr = knobJob?.result?.runs;
+  check(
+    "POST /simulations with changed fairKnobs -> done, other rule sets unchanged, heatgate-fair changed",
+    knobJob?.status === "done" &&
+      (["no-rules", "ndma-2025", "union-demand"] as const).every((p) => hash(kr?.[p]) === hash(runs[p])) &&
+      hash(kr?.["heatgate-fair"]) !== hash(runs["heatgate-fair"]),
+    withKnobs.status === 202 ? knobJob && { ...knobJob, result: undefined } : withKnobs,
   );
 }
 

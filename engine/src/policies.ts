@@ -2,7 +2,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import * as cedar from "@cedar-policy/cedar-wasm/nodejs";
-import type { PolicyVersion } from "@heatgate/contracts";
+import type { FairKnobs, PolicyVersion } from "@heatgate/contracts";
+import { checkPolicyText } from "./checkPolicy.ts";
+import { fairKnobsKey, renderFairPolicy } from "./fairKnobs.ts";
 
 const POLICY_DIR = join(import.meta.dirname, "..", "..", "policies");
 const VERSIONS: PolicyVersion[] = ["no-rules", "ndma-2025", "union-demand", "heatgate-fair"];
@@ -20,7 +22,10 @@ export interface LoadedPolicySet {
 export const schema = readFileSync(join(POLICY_DIR, "heatgate.cedarschema"), "utf8");
 
 function load(version: PolicyVersion): LoadedPolicySet {
-  const text = readFileSync(join(POLICY_DIR, `${version}.cedar`), "utf8");
+  return parse(version, readFileSync(join(POLICY_DIR, `${version}.cedar`), "utf8"));
+}
+
+function parse(version: string, text: string): LoadedPolicySet {
   const parts = cedar.policySetTextToParts(text);
   if (parts.type === "failure") throw new Error(`${version}: ${parts.errors.map((e) => e.message).join("; ")}`);
   const policies: Record<string, string> = {};
@@ -53,3 +58,29 @@ function preparse(what: string, answer: cedar.CheckParseAnswer) {
 
 preparse("schema", cedar.preparseSchema(SCHEMA_NAME, schema));
 for (const v of VERSIONS) preparse(v, cedar.preparsePolicySet(v, { staticPolicies: POLICY_SETS[v].policies }));
+
+// heatgate-fair rendered from knobs (engine/src/fairKnobs.ts), validated against the schema with the same
+// checks as scripts/check-policies.ts, then parsed into this thread's cedar-wasm cache once per knob set.
+export interface FairPolicySet {
+  id: string; // cedar-wasm cache name
+  set: LoadedPolicySet;
+}
+
+const fairSets = new Map<string, FairPolicySet>();
+const MAX_FAIR_SETS = 50; // a handful of slider positions per demo; keeps a long-lived server bounded
+
+export function fairPolicySet(knobs: FairKnobs): FairPolicySet {
+  const key = fairKnobsKey(knobs);
+  const cached = fairSets.get(key);
+  if (cached) return cached;
+  const text = renderFairPolicy(knobs);
+  const errors = checkPolicyText(text, schema);
+  if (errors.length > 0) throw new Error(`heatgate-fair (${key}): ${errors.join("; ")}`);
+  const id = `heatgate-fair#${key}`;
+  const set = parse(id, text);
+  preparse(id, cedar.preparsePolicySet(id, { staticPolicies: set.policies }));
+  if (fairSets.size >= MAX_FAIR_SETS) fairSets.clear();
+  const entry = { id, set };
+  fairSets.set(key, entry);
+  return entry;
+}
