@@ -1,7 +1,7 @@
 {
  "items": [
   {
-   "decisionId": "01KS2Z8M9000000000000001Q3",
+   "decisionId": "01KS2Z8M9000000000000001ZB",
    "at": "2026-05-20T15:15:00.000Z",
    "policyVersion": "no-rules",
    "riderId": "rider-003",
@@ -25,10 +25,10 @@
    }
   },
   {
-   "decisionId": "01KS2X8HG000000000000001QP",
+   "decisionId": "01KS2X8HG000000000000001ZY",
    "at": "2026-05-20T14:40:00.000Z",
    "policyVersion": "union-demand",
-   "riderId": "rider-013",
+   "riderId": "rider-020",
    "orderId": "order-union-demand-2",
    "outcome": "FORCE_REST",
    "restMinutes": 20,
@@ -51,10 +51,10 @@
    }
   },
   {
-   "decisionId": "01KS2VTRN000000000000001QR",
+   "decisionId": "01KS2VTRN00000000000000200",
    "at": "2026-05-20T14:15:00.000Z",
    "policyVersion": "union-demand",
-   "riderId": "rider-017",
+   "riderId": "rider-019",
    "orderId": "order-union-demand-4",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -75,10 +75,10 @@
    }
   },
   {
-   "decisionId": "01KS2STNW000000000000001QT",
+   "decisionId": "01KS2STNW00000000000000202",
    "at": "2026-05-20T13:40:00.000Z",
    "policyVersion": "union-demand",
-   "riderId": "rider-010",
+   "riderId": "rider-015",
    "orderId": "order-union-demand-6",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -99,7 +99,7 @@
    }
   },
   {
-   "decisionId": "01KS2RP20000000000000001Q7",
+   "decisionId": "01KS2RP20000000000000001ZF",
    "at": "2026-05-20T13:20:00.000Z",
    "policyVersion": "no-rules",
    "riderId": "rider-020",
@@ -123,10 +123,10 @@
    }
   },
   {
-   "decisionId": "01KS2QTK3000000000000001QN",
+   "decisionId": "01KS2QTK3000000000000001ZX",
    "at": "2026-05-20T13:05:00.000Z",
    "policyVersion": "union-demand",
-   "riderId": "rider-004",
+   "riderId": "rider-012",
    "orderId": "order-union-demand-1",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -141,13 +141,13 @@
     "exposureMinutesToday": 155,
     "restMinutesRemaining": 0,
     "tripMinutes": 9,
-    "demandLevel": 0,
+    "demandLevel": 1,
     "alertLevel": 1,
     "distanceKm": 1
    }
   },
   {
-   "decisionId": "01KS2PNZ7000000000000001Q1",
+   "decisionId": "01KS2PNZ7000000000000001Z9",
    "at": "2026-05-20T12:45:00.000Z",
    "policyVersion": "no-rules",
    "riderId": "rider-018",
@@ -171,10 +171,10 @@
    }
   },
   {
-   "decisionId": "01KS2PCT8000000000000001R5",
+   "decisionId": "01KS2PCT80000000000000020D",
    "at": "2026-05-20T12:40:00.000Z",
    "policyVersion": "heatgate-fair",
-   "riderId": "rider-004",
+   "riderId": "rider-012",
    "orderId": "order-heatgate-fair-7",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -189,16 +189,16 @@
     "exposureMinutesToday": 34,
     "restMinutesRemaining": 0,
     "tripMinutes": 18,
-    "demandLevel": 0,
+    "demandLevel": 1,
     "alertLevel": 1,
     "distanceKm": 4
    }
   },
   {
-   "decisionId": "01KS2NHBB000000000000001R1",
+   "decisionId": "01KS2NHBB00000000000000209",
    "at": "2026-05-20T12:25:00.000Z",
    "policyVersion": "heatgate-fair",
-   "riderId": "rider-013",
+   "riderId": "rider-018",
    "orderId": "order-heatgate-fair-3",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -213,16 +213,16 @@
     "exposureMinutesToday": 233,
     "restMinutesRemaining": 0,
     "tripMinutes": 14,
-    "demandLevel": 0,
+    "demandLevel": 1,
     "alertLevel": 1,
     "distanceKm": 3
    }
   },
   {
-   "decisionId": "01KS2N86C000000000000001QD",
+   "decisionId": "01KS2N86C000000000000001ZN",
    "at": "2026-05-20T12:20:00.000Z",
    "policyVersion": "ndma-2025",
-   "riderId": "rider-013",
+   "riderId": "rider-018",
    "orderId": "order-ndma-2025-3",
    "outcome": "SKIP_ORDER",
    "restMinutes": 0,
@@ -239,27 +239,26 @@
     "exposureMinutesToday": 128,
     "restMinutesRemaining": 0,
     "tripMinutes": 18,
-    "demandLevel": 0,
+    "demandLevel": 1,
     "alertLevel": 1,
     "distanceKm": 4
    }
   },
   {
-   "decisionId": "01KS2MNWE000000000000001R0",
+   "decisionId": "01KS2MNWE00000000000000208",
    "at": "2026-05-20T12:10:00.000Z",
    "policyVersion": "heatgate-fair",
-   "riderId": "rider-004",
+   "riderId": "rider-012",
    "orderId": "order-heatgate-fair-2",
    "outcome": "FORCE_REST",
    "restMinutes": 20,
    "penaltyWaived": true,
    "heatIndexC": 39,
    "firedRules": [
-    "fair-rest-early-in-lull",
     "fair-rest-due",
     "fair-rest-hard-limit"
    ],
-   "message": "Orders are slow right now. Take a paid 20-minute break in the shade.",
+   "message": "Paid 20-minute cooling break. Nearest shade and water below.",
    "cedarContext": {
     "heatIndexC": 39,
     "hourOfDay": 17,
@@ -267,16 +266,16 @@
     "exposureMinutesToday": 134,
     "restMinutesRemaining": 0,
     "tripMinutes": 11,
-    "demandLevel": 0,
+    "demandLevel": 1,
     "alertLevel": 1,
     "distanceKm": 2
    }
   },
   {
-   "decisionId": "01KS2JNSN000000000000001Q8",
+   "decisionId": "01KS2JNSN000000000000001ZG",
    "at": "2026-05-20T11:35:00.000Z",
    "policyVersion": "no-rules",
-   "riderId": "rider-012",
+   "riderId": "rider-010",
    "orderId": "order-no-rules-8",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -297,7 +296,7 @@
    }
   },
   {
-   "decisionId": "01KS2HTAR000000000000001Q5",
+   "decisionId": "01KS2HTAR000000000000001ZD",
    "at": "2026-05-20T11:20:00.000Z",
    "policyVersion": "no-rules",
    "riderId": "rider-004",
@@ -321,10 +320,10 @@
    }
   },
   {
-   "decisionId": "01KS2HH5S000000000000001QA",
+   "decisionId": "01KS2HH5S000000000000001ZJ",
    "at": "2026-05-20T11:15:00.000Z",
    "policyVersion": "no-rules",
-   "riderId": "rider-013",
+   "riderId": "rider-011",
    "orderId": "order-no-rules-10",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -345,10 +344,10 @@
    }
   },
   {
-   "decisionId": "01KS2GCHX000000000000001Q4",
+   "decisionId": "01KS2GCHX000000000000001ZC",
    "at": "2026-05-20T10:55:00.000Z",
    "policyVersion": "no-rules",
-   "riderId": "rider-002",
+   "riderId": "rider-001",
    "orderId": "order-no-rules-4",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -369,10 +368,10 @@
    }
   },
   {
-   "decisionId": "01KS2ENM3000000000000001QY",
+   "decisionId": "01KS2ENM300000000000000206",
    "at": "2026-05-20T10:25:00.000Z",
    "policyVersion": "union-demand",
-   "riderId": "rider-011",
+   "riderId": "rider-010",
    "orderId": "order-union-demand-10",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -387,16 +386,16 @@
     "exposureMinutesToday": 200,
     "restMinutesRemaining": 0,
     "tripMinutes": 15,
-    "demandLevel": 0,
+    "demandLevel": 1,
     "alertLevel": 1,
     "distanceKm": 3
    }
   },
   {
-   "decisionId": "01KS2DH07000000000000001QF",
+   "decisionId": "01KS2DH07000000000000001ZQ",
    "at": "2026-05-20T10:05:00.000Z",
    "policyVersion": "ndma-2025",
-   "riderId": "rider-009",
+   "riderId": "rider-006",
    "orderId": "order-ndma-2025-5",
    "outcome": "DENY",
    "restMinutes": 0,
@@ -419,7 +418,7 @@
    }
   },
   {
-   "decisionId": "01KS2CNHA000000000000001QE",
+   "decisionId": "01KS2CNHA000000000000001ZP",
    "at": "2026-05-20T09:50:00.000Z",
    "policyVersion": "ndma-2025",
    "riderId": "rider-001",
@@ -446,10 +445,10 @@
    }
   },
   {
-   "decisionId": "01KS2CNHA000000000000001Q9",
+   "decisionId": "01KS2CNHA000000000000001ZH",
    "at": "2026-05-20T09:50:00.000Z",
    "policyVersion": "no-rules",
-   "riderId": "rider-010",
+   "riderId": "rider-006",
    "orderId": "order-no-rules-9",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -470,10 +469,10 @@
    }
   },
   {
-   "decisionId": "01KS2BT2D000000000000001R2",
+   "decisionId": "01KS2BT2D0000000000000020A",
    "at": "2026-05-20T09:35:00.000Z",
    "policyVersion": "heatgate-fair",
-   "riderId": "rider-015",
+   "riderId": "rider-010",
    "orderId": "order-heatgate-fair-4",
    "outcome": "FORCE_REST",
    "restMinutes": 20,
@@ -498,10 +497,10 @@
    }
   },
   {
-   "decisionId": "01KS2AC9J000000000000001R4",
+   "decisionId": "01KS2AC9J0000000000000020C",
    "at": "2026-05-20T09:10:00.000Z",
    "policyVersion": "heatgate-fair",
-   "riderId": "rider-002",
+   "riderId": "rider-001",
    "orderId": "order-heatgate-fair-6",
    "outcome": "FORCE_REST",
    "restMinutes": 20,
@@ -526,10 +525,10 @@
    }
   },
   {
-   "decisionId": "01KS29GTN000000000000001QB",
+   "decisionId": "01KS29GTN000000000000001ZK",
    "at": "2026-05-20T08:55:00.000Z",
    "policyVersion": "ndma-2025",
-   "riderId": "rider-004",
+   "riderId": "rider-002",
    "orderId": "order-ndma-2025-1",
    "outcome": "DENY",
    "restMinutes": 0,
@@ -553,10 +552,10 @@
    }
   },
   {
-   "decisionId": "01KS28C6S000000000000001QM",
+   "decisionId": "01KS28C6S000000000000001ZW",
    "at": "2026-05-20T08:35:00.000Z",
    "policyVersion": "ndma-2025",
-   "riderId": "rider-012",
+   "riderId": "rider-006",
    "orderId": "order-ndma-2025-10",
    "outcome": "DENY",
    "restMinutes": 0,
@@ -579,10 +578,10 @@
    }
   },
   {
-   "decisionId": "01KS27SWV000000000000001QQ",
+   "decisionId": "01KS27SWV000000000000001ZZ",
    "at": "2026-05-20T08:25:00.000Z",
    "policyVersion": "union-demand",
-   "riderId": "rider-019",
+   "riderId": "rider-010",
    "orderId": "order-union-demand-3",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -597,16 +596,16 @@
     "exposureMinutesToday": 173,
     "restMinutesRemaining": 0,
     "tripMinutes": 15,
-    "demandLevel": 0,
+    "demandLevel": 1,
     "alertLevel": 1,
     "distanceKm": 3
    }
   },
   {
-   "decisionId": "01KS27GQW000000000000001QX",
+   "decisionId": "01KS27GQW00000000000000205",
    "at": "2026-05-20T08:20:00.000Z",
    "policyVersion": "union-demand",
-   "riderId": "rider-019",
+   "riderId": "rider-010",
    "orderId": "order-union-demand-9",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -621,16 +620,16 @@
     "exposureMinutesToday": 358,
     "restMinutesRemaining": 0,
     "tripMinutes": 13,
-    "demandLevel": 0,
+    "demandLevel": 1,
     "alertLevel": 1,
     "distanceKm": 3
    }
   },
   {
-   "decisionId": "01KS277JX000000000000001Q6",
+   "decisionId": "01KS277JX000000000000001ZE",
    "at": "2026-05-20T08:15:00.000Z",
    "policyVersion": "no-rules",
-   "riderId": "rider-018",
+   "riderId": "rider-009",
    "orderId": "order-no-rules-6",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -651,10 +650,10 @@
    }
   },
   {
-   "decisionId": "01KS26YDY000000000000001QW",
+   "decisionId": "01KS26YDY00000000000000204",
    "at": "2026-05-20T08:10:00.000Z",
    "policyVersion": "union-demand",
-   "riderId": "rider-016",
+   "riderId": "rider-008",
    "orderId": "order-union-demand-8",
    "outcome": "FORCE_REST",
    "restMinutes": 20,
@@ -677,10 +676,10 @@
    }
   },
   {
-   "decisionId": "01KS26C40000000000000001R8",
+   "decisionId": "01KS26C400000000000000020G",
    "at": "2026-05-20T08:00:00.000Z",
    "policyVersion": "heatgate-fair",
-   "riderId": "rider-008",
+   "riderId": "rider-004",
    "orderId": "order-heatgate-fair-10",
    "outcome": "FORCE_REST",
    "restMinutes": 20,
@@ -703,7 +702,7 @@
    }
   },
   {
-   "decisionId": "01KS262Z1000000000000001R3",
+   "decisionId": "01KS262Z10000000000000020B",
    "at": "2026-05-20T07:55:00.000Z",
    "policyVersion": "heatgate-fair",
    "riderId": "rider-001",
@@ -727,7 +726,7 @@
    }
   },
   {
-   "decisionId": "01KS257G4000000000000001Q2",
+   "decisionId": "01KS257G4000000000000001ZA",
    "at": "2026-05-20T07:40:00.000Z",
    "policyVersion": "no-rules",
    "riderId": "rider-001",
@@ -751,10 +750,10 @@
    }
   },
   {
-   "decisionId": "01KS21SMG000000000000001QV",
+   "decisionId": "01KS21SMG00000000000000203",
    "at": "2026-05-20T06:40:00.000Z",
    "policyVersion": "union-demand",
-   "riderId": "rider-010",
+   "riderId": "rider-005",
    "orderId": "order-union-demand-7",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -769,16 +768,16 @@
     "exposureMinutesToday": 223,
     "restMinutesRemaining": 0,
     "tripMinutes": 15,
-    "demandLevel": 1,
+    "demandLevel": 0,
     "alertLevel": 1,
     "distanceKm": 3
    }
   },
   {
-   "decisionId": "01KS1YMXV000000000000001QG",
+   "decisionId": "01KS1YMXV000000000000001ZR",
    "at": "2026-05-20T05:45:00.000Z",
    "policyVersion": "ndma-2025",
-   "riderId": "rider-020",
+   "riderId": "rider-010",
    "orderId": "order-ndma-2025-6",
    "outcome": "DENY",
    "restMinutes": 0,
@@ -802,10 +801,10 @@
    }
   },
   {
-   "decisionId": "01KS1XG9Z000000000000001R7",
+   "decisionId": "01KS1XG9Z0000000000000020F",
    "at": "2026-05-20T05:25:00.000Z",
    "policyVersion": "heatgate-fair",
-   "riderId": "rider-016",
+   "riderId": "rider-009",
    "orderId": "order-heatgate-fair-9",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -826,10 +825,10 @@
    }
   },
   {
-   "decisionId": "01KS1V727000000000000001QJ",
+   "decisionId": "01KS1V727000000000000001ZT",
    "at": "2026-05-20T04:45:00.000Z",
    "policyVersion": "ndma-2025",
-   "riderId": "rider-020",
+   "riderId": "rider-010",
    "orderId": "order-ndma-2025-8",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -844,16 +843,16 @@
     "exposureMinutesToday": 352,
     "restMinutesRemaining": 0,
     "tripMinutes": 11,
-    "demandLevel": 1,
+    "demandLevel": 0,
     "alertLevel": 1,
     "distanceKm": 2
    }
   },
   {
-   "decisionId": "01KS1TBKA000000000000001QC",
+   "decisionId": "01KS1TBKA000000000000001ZM",
    "at": "2026-05-20T04:30:00.000Z",
    "policyVersion": "ndma-2025",
-   "riderId": "rider-014",
+   "riderId": "rider-007",
    "orderId": "order-ndma-2025-2",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -868,13 +867,13 @@
     "exposureMinutesToday": 350,
     "restMinutesRemaining": 0,
     "tripMinutes": 15,
-    "demandLevel": 1,
+    "demandLevel": 0,
     "alertLevel": 1,
     "distanceKm": 3
    }
   },
   {
-   "decisionId": "01KS1RBGH000000000000001QZ",
+   "decisionId": "01KS1RBGH00000000000000207",
    "at": "2026-05-20T03:55:00.000Z",
    "policyVersion": "heatgate-fair",
    "riderId": "rider-001",
@@ -898,10 +897,10 @@
    }
   },
   {
-   "decisionId": "01KS1QG1M000000000000001QH",
+   "decisionId": "01KS1QG1M000000000000001ZS",
    "at": "2026-05-20T03:40:00.000Z",
    "policyVersion": "ndma-2025",
-   "riderId": "rider-012",
+   "riderId": "rider-007",
    "orderId": "order-ndma-2025-7",
    "outcome": "FORCE_REST",
    "restMinutes": 15,
@@ -918,16 +917,16 @@
     "exposureMinutesToday": 92,
     "restMinutesRemaining": 0,
     "tripMinutes": 11,
-    "demandLevel": 2,
+    "demandLevel": 1,
     "alertLevel": 1,
     "distanceKm": 2
    }
   },
   {
-   "decisionId": "01KS1Q6WN000000000000001QK",
+   "decisionId": "01KS1Q6WN000000000000001ZV",
    "at": "2026-05-20T03:35:00.000Z",
    "policyVersion": "ndma-2025",
-   "riderId": "rider-002",
+   "riderId": "rider-003",
    "orderId": "order-ndma-2025-9",
    "outcome": "ALLOW",
    "restMinutes": 0,
@@ -942,16 +941,16 @@
     "exposureMinutesToday": 254,
     "restMinutesRemaining": 0,
     "tripMinutes": 13,
-    "demandLevel": 2,
+    "demandLevel": 1,
     "alertLevel": 1,
     "distanceKm": 3
    }
   },
   {
-   "decisionId": "01KS1PMJQ000000000000001QS",
+   "decisionId": "01KS1PMJQ00000000000000201",
    "at": "2026-05-20T03:25:00.000Z",
    "policyVersion": "union-demand",
-   "riderId": "rider-020",
+   "riderId": "rider-010",
    "orderId": "order-union-demand-5",
    "outcome": "FORCE_REST",
    "restMinutes": 20,
@@ -974,10 +973,10 @@
    }
   },
   {
-   "decisionId": "01KS1MMFY000000000000001R6",
+   "decisionId": "01KS1MMFY0000000000000020E",
    "at": "2026-05-20T02:50:00.000Z",
    "policyVersion": "heatgate-fair",
-   "riderId": "rider-011",
+   "riderId": "rider-001",
    "orderId": "order-heatgate-fair-8",
    "outcome": "ALLOW",
    "restMinutes": 0,

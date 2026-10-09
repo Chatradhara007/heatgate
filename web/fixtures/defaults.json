@@ -12,7 +12,7 @@
  "alertLevel": "auto",
  "startHour": 8,
  "endHour": 20,
- "ordersPerHour": 50,
+ "ordersPerHour": 34,
  "shiftHours": {
   "min": 6,
   "max": 8

@@ -5,6 +5,7 @@
 // VITE_USE_FIXTURES "true" = return the JSON in web/fixtures/ and never touch the network
 import type {
   ApiError,
+  BreakEvenReport,
   DecideRequest,
   Decision,
   Outcome,
@@ -107,6 +108,7 @@ const fixtures = {
   defaults: async () => (await import("../fixtures/defaults.json")).default as unknown as SimParams,
   audit: async () => (await import("../fixtures/audit.json")).default as unknown as AuditPage,
   simResult: async () => (await import("../fixtures/simResult.json")).default as unknown as SimResult,
+  breakEven: async () => (await import("../fixtures/breakEven.json")).default as unknown as BreakEvenReport,
 };
 
 async function fixtureDecision(req: DecideRequest): Promise<Decision> {
@@ -168,6 +170,18 @@ export async function getSimulation(simulationId: string, signal?: AbortSignal):
     return { simulationId, status: "done", createdAt: now, finishedAt: now, result: { ...result, simulationId } };
   }
   return request("GET", `/simulations/${encodeURIComponent(simulationId)}`, undefined, signal);
+}
+
+// GET /break-even: the committed break-even rest pay sweep (sim/results/break-even.json), with stale = true
+// when it was made with params other than today's defaults. All rupee amounts are placeholders from
+// interview-pending economics. The API answers 404 NOT_FOUND if the file has not been generated.
+export async function breakEven(signal?: AbortSignal): Promise<BreakEvenReport> {
+  if (USE_FIXTURES) {
+    const [report, params] = await Promise.all([fixtures.breakEven(), fixtures.defaults()]);
+    // Like the API: both fixtures come from defaultSimParams(), so the key order matches.
+    return { ...report, stale: JSON.stringify(report.params) !== JSON.stringify(params) };
+  }
+  return request("GET", "/break-even", undefined, signal);
 }
 
 const sleep = (ms: number, signal?: AbortSignal) =>

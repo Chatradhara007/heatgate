@@ -1,0 +1,812 @@
+{
+  "note": "All rupee amounts are placeholders from interview-pending economics.",
+  "generatedAt": "2026-10-09T05:15:45.712Z",
+  "params": {
+    "seeds": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "riders": 50,
+    "peakTempC": 40,
+    "humidityPct": 25,
+    "alertLevel": "auto",
+    "startHour": 8,
+    "endHour": 20,
+    "ordersPerHour": 34,
+    "shiftHours": {
+      "min": 6,
+      "max": 8
+    },
+    "multiAppPct": 40,
+    "feeDemandDropPctPerInr": 1,
+    "policyVersions": [
+      "no-rules",
+      "ndma-2025",
+      "union-demand",
+      "heatgate-fair"
+    ],
+    "economics": {
+      "payPerOrderInr": 25,
+      "payPerKmInr": 6,
+      "dailyTargetShare": 0.9,
+      "dailyBonusInr": 150,
+      "restPayPerMinuteInr": 1.5,
+      "heatFeePerOrderInr": 5
+    },
+    "pay": {
+      "no-rules": {
+        "paidRest": false,
+        "protectIncentive": false
+      },
+      "ndma-2025": {
+        "paidRest": true,
+        "protectIncentive": false
+      },
+      "union-demand": {
+        "paidRest": true,
+        "protectIncentive": true
+      },
+      "heatgate-fair": {
+        "paidRest": true,
+        "protectIncentive": true
+      }
+    },
+    "fairFeatures": {
+      "heatFee": true,
+      "shadeWaitCountsAsRest": false
+    }
+  },
+  "restPayRatesInrPerMin": [
+    0,
+    0.25,
+    0.5,
+    0.75,
+    1,
+    1.5
+  ],
+  "levels": [
+    {
+      "ordersPerHour": 25,
+      "noRulesAvgEarningsInr": {
+        "mean": 354.99042163858155,
+        "min": 332.885300630905,
+        "max": 371.6449057159778
+      },
+      "policies": {
+        "union-demand": {
+          "breakEven": {
+            "status": "reached",
+            "meanInrPerMin": 0.2971494092751156,
+            "perSeedMinInrPerMin": 0.18644934232125196,
+            "perSeedMaxInrPerMin": 0.4640296040069455,
+            "seedsNotReached": 0
+          },
+          "rows": [
+            {
+              "restPayInrPerMin": 0,
+              "earningsPctOfNoRules": {
+                "mean": 91.0868319167963,
+                "min": 86.60995848294485,
+                "max": 95.08181141924678
+              },
+              "avgEarningsInr": {
+                "mean": 323.1074786209987,
+                "min": 300.43996167947637,
+                "max": 332.41126970768795
+              },
+              "lowestRiderInr": {
+                "mean": 42.38389914445757,
+                "min": 0,
+                "max": 74.329332096088
+              }
+            },
+            {
+              "restPayInrPerMin": 0.25,
+              "earningsPctOfNoRules": {
+                "mean": 98.67842143680016,
+                "min": 93.82396024136217,
+                "max": 101.67634873367612
+              },
+              "avgEarningsInr": {
+                "mean": 349.93147862099875,
+                "min": 334.28996167947645,
+                "max": 358.611269707688
+              },
+              "lowestRiderInr": {
+                "mean": 55.190567319475676,
+                "min": 28.25,
+                "max": 84.11267297117851
+              }
+            },
+            {
+              "restPayInrPerMin": 0.5,
+              "earningsPctOfNoRules": {
+                "mean": 106.27001095680399,
+                "min": 101.03796199977945,
+                "max": 110.59063316456287
+              },
+              "avgEarningsInr": {
+                "mean": 376.75547862099876,
+                "min": 368.13996167947647,
+                "max": 384.81126970768787
+              },
+              "lowestRiderInr": {
+                "mean": 66.74056731947567,
+                "min": 41.55355163760323,
+                "max": 87.97112606298394
+              }
+            },
+            {
+              "restPayInrPerMin": 0.75,
+              "earningsPctOfNoRules": {
+                "mean": 113.86160047680778,
+                "min": 108.25196375819674,
+                "max": 120.75930085155457
+              },
+              "avgEarningsInr": {
+                "mean": 403.57947862099877,
+                "min": 400.01054232398195,
+                "max": 411.011269707688
+              },
+              "lowestRiderInr": {
+                "mean": 78.29056731947568,
+                "min": 46.55355163760323,
+                "max": 100.72112606298394
+              }
+            },
+            {
+              "restPayInrPerMin": 1,
+              "earningsPctOfNoRules": {
+                "mean": 121.4531899968116,
+                "min": 115.46596551661402,
+                "max": 130.92796853854625
+              },
+              "avgEarningsInr": {
+                "mean": 430.4034786209987,
+                "min": 422.97554232398187,
+                "max": 437.21126970768796
+              },
+              "lowestRiderInr": {
+                "mean": 89.8405673194757,
+                "min": 51.55355163760323,
+                "max": 113.47112606298394
+              }
+            },
+            {
+              "restPayInrPerMin": 1.5,
+              "earningsPctOfNoRules": {
+                "mean": 136.63636903681925,
+                "min": 129.89396903344863,
+                "max": 151.26530391252965
+              },
+              "avgEarningsInr": {
+                "mean": 484.05147862099875,
+                "min": 468.9055423239819,
+                "max": 503.53996167947645
+              },
+              "lowestRiderInr": {
+                "mean": 107.14955310738348,
+                "min": 61.55355163760323,
+                "max": 140.54492893953898
+              }
+            }
+          ]
+        },
+        "heatgate-fair": {
+          "breakEven": {
+            "status": "reached",
+            "meanInrPerMin": 0.5750085114018196,
+            "perSeedMinInrPerMin": 0.3985365665597414,
+            "perSeedMaxInrPerMin": 0.822890454643076,
+            "seedsNotReached": 0
+          },
+          "rows": [
+            {
+              "restPayInrPerMin": 0,
+              "earningsPctOfNoRules": {
+                "mean": 85.00903874063832,
+                "min": 79.86420456885489,
+                "max": 88.1051682494545
+              },
+              "avgEarningsInr": {
+                "mean": 301.41112854615994,
+                "min": 287.7948734903359,
+                "max": 309.14982936613114
+              },
+              "lowestRiderInr": {
+                "mean": 72.36100818400821,
+                "min": 67.39041032692106,
+                "max": 83.17818041828775
+              }
+            },
+            {
+              "restPayInrPerMin": 0.25,
+              "earningsPctOfNoRules": {
+                "mean": 91.59930709977705,
+                "min": 85.98160309909998,
+                "max": 94.95158629452294
+              },
+              "avgEarningsInr": {
+                "mean": 324.70612854615996,
+                "min": 316.0798734903359,
+                "max": 331.23635678539324
+              },
+              "lowestRiderInr": {
+                "mean": 77.20639246302278,
+                "min": 72.39041032692106,
+                "max": 83.17818041828775
+              }
+            },
+            {
+              "restPayInrPerMin": 0.5,
+              "earningsPctOfNoRules": {
+                "mean": 98.18957545891577,
+                "min": 92.09900162934511,
+                "max": 103.44850698954687
+              },
+              "avgEarningsInr": {
+                "mean": 348.00112854616,
+                "min": 342.2812477707365,
+                "max": 354.41135678539314
+              },
+              "lowestRiderInr": {
+                "mean": 80.20639246302278,
+                "min": 76.05046194541603,
+                "max": 85.058080432678
+              }
+            },
+            {
+              "restPayInrPerMin": 0.75,
+              "earningsPctOfNoRules": {
+                "mean": 104.7798438180545,
+                "min": 98.21640015959021,
+                "max": 111.94542768457076
+              },
+              "avgEarningsInr": {
+                "mean": 371.29612854616005,
+                "min": 365.0162477707365,
+                "max": 377.58635678539315
+              },
+              "lowestRiderInr": {
+                "mean": 83.20639246302278,
+                "min": 76.05046194541603,
+                "max": 90.058080432678
+              }
+            },
+            {
+              "restPayInrPerMin": 1,
+              "earningsPctOfNoRules": {
+                "mean": 111.3701121771932,
+                "min": 104.33379868983526,
+                "max": 120.4423483795947
+              },
+              "avgEarningsInr": {
+                "mean": 394.59112854616,
+                "min": 387.75124777073637,
+                "max": 400.9348734903358
+              },
+              "lowestRiderInr": {
+                "mean": 86.20639246302278,
+                "min": 76.05046194541603,
+                "max": 95.058080432678
+              }
+            },
+            {
+              "restPayInrPerMin": 1.5,
+              "earningsPctOfNoRules": {
+                "mean": 124.55064889547069,
+                "min": 116.5685957503255,
+                "max": 137.4361897696426
+              },
+              "avgEarningsInr": {
+                "mean": 441.18112854616004,
+                "min": 432.34833531820334,
+                "max": 457.5048734903359
+              },
+              "lowestRiderInr": {
+                "mean": 92.20639246302278,
+                "min": 76.05046194541603,
+                "max": 105.058080432678
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "ordersPerHour": 34,
+      "noRulesAvgEarningsInr": {
+        "mean": 430.7304822356285,
+        "min": 415.0025912864135,
+        "max": 448.9859497201411
+      },
+      "policies": {
+        "union-demand": {
+          "breakEven": {
+            "status": "reached",
+            "meanInrPerMin": 0.856562335723757,
+            "perSeedMinInrPerMin": 0.7096850006177247,
+            "perSeedMaxInrPerMin": 0.9854244908436453,
+            "seedsNotReached": 0
+          },
+          "rows": [
+            {
+              "restPayInrPerMin": 0,
+              "earningsPctOfNoRules": {
+                "mean": 77.38701510641991,
+                "min": 71.64516502789938,
+                "max": 83.41912578266178
+              },
+              "avgEarningsInr": {
+                "mean": 332.9795884828335,
+                "min": 317.35795214458597,
+                "max": 346.19153362651906
+              },
+              "lowestRiderInr": {
+                "mean": 86.40435485906862,
+                "min": 66.30079871754721,
+                "max": 108.94234298352355
+              }
+            },
+            {
+              "restPayInrPerMin": 0.25,
+              "earningsPctOfNoRules": {
+                "mean": 84.00364850232481,
+                "min": 79.71365104122775,
+                "max": 89.26005316696111
+              },
+              "avgEarningsInr": {
+                "mean": 361.50958848283346,
+                "min": 352.1003027824349,
+                "max": 371.8252121408257
+              },
+              "lowestRiderInr": {
+                "mean": 97.81395144752791,
+                "min": 81.80079871754721,
+                "max": 116.69234298352355
+              }
+            },
+            {
+              "restPayInrPerMin": 0.5,
+              "earningsPctOfNoRules": {
+                "mean": 90.62028189822972,
+                "min": 87.7821370545561,
+                "max": 95.10098055126045
+              },
+              "avgEarningsInr": {
+                "mean": 390.03958848283344,
+                "min": 380.3153027824348,
+                "max": 398.05521214082574
+              },
+              "lowestRiderInr": {
+                "mean": 105.50434066072225,
+                "min": 87.76434126856611,
+                "max": 123.93074649847625
+              }
+            },
+            {
+              "restPayInrPerMin": 0.75,
+              "earningsPctOfNoRules": {
+                "mean": 97.23691529413463,
+                "min": 94.498549989212,
+                "max": 100.94190793555977
+              },
+              "avgEarningsInr": {
+                "mean": 418.5695884828333,
+                "min": 408.53030278243466,
+                "max": 424.57795214458594
+              },
+              "lowestRiderInr": {
+                "mean": 112.05434066072226,
+                "min": 92.76434126856611,
+                "max": 126.43074649847625
+              }
+            },
+            {
+              "restPayInrPerMin": 1,
+              "earningsPctOfNoRules": {
+                "mean": 103.85354869003956,
+                "min": 100.34060362504394,
+                "max": 106.78283531985912
+              },
+              "avgEarningsInr": {
+                "mean": 447.0995884828334,
+                "min": 436.7453027824348,
+                "max": 460.3179521445859
+              },
+              "lowestRiderInr": {
+                "mean": 117.90946311975995,
+                "min": 97.76434126856611,
+                "max": 128.93074649847625
+              }
+            },
+            {
+              "restPayInrPerMin": 1.5,
+              "earningsPctOfNoRules": {
+                "mean": 117.08681548184941,
+                "min": 112.02471089670779,
+                "max": 120.05608110786955
+              },
+              "avgEarningsInr": {
+                "mean": 504.1595884828333,
+                "min": 491.6315336265188,
+                "max": 531.7979521445859
+              },
+              "lowestRiderInr": {
+                "mean": 128.5094631197599,
+                "min": 107.76434126856611,
+                "max": 142.2083123330857
+              }
+            }
+          ]
+        },
+        "heatgate-fair": {
+          "breakEven": {
+            "status": "reached",
+            "meanInrPerMin": 1.0010785229217765,
+            "perSeedMinInrPerMin": 0.9326413311831789,
+            "perSeedMaxInrPerMin": 1.1224501707386794,
+            "seedsNotReached": 0
+          },
+          "rows": [
+            {
+              "restPayInrPerMin": 0,
+              "earningsPctOfNoRules": {
+                "mean": 77.67036730031033,
+                "min": 75.32792629097372,
+                "max": 80.52369543884849
+              },
+              "avgEarningsInr": {
+                "mean": 334.3946938178201,
+                "min": 326.97178853838983,
+                "max": 347.44910727512035
+              },
+              "lowestRiderInr": {
+                "mean": 67.48120098153795,
+                "min": 0,
+                "max": 103.56543136549824
+              }
+            },
+            {
+              "restPayInrPerMin": 0.25,
+              "earningsPctOfNoRules": {
+                "mean": 83.25123939161841,
+                "min": 81.94142091213921,
+                "max": 85.65619351168577
+              },
+              "avgEarningsInr": {
+                "mean": 358.4526938178201,
+                "min": 349.55178853838976,
+                "max": 370.0641072751202
+              },
+              "lowestRiderInr": {
+                "mean": 85.18120098153796,
+                "min": 58.5,
+                "max": 113.56543136549824
+              }
+            },
+            {
+              "restPayInrPerMin": 0.5,
+              "earningsPctOfNoRules": {
+                "mean": 88.83211148292654,
+                "min": 87.45910813464927,
+                "max": 90.78869158452304
+              },
+              "avgEarningsInr": {
+                "mean": 382.5106938178201,
+                "min": 372.1317885383897,
+                "max": 392.6791072751202
+              },
+              "lowestRiderInr": {
+                "mean": 97.32519444047652,
+                "min": 74.96779780809526,
+                "max": 120.24600065700898
+              }
+            },
+            {
+              "restPayInrPerMin": 0.75,
+              "earningsPctOfNoRules": {
+                "mean": 94.41298357423463,
+                "min": 92.49601408105947,
+                "max": 95.92118965736034
+              },
+              "avgEarningsInr": {
+                "mean": 406.5686938178201,
+                "min": 394.71178853838967,
+                "max": 421.5560358290406
+              },
+              "lowestRiderInr": {
+                "mean": 102.32519444047652,
+                "min": 74.96779780809526,
+                "max": 121.93995834176505
+              }
+            },
+            {
+              "restPayInrPerMin": 1,
+              "earningsPctOfNoRules": {
+                "mean": 99.99385566554272,
+                "min": 97.53292002746963,
+                "max": 101.78190477563565
+              },
+              "avgEarningsInr": {
+                "mean": 430.62669381782007,
+                "min": 417.29178853838965,
+                "max": 450.8510358290405
+              },
+              "lowestRiderInr": {
+                "mean": 105.98585411011041,
+                "min": 74.96779780809526,
+                "max": 130.2432566899344
+              }
+            },
+            {
+              "restPayInrPerMin": 1.5,
+              "earningsPctOfNoRules": {
+                "mean": 111.15559984815893,
+                "min": 107.60673192028997,
+                "max": 115.0088940179666
+              },
+              "avgEarningsInr": {
+                "mean": 478.74269381782005,
+                "min": 461.9754226708007,
+                "max": 509.4410358290404
+              },
+              "lowestRiderInr": {
+                "mean": 109.98585411011041,
+                "min": 74.96779780809526,
+                "max": 130.2432566899344
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "ordersPerHour": 50,
+      "noRulesAvgEarningsInr": {
+        "mean": 543.5172354394575,
+        "min": 531.9287162597168,
+        "max": 560.157073856072
+      },
+      "policies": {
+        "union-demand": {
+          "breakEven": {
+            "status": "notReached",
+            "bestEarningsPctOfNoRules": 93.06020345208614,
+            "atRestPayInrPerMin": 1.5
+          },
+          "rows": [
+            {
+              "restPayInrPerMin": 0,
+              "earningsPctOfNoRules": {
+                "mean": 61.49233794330267,
+                "min": 55.551342255611665,
+                "max": 67.11116724285002
+              },
+              "avgEarningsInr": {
+                "mean": 333.863446009281,
+                "min": 311.17477326680597,
+                "max": 356.98357038180364
+              },
+              "lowestRiderInr": {
+                "mean": 86.79865953464073,
+                "min": 75.03118603165628,
+                "max": 114.70866466355983
+              }
+            },
+            {
+              "restPayInrPerMin": 0.25,
+              "earningsPctOfNoRules": {
+                "mean": 66.75364886143322,
+                "min": 61.86921301932054,
+                "max": 71.75652652590387
+              },
+              "avgEarningsInr": {
+                "mean": 362.5054460092809,
+                "min": 346.56477326680584,
+                "max": 381.69357038180357
+              },
+              "lowestRiderInr": {
+                "mean": 94.45814567936512,
+                "min": 80.03118603165628,
+                "max": 121.98319266316044
+              }
+            },
+            {
+              "restPayInrPerMin": 0.5,
+              "earningsPctOfNoRules": {
+                "mean": 72.01495977956382,
+                "min": 68.18708378302944,
+                "max": 76.40188580895774
+              },
+              "avgEarningsInr": {
+                "mean": 391.147446009281,
+                "min": 381.9547732668059,
+                "max": 406.40357038180366
+              },
+              "lowestRiderInr": {
+                "mean": 99.95814567936512,
+                "min": 85.03118603165628,
+                "max": 123.48319266316044
+              }
+            },
+            {
+              "restPayInrPerMin": 0.75,
+              "earningsPctOfNoRules": {
+                "mean": 77.2762706976944,
+                "min": 74.50495454673833,
+                "max": 81.0472450920116
+              },
+              "avgEarningsInr": {
+                "mean": 419.7894460092809,
+                "min": 413.2607073221482,
+                "max": 431.1135703818036
+              },
+              "lowestRiderInr": {
+                "mean": 105.45814567936512,
+                "min": 90.03118603165628,
+                "max": 124.98319266316044
+              }
+            },
+            {
+              "restPayInrPerMin": 1,
+              "earningsPctOfNoRules": {
+                "mean": 82.53758161582498,
+                "min": 80.70756219912523,
+                "max": 85.69260437506546
+              },
+              "avgEarningsInr": {
+                "mean": 448.431446009281,
+                "min": 442.00070732214823,
+                "max": 455.82357038180356
+              },
+              "lowestRiderInr": {
+                "mean": 110.95814567936512,
+                "min": 95.03118603165628,
+                "max": 127.6768684782185
+              }
+            },
+            {
+              "restPayInrPerMin": 1.5,
+              "earningsPctOfNoRules": {
+                "mean": 93.06020345208614,
+                "min": 90.86600190177609,
+                "max": 94.98332294117318
+              },
+              "avgEarningsInr": {
+                "mean": 505.715446009281,
+                "min": 497.8149435919859,
+                "max": 523.5147732668061
+              },
+              "lowestRiderInr": {
+                "mean": 119.9168235580288,
+                "min": 105.03118603165628,
+                "max": 138.9702578715369
+              }
+            }
+          ]
+        },
+        "heatgate-fair": {
+          "breakEven": {
+            "status": "notReached",
+            "bestEarningsPctOfNoRules": 90.75646283674071,
+            "atRestPayInrPerMin": 1.5
+          },
+          "rows": [
+            {
+              "restPayInrPerMin": 0,
+              "earningsPctOfNoRules": {
+                "mean": 64.8107381098553,
+                "min": 59.758194732894424,
+                "max": 69.22930779964618
+              },
+              "avgEarningsInr": {
+                "mean": 351.982295639575,
+                "min": 334.7397550049947,
+                "max": 368.2505682541459
+              },
+              "lowestRiderInr": {
+                "mean": 80.81634190607443,
+                "min": 70.45429427278643,
+                "max": 99.0984874671606
+              }
+            },
+            {
+              "restPayInrPerMin": 0.25,
+              "earningsPctOfNoRules": {
+                "mean": 69.13502556433619,
+                "min": 64.78089306397521,
+                "max": 73.08038772329485
+              },
+              "avgEarningsInr": {
+                "mean": 375.5172956395751,
+                "min": 362.87475500499465,
+                "max": 388.73556825414596
+              },
+              "lowestRiderInr": {
+                "mean": 94.77524180295667,
+                "min": 82.33774877453234,
+                "max": 112.33671096283616
+              }
+            },
+            {
+              "restPayInrPerMin": 0.5,
+              "earningsPctOfNoRules": {
+                "mean": 73.45931301881708,
+                "min": 69.80359139505602,
+                "max": 76.93146764694352
+              },
+              "avgEarningsInr": {
+                "mean": 399.05229563957505,
+                "min": 391.00975500499464,
+                "max": 409.220568254146
+              },
+              "lowestRiderInr": {
+                "mean": 105.77524180295669,
+                "min": 87.33774877453234,
+                "max": 130.6196620239732
+              }
+            },
+            {
+              "restPayInrPerMin": 0.75,
+              "earningsPctOfNoRules": {
+                "mean": 77.783600473298,
+                "min": 74.8262897261368,
+                "max": 80.7825475705922
+              },
+              "avgEarningsInr": {
+                "mean": 422.587295639575,
+                "min": 414.32872451840444,
+                "max": 430.478162518514
+              },
+              "lowestRiderInr": {
+                "mean": 111.82397100882781,
+                "min": 92.33774877453234,
+                "max": 143.23939122113754
+              }
+            },
+            {
+              "restPayInrPerMin": 1,
+              "earningsPctOfNoRules": {
+                "mean": 82.10788792777892,
+                "min": 79.84898805721762,
+                "max": 84.63362749424087
+              },
+              "avgEarningsInr": {
+                "mean": 446.1222956395751,
+                "min": 435.7687245184043,
+                "max": 454.09316251851413
+              },
+              "lowestRiderInr": {
+                "mean": 115.82397100882781,
+                "min": 97.33774877453234,
+                "max": 148.23939122113754
+              }
+            },
+            {
+              "restPayInrPerMin": 1.5,
+              "earningsPctOfNoRules": {
+                "mean": 90.75646283674071,
+                "min": 88.65669487871929,
+                "max": 92.33578734153818
+              },
+              "avgEarningsInr": {
+                "mean": 493.19229563957504,
+                "min": 478.64872451840444,
+                "max": 503.5497550049946
+              },
+              "lowestRiderInr": {
+                "mean": 123.82397100882781,
+                "min": 107.33774877453234,
+                "max": 158.23939122113754
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
