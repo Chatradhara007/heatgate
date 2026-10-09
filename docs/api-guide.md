@@ -266,35 +266,35 @@ Response (200, real, shortened: one level, one rule set, two of six rows):
 ```json
 {
   "note": "All rupee amounts are placeholders from interview-pending economics.",
-  "generatedAt": "2026-10-09T05:15:45.712Z",
+  "generatedAt": "2026-10-09T09:25:22.690Z",
   "params": { "seeds": [1, 2, 3, 4, 5], "riders": 50, "peakTempC": 40, "…": "…" },
   "restPayRatesInrPerMin": [0, 0.25, 0.5, 0.75, 1, 1.5],
   "levels": [
     {
       "ordersPerHour": 34,
-      "noRulesAvgEarningsInr": { "mean": 430.73, "min": 415.00, "max": 448.99 },
+      "noRulesAvgEarningsInr": { "mean": 444.42, "min": 420.66, "max": 466.19 },
       "policies": {
         "union-demand": {
           "breakEven": {
             "status": "reached",
-            "meanInrPerMin": 0.857,
-            "perSeedMinInrPerMin": 0.710,
-            "perSeedMaxInrPerMin": 0.985,
+            "meanInrPerMin": 0.962,
+            "perSeedMinInrPerMin": 0.645,
+            "perSeedMaxInrPerMin": 1.173,
             "seedsNotReached": 0
           },
           "rows": [
             {
               "restPayInrPerMin": 0,
-              "earningsPctOfNoRules": { "mean": 77.39, "min": 71.65, "max": 83.42 },
-              "avgEarningsInr":       { "mean": 332.98, "min": 317.36, "max": 346.19 },
-              "lowestRiderInr":       { "mean": 86.40, "min": 66.30, "max": 108.94 }
+              "earningsPctOfNoRules": { "mean": 75.43, "min": 68.54, "max": 85.14 },
+              "avgEarningsInr":       { "mean": 334.67, "min": 305.27, "max": 358.14 },
+              "lowestRiderInr":       { "mean": 90.61, "min": 66.30, "max": 113.97 }
             },
             "…",
             {
               "restPayInrPerMin": 1.5,
-              "earningsPctOfNoRules": { "mean": 117.09, "min": 112.02, "max": 120.06 },
-              "avgEarningsInr":       { "mean": 504.16, "min": 491.63, "max": 531.80 },
-              "lowestRiderInr":       { "mean": 128.51, "min": 107.76, "max": 142.21 }
+              "earningsPctOfNoRules": { "mean": 113.95, "min": 107.36, "max": 119.71 },
+              "avgEarningsInr":       { "mean": 505.85, "min": 500.50, "max": 519.71 },
+              "lowestRiderInr":       { "mean": 146.47, "min": 133.93, "max": 162.26 }
             }
           ]
         },
@@ -310,9 +310,12 @@ The real break-even values in the file today (placeholders, quote as ranges):
 
 | Orders / hour | union-demand                         | heatgate-fair                        |
 | ------------- | ------------------------------------ | ------------------------------------ |
-| 25            | reached: ₹0.19–0.46 per min (mean 0.30) | reached: ₹0.40–0.82 per min (mean 0.58) |
-| 34 (default)  | reached: ₹0.71–0.99 per min (mean 0.86) | reached: ₹0.93–1.12 per min (mean 1.00) |
-| 50            | not reached: best 93 % of today at ₹1.5 | not reached: best 91 % of today at ₹1.5 |
+| 25            | reached: ₹0.25–0.55 per min (mean 0.38) | reached: ₹0.29–0.72 per min (mean 0.48) |
+| 34 (default)  | reached: ₹0.64–1.17 per min (mean 0.96) | reached: ₹0.77–1.12 per min (mean 0.94) |
+| 50            | not reached: best 90 % of today at ₹1.5 | not reached: best 91 % of today at ₹1.5 |
+
+The per-seed ranges overlap at every demand level, so there is no clear difference between the two
+rule sets' break-even rest pay.
 
 How to show it:
 
@@ -872,21 +875,21 @@ Speed:
 | Metric               | One sentence                                                                       | Example |
 | -------------------- | ---------------------------------------------------------------------------------- | ------- |
 | `ordersTotal`        | Orders customers placed (orders lost to the heat fee are not counted).              | 452.8 → 435.8 |
-| `ordersDelivered`    | Orders that reached the customer.                                                   | 428.6 → 306 |
-| `avgDeliveryMinutes` | Average minutes from order placed to delivered.                                    | 27.5 → 40.9 |
-| `p90DeliveryMinutes` | 9 in 10 delivered orders arrived within this many minutes.                          | 40.2 → 61.8 |
-| `ordersLate`         | Orders delivered after 45 minutes, plus orders nobody took within 30 minutes.       | 24 → 218 |
+| `ordersDelivered`    | Orders that reached the customer (a delivery under way at the end of the day finishes and counts). | 450.6 → 331 |
+| `avgDeliveryMinutes` | Average minutes from order placed to delivered.                                    | 27.7 → 41.7 |
+| `p90DeliveryMinutes` | 9 in 10 delivered orders arrived within this many minutes.                          | 40.4 → 62.6 |
+| `ordersLate`         | Orders delivered after 45 minutes, plus orders nobody took within 30 minutes.       | 27.6 → 234.6 |
 
 Money (all placeholders, section 7):
 
 | Metric                   | One sentence                                                                 | Example |
 | ------------------------ | ---------------------------------------------------------------------------- | ------- |
-| `avgEarningsPerRiderInr` | What the average rider earned that day: order pay + bonus + rest pay.        | ₹431 → ₹479 |
-| `minEarningsPerRiderInr` | What the lowest-earning rider earned (see below).                            | ₹63 (0–109) → ₹110 (75–130) |
-| `incentiveHitRatePct`    | The % of riders who reached their daily bonus target.                        | 58 → 62 |
+| `avgEarningsPerRiderInr` | What the average rider earned that day: order pay + bonus + rest pay.        | ₹444 → ₹498 |
+| `minEarningsPerRiderInr` | What the lowest-earning rider earned (see below).                            | ₹91 (48–131) → ₹144 (108–163) |
+| `incentiveHitRatePct`    | The % of riders who reached their daily bonus target.                        | 55.2 → 61.2 |
 | `restPayTotalInr`        | The total paid for rest minutes across all riders.                           | ₹0 → ₹7217 |
 | `heatFeeCollectedInr`    | The total heat fee customers paid (HeatGate Fair only).                      | ₹0 → ₹1442 |
-| `earningsPctOfNoRules`   | The average rider's earnings as a % of today's (no-rules) on the same seed.  | 100 → 111.2 (107.6–115.0) |
+| `earningsPctOfNoRules`   | The average rider's earnings as a % of today's (no-rules) on the same seed.  | 100 → 112.1 (107.3–119.1) |
 | `decisions`              | How many times each outcome was decided (one order can be asked of several riders, so this is bigger than the order count). | `{ "ALLOW": 331, "SKIP_ORDER": 539.2, "DENY": 0, "FORCE_REST": 256 }` |
 
 Metrics are means over seeds, so counts can have decimals (e.g. 452.8 orders). Round for display.
@@ -901,7 +904,7 @@ break-even rest pay (`GET /break-even`) instead (docs/money-model.md).
 in the day, among riders who were on shift at least **2 hours**. Short-shift riders are left out because
 someone who logs in just before the day ends earns little for that reason, not because of the rules.
 The average still counts every rider. It answers "did the rules leave anyone badly off?" Show it as a
-range across seeds; it moves a lot from seed to seed (no-rules: ₹0–109).
+range across seeds; it moves a lot from seed to seed (no-rules: ₹48–131).
 
 ### Ranges across seeds
 
@@ -914,6 +917,8 @@ of ranking them. With a single seed, `min === max === mean`; say "1 seed" on scr
 
 `frames` is one seed (the first) only, one frame every 5 simulated minutes from `startHour`. The default
 day (08:00–20:00) has 144 frames, minutes 0 to 715.
+No orders are offered after `endHour`, but a rider on a delivery at that moment finishes it (and is paid
+for it) after the last frame: those drop-offs count in the metrics, not in the frames.
 
 ```json
 {
@@ -1009,7 +1014,7 @@ These are not optional. Judges and riders will read the numbers.
    it, e.g. "₹ amounts are placeholders until rider interviews". `GET /break-even` gives you the exact
    `note` text.
 2. **Never show a single rupee figure for break-even.** Show the range across seeds
-   ("₹0.93–1.12 per minute, placeholder pay") and the demand level it is for. If it was not reached, say
+   ("₹0.77–1.12 per minute, placeholder pay") and the demand level it is for. If it was not reached, say
    so. Show `stale` warnings.
 3. **Show ranges across seeds, not a single number.** Mean plus min–max for every metric. If ranges
    overlap, say "no clear difference". If the run used 1 seed, say so.

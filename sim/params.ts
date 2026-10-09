@@ -5,8 +5,8 @@ export function defaultSimParams(overrides: Partial<SimParams> = {}): SimParams 
   return {
     seeds: [1, 2, 3, 4, 5],
     riders: 50,
-    // Proposed demo day, NOT the contract's humidity default of 45%: at 45% the heat index passes
-    // heatgate-fair's extreme-heat stop (46) all afternoon from a 40 °C peak, so Fair delivers almost nothing.
+    // 25% (the contract default). At 45% the heat index passes heatgate-fair's extreme-heat stop (46)
+    // all afternoon from a 40 °C peak, so Fair delivers almost nothing.
     peakTempC: 40,
     humidityPct: 25,
     alertLevel: "auto",

@@ -90,7 +90,7 @@ describe("default knobs", () => {
     }
     // The sweep reaches every outcome, not just ALLOW.
     expect(notAllowed).toBeGreaterThan(rows.length / 4);
-  });
+  }, 30_000); // the sweep takes 4-5.5 s, around vitest's 5 s default on slower machines
 });
 
 describe("knob values", () => {
