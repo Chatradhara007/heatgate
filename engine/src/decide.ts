@@ -1,15 +1,17 @@
 import * as cedar from "@cedar-policy/cedar-wasm/nodejs";
-import type { DecideRequest, Decision, Outcome, PolicyVersion } from "@heatgate/contracts";
+import type { DecideRequest, Decision, FairKnobs, Outcome, PolicyVersion } from "@heatgate/contracts";
 import { heatIndexC } from "./heatIndex.ts";
 import { newDecisionId } from "./ids.ts";
-import { POLICY_SETS, SCHEMA_NAME } from "./policies.ts";
+import { POLICY_SETS, SCHEMA_NAME, fairPolicySet } from "./policies.ts";
 
 const STRENGTH: Record<Outcome, number> = { ALLOW: 0, SKIP_ORDER: 1, DENY: 2, FORCE_REST: 3 };
 const DEFAULT_REST_MINUTES = 20;
 
-export function decide(request: DecideRequest, policy: PolicyVersion, now: Date = new Date()): Decision {
+// fairKnobs: render heatgate-fair from these numbers instead of the committed file. Ignored for the
+// other three rule sets.
+export function decide(request: DecideRequest, policy: PolicyVersion, now: Date = new Date(), fairKnobs?: FairKnobs): Decision {
   const { tempC, humidityPct } = request.conditions;
-  return decideWithHeatIndex(request, policy, heatIndexC(tempC, humidityPct), now);
+  return decideWithHeatIndex(request, policy, heatIndexC(tempC, humidityPct), now, fairKnobs);
 }
 
 // Same as decide(), but takes the heat index directly (the golden tests use this).
@@ -18,8 +20,11 @@ export function decideWithHeatIndex(
   policy: PolicyVersion,
   heatIndex: number,
   now: Date = new Date(),
+  fairKnobs?: FairKnobs,
 ): Decision {
-  const set = POLICY_SETS[policy];
+  const rendered = policy === "heatgate-fair" && fairKnobs ? fairPolicySet(fairKnobs) : undefined;
+  const set = rendered?.set ?? POLICY_SETS[policy];
+  const policySetId = rendered?.id ?? policy;
   // Cedar only has whole numbers (Long).
   const context = {
     heatIndexC: Math.round(heatIndex),
@@ -47,7 +52,7 @@ export function decideWithHeatIndex(
       context,
       preparsedSchemaName: SCHEMA_NAME,
       validateRequest: true,
-      preparsedPolicySetId: policy,
+      preparsedPolicySetId: policySetId,
       entities,
     });
     if (answer.type === "failure") throw new Error(`Cedar: ${answer.errors.map((e) => e.message).join("; ")}`);

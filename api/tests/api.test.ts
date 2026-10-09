@@ -89,7 +89,7 @@ test("unknown simulation id -> 404 with the standard error body; unsupported fie
   const r = await call("GET", "/simulations/nope");
   expect(r.status).toBe(404);
   expect(r.json).toEqual({ error: { code: "NOT_FOUND", message: expect.any(String) } });
-  const w = await call("POST", "/simulations", { weather: { kind: "slider" } });
+  const w = await call("POST", "/simulations", { weather: { kind: "slider" } }); // fairKnobs is supported now (knobs.test.ts)
   expect(w.status).toBe(400);
   expect(w.json.error.code).toBe("NOT_SUPPORTED");
 });

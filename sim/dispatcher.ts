@@ -324,7 +324,7 @@ export function runDay(
           simulationId,
           dryRun: true,
         };
-        const d = decide(request, policy, now);
+        const d = decide(request, policy, now, params.fairKnobs);
         decisions[d.outcome]++;
         audit?.add(d);
         events.push({ riderId: r.id, outcome: d.outcome, rule: d.firedRules[0] ?? "" });
