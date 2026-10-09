@@ -12,3 +12,4 @@ export {
   type FairRuleSummary,
 } from "./fairKnobs.ts";
 export { schema as policySchema } from "./policies.ts";
+export { ALLOW_MESSAGE, auditRecord, messagesFor, nearestCoolingPoint, type NamedPoint } from "./messages.ts";

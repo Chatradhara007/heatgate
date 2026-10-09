@@ -134,12 +134,13 @@ const fixtures = {
   defaults: async () => (await import("../fixtures/defaults.json")).default as unknown as Defaults,
   renderPolicy: async () => (await import("../fixtures/renderPolicy.json")).default as unknown as RenderedPolicy,
   audit: async () => (await import("../fixtures/audit.json")).default as unknown as AuditPage,
+  decide: async () => (await import("../fixtures/decide.json")).default as unknown as AuditPage, // full POST /decide answers
   simResult: async () => (await import("../fixtures/simResult.json")).default as unknown as SimResult,
   breakEven: async () => (await import("../fixtures/breakEven.json")).default as unknown as BreakEvenReport,
 };
 
 async function fixtureDecision(req: DecideRequest): Promise<Decision> {
-  const { items } = await fixtures.audit();
+  const { items } = await fixtures.decide();
   const match = items.find((d) => d.policyVersion === req.policyVersion) ?? items[0];
   return { ...match, riderId: req.rider.id, orderId: req.order.id, policyVersion: req.policyVersion, simulationId: req.simulationId };
 }

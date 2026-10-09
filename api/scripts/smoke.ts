@@ -186,6 +186,11 @@ async function run() {
       h.cedarContext.distanceKm === 4,
     hot.json,
   );
+  check(
+    "FORCE_REST names the nearest cooling point and has the message in hi, te, ur",
+    typeof h.coolingPoint?.name === "string" && typeof h.coolingPoint?.distanceM === "number" && Boolean(h.messages?.hi && h.messages?.te && h.messages?.ur),
+    h,
+  );
   const dry = await call("POST", "/decide", { ...coolRequest, rider: { ...coolRequest.rider, id: DRY_RIDER }, dryRun: true });
   check("POST /decide dryRun -> 200", dry.status === 200 && dry.json.outcome === "ALLOW", dry);
   const named = await call("POST", "/decide", { ...coolRequest, rider: { ...coolRequest.rider, id: "Ravi Kumar" } });
@@ -203,6 +208,12 @@ async function run() {
     `GET /audit -> ${REMOTE ? "the 2 newest are ours" : "2 logged decisions"}, newest first`,
     all.status === 200 && only(all.json.items, 2) && all.json.items[0]?.riderId === HOT_RIDER && all.json.items[1]?.riderId === COOL_RIDER,
     all.json,
+  );
+  const loggedHot = all.json.items?.find((d: Decision) => d.riderId === HOT_RIDER);
+  check(
+    "Audit entry keeps the messages but no cooling point or position",
+    loggedHot !== undefined && loggedHot.messages?.hi === h.messages?.hi && !("coolingPoint" in loggedHot) && !("x" in loggedHot) && !("y" in loggedHot),
+    loggedHot,
   );
   const dryLogged = await call("GET", `/audit?rider=${DRY_RIDER}`);
   check("dryRun not logged", dryLogged.status === 200 && dryLogged.json.items.length === 0, dryLogged.json);

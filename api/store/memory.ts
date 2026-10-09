@@ -1,5 +1,6 @@
 // In-memory store: for local runs, tests and the smoke script. Data is lost on restart.
 import type { Decision, SimulationJob } from "@heatgate/contracts";
+import { auditRecord } from "@heatgate/engine";
 import { BadCursorError, MAX_AUDITED_SIMULATIONS, type AuditFilter, type Page, type Store } from "./types.ts";
 
 export class MemoryStore implements Store {
@@ -8,7 +9,7 @@ export class MemoryStore implements Store {
   private auditedSimulations: string[] = []; // oldest first
 
   async putDecision(decision: Decision): Promise<void> {
-    this.decisions.push(structuredClone(decision));
+    this.decisions.push(structuredClone(auditRecord(decision)));
   }
 
   async putSimulationDecisions(simulationId: string, decisions: Decision[]): Promise<void> {
@@ -16,7 +17,7 @@ export class MemoryStore implements Store {
     const dropped = new Set([simulationId]);
     while (this.auditedSimulations.length > MAX_AUDITED_SIMULATIONS) dropped.add(this.auditedSimulations.shift()!);
     this.decisions = this.decisions.filter((d) => d.simulationId === undefined || !dropped.has(d.simulationId));
-    for (const d of decisions) this.decisions.push(structuredClone({ ...d, simulationId }));
+    for (const d of decisions) this.decisions.push(structuredClone({ ...auditRecord(d), simulationId }));
   }
 
   async listDecisions(filter: AuditFilter, page: { limit: number; cursor?: string }): Promise<Page<Decision>> {

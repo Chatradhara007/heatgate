@@ -337,7 +337,7 @@ export function runDay(
           simulationId,
           dryRun: true,
         };
-        const d = decide(request, policy, now, params.fairKnobs);
+        const d = decide(request, policy, now, params.fairKnobs, coolingPoints);
         decisions[d.outcome]++;
         lastOfferMinute = minute;
         audit?.add(d);

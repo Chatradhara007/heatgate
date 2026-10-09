@@ -1,0 +1,1232 @@
+{
+ "items": [
+  {
+   "decisionId": "01KS2Z8M9000000000000001ZB",
+   "at": "2026-05-20T15:15:00.000Z",
+   "policyVersion": "no-rules",
+   "riderId": "rider-003",
+   "orderId": "order-no-rules-3",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 35,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 35,
+    "hourOfDay": 20,
+    "minutesSinceBreak": 65,
+    "exposureMinutesToday": 200,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 13,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS2X8HG000000000000001ZY",
+   "at": "2026-05-20T14:40:00.000Z",
+   "policyVersion": "union-demand",
+   "riderId": "rider-020",
+   "orderId": "order-union-demand-2",
+   "outcome": "FORCE_REST",
+   "restMinutes": 20,
+   "penaltyWaived": true,
+   "heatIndexC": 36,
+   "firedRules": [
+    "union-rest-due"
+   ],
+   "message": "Heatwave day: paid 20-minute cooling break after 2 hours of work. Nearest shade and water below. No penalty.",
+   "messages": {
+    "hi": "लू का दिन: 2 घंटे काम के बाद पैसे सहित 20 मिनट का आराम ब्रेक। पास की छाँव और पानी नीचे देखें। कोई जुर्माना नहीं।",
+    "te": "వడగాల్పుల రోజు: 2 గంటల పని తర్వాత జీతంతో 20 నిమిషాల విశ్రాంతి బ్రేక్. దగ్గరి నీడ, నీళ్లు కింద చూడండి. జరిమానా లేదు.",
+    "ur": "لُو کا دن: 2 گھنٹے کام کے بعد پیسوں کے ساتھ 20 منٹ کا آرام کا وقفہ۔ قریب ترین سایہ اور پانی نیچے دیکھیں۔ کوئی جرمانہ نہیں۔"
+   },
+   "coolingPoint": {
+    "name": "Cooling point 8",
+    "distanceM": 1870
+   },
+   "cedarContext": {
+    "heatIndexC": 36,
+    "hourOfDay": 20,
+    "minutesSinceBreak": 102,
+    "exposureMinutesToday": 243,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 21,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 5
+   }
+  },
+  {
+   "decisionId": "01KS2VTRN00000000000000200",
+   "at": "2026-05-20T14:15:00.000Z",
+   "policyVersion": "union-demand",
+   "riderId": "rider-019",
+   "orderId": "order-union-demand-4",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 36,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 36,
+    "hourOfDay": 19,
+    "minutesSinceBreak": 76,
+    "exposureMinutesToday": 311,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 18,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 4
+   }
+  },
+  {
+   "decisionId": "01KS2STNW00000000000000202",
+   "at": "2026-05-20T13:40:00.000Z",
+   "policyVersion": "union-demand",
+   "riderId": "rider-015",
+   "orderId": "order-union-demand-6",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 37,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 37,
+    "hourOfDay": 19,
+    "minutesSinceBreak": 86,
+    "exposureMinutesToday": 161,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 14,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS2RP20000000000000001ZF",
+   "at": "2026-05-20T13:20:00.000Z",
+   "policyVersion": "no-rules",
+   "riderId": "rider-020",
+   "orderId": "order-no-rules-7",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 38,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 38,
+    "hourOfDay": 18,
+    "minutesSinceBreak": 12,
+    "exposureMinutesToday": 163,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 9,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS2QTK3000000000000001ZX",
+   "at": "2026-05-20T13:05:00.000Z",
+   "policyVersion": "union-demand",
+   "riderId": "rider-012",
+   "orderId": "order-union-demand-1",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 38,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 38,
+    "hourOfDay": 18,
+    "minutesSinceBreak": 64,
+    "exposureMinutesToday": 155,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 9,
+    "demandLevel": 1,
+    "alertLevel": 1,
+    "distanceKm": 1
+   }
+  },
+  {
+   "decisionId": "01KS2PNZ7000000000000001Z9",
+   "at": "2026-05-20T12:45:00.000Z",
+   "policyVersion": "no-rules",
+   "riderId": "rider-018",
+   "orderId": "order-no-rules-1",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 39,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 39,
+    "hourOfDay": 18,
+    "minutesSinceBreak": 113,
+    "exposureMinutesToday": 244,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 11,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS2PCT80000000000000020D",
+   "at": "2026-05-20T12:40:00.000Z",
+   "policyVersion": "heatgate-fair",
+   "riderId": "rider-012",
+   "orderId": "order-heatgate-fair-7",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 39,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 39,
+    "hourOfDay": 18,
+    "minutesSinceBreak": 49,
+    "exposureMinutesToday": 34,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 18,
+    "demandLevel": 1,
+    "alertLevel": 1,
+    "distanceKm": 4
+   }
+  },
+  {
+   "decisionId": "01KS2NHBB00000000000000209",
+   "at": "2026-05-20T12:25:00.000Z",
+   "policyVersion": "heatgate-fair",
+   "riderId": "rider-018",
+   "orderId": "order-heatgate-fair-3",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 39,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 39,
+    "hourOfDay": 17,
+    "minutesSinceBreak": 53,
+    "exposureMinutesToday": 233,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 14,
+    "demandLevel": 1,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS2N86C000000000000001ZN",
+   "at": "2026-05-20T12:20:00.000Z",
+   "policyVersion": "ndma-2025",
+   "riderId": "rider-018",
+   "orderId": "order-ndma-2025-3",
+   "outcome": "SKIP_ORDER",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 39,
+   "firedRules": [
+    "ndma-reduced-radius"
+   ],
+   "message": "Heat alert: orders are limited to 3 km.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: ऑर्डर सिर्फ़ 3 किमी तक।",
+    "te": "వేడి హెచ్చరిక: ఆర్డర్లు 3 కి.మీ. వరకు మాత్రమే.",
+    "ur": "گرمی کی وارننگ: آرڈر صرف 3 کلومیٹر تک۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 39,
+    "hourOfDay": 17,
+    "minutesSinceBreak": 62,
+    "exposureMinutesToday": 128,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 18,
+    "demandLevel": 1,
+    "alertLevel": 1,
+    "distanceKm": 4
+   }
+  },
+  {
+   "decisionId": "01KS2MNWE00000000000000208",
+   "at": "2026-05-20T12:10:00.000Z",
+   "policyVersion": "heatgate-fair",
+   "riderId": "rider-012",
+   "orderId": "order-heatgate-fair-2",
+   "outcome": "FORCE_REST",
+   "restMinutes": 20,
+   "penaltyWaived": true,
+   "heatIndexC": 39,
+   "firedRules": [
+    "fair-rest-due",
+    "fair-rest-hard-limit"
+   ],
+   "message": "Paid 20-minute cooling break. Nearest shade and water below.",
+   "messages": {
+    "hi": "पैसे सहित 20 मिनट का आराम ब्रेक। पास की छाँव और पानी नीचे देखें।",
+    "te": "జీతంతో 20 నిమిషాల విశ్రాంతి బ్రేక్. దగ్గరి నీడ, నీళ్లు కింద చూడండి.",
+    "ur": "پیسوں کے ساتھ 20 منٹ کا آرام کا وقفہ۔ قریب ترین سایہ اور پانی نیچے دیکھیں۔"
+   },
+   "coolingPoint": {
+    "name": "Cooling point 6",
+    "distanceM": 0
+   },
+   "cedarContext": {
+    "heatIndexC": 39,
+    "hourOfDay": 17,
+    "minutesSinceBreak": 115,
+    "exposureMinutesToday": 134,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 11,
+    "demandLevel": 1,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS2JNSN000000000000001ZG",
+   "at": "2026-05-20T11:35:00.000Z",
+   "policyVersion": "no-rules",
+   "riderId": "rider-010",
+   "orderId": "order-no-rules-8",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 40,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 40,
+    "hourOfDay": 17,
+    "minutesSinceBreak": 2,
+    "exposureMinutesToday": 127,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 18,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 4
+   }
+  },
+  {
+   "decisionId": "01KS2HTAR000000000000001ZD",
+   "at": "2026-05-20T11:20:00.000Z",
+   "policyVersion": "no-rules",
+   "riderId": "rider-004",
+   "orderId": "order-no-rules-5",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 40,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 40,
+    "hourOfDay": 16,
+    "minutesSinceBreak": 12,
+    "exposureMinutesToday": 337,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 10,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS2HH5S000000000000001ZJ",
+   "at": "2026-05-20T11:15:00.000Z",
+   "policyVersion": "no-rules",
+   "riderId": "rider-011",
+   "orderId": "order-no-rules-10",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 40,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 40,
+    "hourOfDay": 16,
+    "minutesSinceBreak": 126,
+    "exposureMinutesToday": 268,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 19,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 4
+   }
+  },
+  {
+   "decisionId": "01KS2GCHX000000000000001ZC",
+   "at": "2026-05-20T10:55:00.000Z",
+   "policyVersion": "no-rules",
+   "riderId": "rider-001",
+   "orderId": "order-no-rules-4",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 41,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 16,
+    "minutesSinceBreak": 126,
+    "exposureMinutesToday": 345,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 13,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS2ENM300000000000000206",
+   "at": "2026-05-20T10:25:00.000Z",
+   "policyVersion": "union-demand",
+   "riderId": "rider-010",
+   "orderId": "order-union-demand-10",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 41,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 15,
+    "minutesSinceBreak": 95,
+    "exposureMinutesToday": 200,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 15,
+    "demandLevel": 1,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS2DH07000000000000001ZQ",
+   "at": "2026-05-20T10:05:00.000Z",
+   "policyVersion": "ndma-2025",
+   "riderId": "rider-006",
+   "orderId": "order-ndma-2025-5",
+   "outcome": "DENY",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 41,
+   "firedRules": [
+    "ndma-peak-hours-pause"
+   ],
+   "message": "Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: सुबह 11 से शाम 4 बजे तक कोई ज़रूरी ऑर्डर नहीं। कोई जुर्माना नहीं।",
+    "te": "వేడి హెచ్చరిక: ఉదయం 11 నుండి సాయంత్రం 4 వరకు తప్పనిసరి ఆర్డర్లు లేవు. జరిమానా లేదు.",
+    "ur": "گرمی کی وارننگ: صبح 11 سے شام 4 بجے تک کوئی لازمی آرڈر نہیں۔ کوئی جرمانہ نہیں۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 15,
+    "minutesSinceBreak": 49,
+    "exposureMinutesToday": 221,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 10,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS2CNHA000000000000001ZP",
+   "at": "2026-05-20T09:50:00.000Z",
+   "policyVersion": "ndma-2025",
+   "riderId": "rider-001",
+   "orderId": "order-ndma-2025-4",
+   "outcome": "DENY",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 41,
+   "firedRules": [
+    "ndma-peak-hours-pause",
+    "ndma-reduced-radius"
+   ],
+   "message": "Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: सुबह 11 से शाम 4 बजे तक कोई ज़रूरी ऑर्डर नहीं। कोई जुर्माना नहीं।",
+    "te": "వేడి హెచ్చరిక: ఉదయం 11 నుండి సాయంత్రం 4 వరకు తప్పనిసరి ఆర్డర్లు లేవు. జరిమానా లేదు.",
+    "ur": "گرمی کی وارننگ: صبح 11 سے شام 4 بجے تک کوئی لازمی آرڈر نہیں۔ کوئی جرمانہ نہیں۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 15,
+    "minutesSinceBreak": 56,
+    "exposureMinutesToday": 271,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 19,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 5
+   }
+  },
+  {
+   "decisionId": "01KS2CNHA000000000000001ZH",
+   "at": "2026-05-20T09:50:00.000Z",
+   "policyVersion": "no-rules",
+   "riderId": "rider-006",
+   "orderId": "order-no-rules-9",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 41,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 15,
+    "minutesSinceBreak": 77,
+    "exposureMinutesToday": 303,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 9,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 1
+   }
+  },
+  {
+   "decisionId": "01KS2BT2D0000000000000020A",
+   "at": "2026-05-20T09:35:00.000Z",
+   "policyVersion": "heatgate-fair",
+   "riderId": "rider-010",
+   "orderId": "order-heatgate-fair-4",
+   "outcome": "FORCE_REST",
+   "restMinutes": 20,
+   "penaltyWaived": true,
+   "heatIndexC": 41,
+   "firedRules": [
+    "fair-rest-early-in-lull",
+    "fair-rest-due",
+    "fair-rest-hard-limit"
+   ],
+   "message": "Orders are slow right now. Take a paid 20-minute break in the shade.",
+   "messages": {
+    "hi": "अभी ऑर्डर कम हैं। छाँव में पैसे सहित 20 मिनट का ब्रेक लें।",
+    "te": "ఇప్పుడు ఆర్డర్లు తక్కువగా ఉన్నాయి. నీడలో జీతంతో 20 నిమిషాల బ్రేక్ తీసుకోండి.",
+    "ur": "ابھی آرڈر کم ہیں۔ سائے میں پیسوں کے ساتھ 20 منٹ کا وقفہ لیں۔"
+   },
+   "coolingPoint": {
+    "name": "Cooling point 6",
+    "distanceM": 0
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 15,
+    "minutesSinceBreak": 120,
+    "exposureMinutesToday": 199,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 11,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS2AC9J0000000000000020C",
+   "at": "2026-05-20T09:10:00.000Z",
+   "policyVersion": "heatgate-fair",
+   "riderId": "rider-001",
+   "orderId": "order-heatgate-fair-6",
+   "outcome": "FORCE_REST",
+   "restMinutes": 20,
+   "penaltyWaived": true,
+   "heatIndexC": 41,
+   "firedRules": [
+    "fair-rest-early-in-lull",
+    "fair-rest-due",
+    "fair-rest-hard-limit"
+   ],
+   "message": "Orders are slow right now. Take a paid 20-minute break in the shade.",
+   "messages": {
+    "hi": "अभी ऑर्डर कम हैं। छाँव में पैसे सहित 20 मिनट का ब्रेक लें।",
+    "te": "ఇప్పుడు ఆర్డర్లు తక్కువగా ఉన్నాయి. నీడలో జీతంతో 20 నిమిషాల బ్రేక్ తీసుకోండి.",
+    "ur": "ابھی آرڈر کم ہیں۔ سائے میں پیسوں کے ساتھ 20 منٹ کا وقفہ لیں۔"
+   },
+   "coolingPoint": {
+    "name": "Cooling point 3",
+    "distanceM": 0
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 14,
+    "minutesSinceBreak": 135,
+    "exposureMinutesToday": 135,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 13,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS29GTN000000000000001ZK",
+   "at": "2026-05-20T08:55:00.000Z",
+   "policyVersion": "ndma-2025",
+   "riderId": "rider-002",
+   "orderId": "order-ndma-2025-1",
+   "outcome": "DENY",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 41,
+   "firedRules": [
+    "ndma-peak-hours-pause",
+    "ndma-reduced-radius"
+   ],
+   "message": "Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: सुबह 11 से शाम 4 बजे तक कोई ज़रूरी ऑर्डर नहीं। कोई जुर्माना नहीं।",
+    "te": "వేడి హెచ్చరిక: ఉదయం 11 నుండి సాయంత్రం 4 వరకు తప్పనిసరి ఆర్డర్లు లేవు. జరిమానా లేదు.",
+    "ur": "گرمی کی وارننگ: صبح 11 سے شام 4 بجے تک کوئی لازمی آرڈر نہیں۔ کوئی جرمانہ نہیں۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 14,
+    "minutesSinceBreak": 71,
+    "exposureMinutesToday": 239,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 17,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 4
+   }
+  },
+  {
+   "decisionId": "01KS28C6S000000000000001ZW",
+   "at": "2026-05-20T08:35:00.000Z",
+   "policyVersion": "ndma-2025",
+   "riderId": "rider-006",
+   "orderId": "order-ndma-2025-10",
+   "outcome": "DENY",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 41,
+   "firedRules": [
+    "ndma-peak-hours-pause"
+   ],
+   "message": "Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: सुबह 11 से शाम 4 बजे तक कोई ज़रूरी ऑर्डर नहीं। कोई जुर्माना नहीं।",
+    "te": "వేడి హెచ్చరిక: ఉదయం 11 నుండి సాయంత్రం 4 వరకు తప్పనిసరి ఆర్డర్లు లేవు. జరిమానా లేదు.",
+    "ur": "گرمی کی وارننگ: صبح 11 سے شام 4 بجے تک کوئی لازمی آرڈر نہیں۔ کوئی جرمانہ نہیں۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 14,
+    "minutesSinceBreak": 33,
+    "exposureMinutesToday": 231,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 10,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS27SWV000000000000001ZZ",
+   "at": "2026-05-20T08:25:00.000Z",
+   "policyVersion": "union-demand",
+   "riderId": "rider-010",
+   "orderId": "order-union-demand-3",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 41,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 13,
+    "minutesSinceBreak": 54,
+    "exposureMinutesToday": 173,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 15,
+    "demandLevel": 1,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS27GQW00000000000000205",
+   "at": "2026-05-20T08:20:00.000Z",
+   "policyVersion": "union-demand",
+   "riderId": "rider-010",
+   "orderId": "order-union-demand-9",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 41,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 13,
+    "minutesSinceBreak": 36,
+    "exposureMinutesToday": 358,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 13,
+    "demandLevel": 1,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS277JX000000000000001ZE",
+   "at": "2026-05-20T08:15:00.000Z",
+   "policyVersion": "no-rules",
+   "riderId": "rider-009",
+   "orderId": "order-no-rules-6",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 41,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 13,
+    "minutesSinceBreak": 42,
+    "exposureMinutesToday": 297,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 16,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 4
+   }
+  },
+  {
+   "decisionId": "01KS26YDY00000000000000204",
+   "at": "2026-05-20T08:10:00.000Z",
+   "policyVersion": "union-demand",
+   "riderId": "rider-008",
+   "orderId": "order-union-demand-8",
+   "outcome": "FORCE_REST",
+   "restMinutes": 20,
+   "penaltyWaived": true,
+   "heatIndexC": 41,
+   "firedRules": [
+    "union-rest-due"
+   ],
+   "message": "Heatwave day: paid 20-minute cooling break after 2 hours of work. Nearest shade and water below. No penalty.",
+   "messages": {
+    "hi": "लू का दिन: 2 घंटे काम के बाद पैसे सहित 20 मिनट का आराम ब्रेक। पास की छाँव और पानी नीचे देखें। कोई जुर्माना नहीं।",
+    "te": "వడగాల్పుల రోజు: 2 గంటల పని తర్వాత జీతంతో 20 నిమిషాల విశ్రాంతి బ్రేక్. దగ్గరి నీడ, నీళ్లు కింద చూడండి. జరిమానా లేదు.",
+    "ur": "لُو کا دن: 2 گھنٹے کام کے بعد پیسوں کے ساتھ 20 منٹ کا آرام کا وقفہ۔ قریب ترین سایہ اور پانی نیچے دیکھیں۔ کوئی جرمانہ نہیں۔"
+   },
+   "coolingPoint": {
+    "name": "Cooling point 1",
+    "distanceM": 1480
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 13,
+    "minutesSinceBreak": 119,
+    "exposureMinutesToday": 81,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 15,
+    "demandLevel": 1,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS26C400000000000000020G",
+   "at": "2026-05-20T08:00:00.000Z",
+   "policyVersion": "heatgate-fair",
+   "riderId": "rider-004",
+   "orderId": "order-heatgate-fair-10",
+   "outcome": "FORCE_REST",
+   "restMinutes": 20,
+   "penaltyWaived": true,
+   "heatIndexC": 41,
+   "firedRules": [
+    "fair-rest-early-in-lull"
+   ],
+   "message": "Orders are slow right now. Take a paid 20-minute break in the shade.",
+   "messages": {
+    "hi": "अभी ऑर्डर कम हैं। छाँव में पैसे सहित 20 मिनट का ब्रेक लें।",
+    "te": "ఇప్పుడు ఆర్డర్లు తక్కువగా ఉన్నాయి. నీడలో జీతంతో 20 నిమిషాల బ్రేక్ తీసుకోండి.",
+    "ur": "ابھی آرڈر کم ہیں۔ سائے میں پیسوں کے ساتھ 20 منٹ کا وقفہ لیں۔"
+   },
+   "coolingPoint": {
+    "name": "Cooling point 6",
+    "distanceM": 0
+   },
+   "cedarContext": {
+    "heatIndexC": 41,
+    "hourOfDay": 13,
+    "minutesSinceBreak": 89,
+    "exposureMinutesToday": 102,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 9,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS262Z10000000000000020B",
+   "at": "2026-05-20T07:55:00.000Z",
+   "policyVersion": "heatgate-fair",
+   "riderId": "rider-001",
+   "orderId": "order-heatgate-fair-5",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 40,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 40,
+    "hourOfDay": 13,
+    "minutesSinceBreak": 65,
+    "exposureMinutesToday": 130,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 13,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS257G4000000000000001ZA",
+   "at": "2026-05-20T07:40:00.000Z",
+   "policyVersion": "no-rules",
+   "riderId": "rider-001",
+   "orderId": "order-no-rules-2",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 40,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 40,
+    "hourOfDay": 13,
+    "minutesSinceBreak": 86,
+    "exposureMinutesToday": 351,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 10,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS21SMG00000000000000203",
+   "at": "2026-05-20T06:40:00.000Z",
+   "policyVersion": "union-demand",
+   "riderId": "rider-005",
+   "orderId": "order-union-demand-7",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 39,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 39,
+    "hourOfDay": 12,
+    "minutesSinceBreak": 83,
+    "exposureMinutesToday": 223,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 15,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS1YMXV000000000000001ZR",
+   "at": "2026-05-20T05:45:00.000Z",
+   "policyVersion": "ndma-2025",
+   "riderId": "rider-010",
+   "orderId": "order-ndma-2025-6",
+   "outcome": "DENY",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 38,
+   "firedRules": [
+    "ndma-peak-hours-pause",
+    "ndma-reduced-radius"
+   ],
+   "message": "Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: सुबह 11 से शाम 4 बजे तक कोई ज़रूरी ऑर्डर नहीं। कोई जुर्माना नहीं।",
+    "te": "వేడి హెచ్చరిక: ఉదయం 11 నుండి సాయంత్రం 4 వరకు తప్పనిసరి ఆర్డర్లు లేవు. జరిమానా లేదు.",
+    "ur": "گرمی کی وارننگ: صبح 11 سے شام 4 بجے تک کوئی لازمی آرڈر نہیں۔ کوئی جرمانہ نہیں۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 38,
+    "hourOfDay": 11,
+    "minutesSinceBreak": 43,
+    "exposureMinutesToday": 309,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 20,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 5
+   }
+  },
+  {
+   "decisionId": "01KS1XG9Z0000000000000020F",
+   "at": "2026-05-20T05:25:00.000Z",
+   "policyVersion": "heatgate-fair",
+   "riderId": "rider-009",
+   "orderId": "order-heatgate-fair-9",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 37,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 37,
+    "hourOfDay": 10,
+    "minutesSinceBreak": 139,
+    "exposureMinutesToday": 299,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 20,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 5
+   }
+  },
+  {
+   "decisionId": "01KS1V727000000000000001ZT",
+   "at": "2026-05-20T04:45:00.000Z",
+   "policyVersion": "ndma-2025",
+   "riderId": "rider-010",
+   "orderId": "order-ndma-2025-8",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 36,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 36,
+    "hourOfDay": 10,
+    "minutesSinceBreak": 51,
+    "exposureMinutesToday": 352,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 11,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS1TBKA000000000000001ZM",
+   "at": "2026-05-20T04:30:00.000Z",
+   "policyVersion": "ndma-2025",
+   "riderId": "rider-007",
+   "orderId": "order-ndma-2025-2",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 36,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 36,
+    "hourOfDay": 10,
+    "minutesSinceBreak": 11,
+    "exposureMinutesToday": 350,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 15,
+    "demandLevel": 0,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS1RBGH00000000000000207",
+   "at": "2026-05-20T03:55:00.000Z",
+   "policyVersion": "heatgate-fair",
+   "riderId": "rider-001",
+   "orderId": "order-heatgate-fair-1",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 35,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 35,
+    "hourOfDay": 9,
+    "minutesSinceBreak": 113,
+    "exposureMinutesToday": 101,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 11,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS1QG1M000000000000001ZS",
+   "at": "2026-05-20T03:40:00.000Z",
+   "policyVersion": "ndma-2025",
+   "riderId": "rider-007",
+   "orderId": "order-ndma-2025-7",
+   "outcome": "FORCE_REST",
+   "restMinutes": 15,
+   "penaltyWaived": true,
+   "heatIndexC": 35,
+   "firedRules": [
+    "ndma-break-due"
+   ],
+   "message": "Heat alert: 15-minute cooling break after 90 minutes of work. No penalty and no pay cut.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: 90 मिनट काम के बाद 15 मिनट का आराम ब्रेक। कोई जुर्माना नहीं, पैसे नहीं कटेंगे।",
+    "te": "వేడి హెచ్చరిక: 90 నిమిషాల పని తర్వాత 15 నిమిషాల విశ్రాంతి బ్రేక్. జరిమానా లేదు, డబ్బు కోత లేదు.",
+    "ur": "گرمی کی وارننگ: 90 منٹ کام کے بعد 15 منٹ کا آرام کا وقفہ۔ کوئی جرمانہ نہیں، پیسے نہیں کٹیں گے۔"
+   },
+   "coolingPoint": {
+    "name": "Cooling point 8",
+    "distanceM": 3430
+   },
+   "cedarContext": {
+    "heatIndexC": 35,
+    "hourOfDay": 9,
+    "minutesSinceBreak": 136,
+    "exposureMinutesToday": 92,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 11,
+    "demandLevel": 1,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS1Q6WN000000000000001ZV",
+   "at": "2026-05-20T03:35:00.000Z",
+   "policyVersion": "ndma-2025",
+   "riderId": "rider-003",
+   "orderId": "order-ndma-2025-9",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": true,
+   "heatIndexC": 35,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 35,
+    "hourOfDay": 9,
+    "minutesSinceBreak": 74,
+    "exposureMinutesToday": 254,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 13,
+    "demandLevel": 1,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  },
+  {
+   "decisionId": "01KS1PMJQ00000000000000201",
+   "at": "2026-05-20T03:25:00.000Z",
+   "policyVersion": "union-demand",
+   "riderId": "rider-010",
+   "orderId": "order-union-demand-5",
+   "outcome": "FORCE_REST",
+   "restMinutes": 20,
+   "penaltyWaived": true,
+   "heatIndexC": 34,
+   "firedRules": [
+    "union-rest-due"
+   ],
+   "message": "Heatwave day: paid 20-minute cooling break after 2 hours of work. Nearest shade and water below. No penalty.",
+   "messages": {
+    "hi": "लू का दिन: 2 घंटे काम के बाद पैसे सहित 20 मिनट का आराम ब्रेक। पास की छाँव और पानी नीचे देखें। कोई जुर्माना नहीं।",
+    "te": "వడగాల్పుల రోజు: 2 గంటల పని తర్వాత జీతంతో 20 నిమిషాల విశ్రాంతి బ్రేక్. దగ్గరి నీడ, నీళ్లు కింద చూడండి. జరిమానా లేదు.",
+    "ur": "لُو کا دن: 2 گھنٹے کام کے بعد پیسوں کے ساتھ 20 منٹ کا آرام کا وقفہ۔ قریب ترین سایہ اور پانی نیچے دیکھیں۔ کوئی جرمانہ نہیں۔"
+   },
+   "coolingPoint": {
+    "name": "Cooling point 6",
+    "distanceM": 2900
+   },
+   "cedarContext": {
+    "heatIndexC": 34,
+    "hourOfDay": 8,
+    "minutesSinceBreak": 128,
+    "exposureMinutesToday": 51,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 10,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 2
+   }
+  },
+  {
+   "decisionId": "01KS1MMFY0000000000000020E",
+   "at": "2026-05-20T02:50:00.000Z",
+   "policyVersion": "heatgate-fair",
+   "riderId": "rider-001",
+   "orderId": "order-heatgate-fair-8",
+   "outcome": "ALLOW",
+   "restMinutes": 0,
+   "penaltyWaived": false,
+   "heatIndexC": 33,
+   "firedRules": [],
+   "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
+   "cedarContext": {
+    "heatIndexC": 33,
+    "hourOfDay": 8,
+    "minutesSinceBreak": 101,
+    "exposureMinutesToday": 280,
+    "restMinutesRemaining": 0,
+    "tripMinutes": 13,
+    "demandLevel": 2,
+    "alertLevel": 1,
+    "distanceKm": 3
+   }
+  }
+ ]
+}

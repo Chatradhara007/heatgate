@@ -36,7 +36,7 @@ export function demandLevelFor(delivering: number, onShift: number): 0 | 1 | 2 {
 
 export interface CityLayout {
   hubs: Point[];
-  coolingPoints: Point[];
+  coolingPoints: (Point & { name: string })[];
 }
 
 // Fixed seeded positions (the same city for every seed and rule set).
