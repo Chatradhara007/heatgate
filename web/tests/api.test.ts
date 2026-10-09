@@ -59,8 +59,10 @@ test("VITE_USE_FIXTURES=true returns the fixture without touching the network", 
   const report = await api.breakEven();
   expect(fetch).not.toHaveBeenCalled();
   expect(report.levels).toEqual(fixture.levels);
-  // Like the API: stale when the sweep ran from params other than the defaults fixture.
-  const fresh = JSON.stringify(fixture.params) === JSON.stringify(JSON.parse(defaultsFixture));
+  // Like the API: stale when the sweep ran from params other than the defaults fixture (minus fairKnobs,
+  // which GET /defaults adds on top of defaultSimParams()).
+  const { fairKnobs: _, ...defaultParams } = JSON.parse(defaultsFixture);
+  const fresh = JSON.stringify(fixture.params) === JSON.stringify(defaultParams);
   expect(report.stale).toBe(!fresh);
 });
 

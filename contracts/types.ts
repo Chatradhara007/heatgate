@@ -125,7 +125,7 @@ export interface SimParams {
   seeds: number[]; // default [1,2,3,4,5]. Same seeds for every rule set
   riders: number; // default 50
   peakTempC: number; // the slider, e.g. 34-46
-  humidityPct: number; // default 45
+  humidityPct: number; // default 25
   alertLevel: AlertSetting;
   startHour: number; // default 8
   endHour: number; // default 20
