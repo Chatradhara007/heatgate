@@ -51,9 +51,13 @@ describe("docs/translations", () => {
   const ROOT = join(import.meta.dirname, "..");
 
   test("messages.csv and engine/src/translations.ts are up to date (npm run export-messages -- --check)", () => {
-    const run = spawnSync(join(ROOT, "node_modules", ".bin", "tsx"), ["scripts/export-messages.ts", "--check"], { cwd: ROOT, encoding: "utf8" });
-    expect(run.stdout).toMatch(/^PASS/);
-    expect(run.status).toBe(0);
+    // node + the tsx CLI file, not node_modules/.bin/tsx: that is a shell script on Linux and a .cmd on
+    // Windows, and spawnSync cannot start a .cmd without a shell.
+    const tsxCli = join(ROOT, "node_modules", "tsx", "dist", "cli.mjs");
+    const run = spawnSync(process.execPath, [tsxCli, "scripts/export-messages.ts", "--check"], { cwd: ROOT, encoding: "utf8" });
+    if (run.error) throw new Error(`could not start ${tsxCli}: ${run.error.message}`);
+    expect(run.stdout + run.stderr).toMatch(/^PASS/);
+    expect(run.status, run.stdout + run.stderr).toBe(0);
   }, 30_000);
 
   test("every row not reviewed yet is listed in REVIEW.md", () => {

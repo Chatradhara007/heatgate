@@ -11,7 +11,7 @@ import { createApp } from "../src/app.ts";
 import type { SimRunner } from "../src/simulations.ts";
 import { MemoryStore } from "../store/memory.ts";
 
-const COMMITTED_FAIR = readFileSync(new URL("../../policies/heatgate-fair.cedar", import.meta.url), "utf8");
+const COMMITTED_FAIR = readFileSync(new URL("../../policies/heatgate-fair.cedar", import.meta.url), "utf8").replace(/\r\n/g, "\n"); // CRLF on a Windows checkout
 
 let server: Server | undefined;
 afterEach(() => server?.close());

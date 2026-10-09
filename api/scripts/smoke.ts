@@ -128,7 +128,7 @@ async function run() {
   );
 
   // rule knobs: render only (nothing logged, nothing run)
-  const committedFair = readFileSync(fileURLToPath(new URL("../../policies/heatgate-fair.cedar", import.meta.url)), "utf8");
+  const committedFair = readFileSync(fileURLToPath(new URL("../../policies/heatgate-fair.cedar", import.meta.url)), "utf8").replace(/\r\n/g, "\n"); // CRLF on a Windows checkout
   const rendered = await call("POST", "/policies/render", { knobs: DEFAULT_FAIR_KNOBS });
   check(
     "POST /policies/render (default knobs) -> the committed heatgate-fair.cedar, valid, 8 rule summaries",
