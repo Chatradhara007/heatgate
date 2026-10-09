@@ -4,7 +4,7 @@ import { copyFileSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { POLICY_LABELS, type DecideRequest, type Decision, type PolicyVersion } from "@heatgate/contracts";
-import { decide } from "@heatgate/engine";
+import { DEFAULT_FAIR_KNOBS, checkPolicyText, decide, policySchema, renderFairPolicy, summarizeFairPolicy } from "@heatgate/engine";
 import { between, dayAlertLevel, defaultSimParams, dropDistanceKm, simulate, stream, temperatureAt } from "@heatgate/sim";
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
@@ -20,8 +20,19 @@ function write(name: string, data: unknown, compact = false) {
 const policies = (Object.keys(POLICY_LABELS) as PolicyVersion[]).map((id) => ({ id, label: POLICY_LABELS[id] }));
 write("policies.json", policies);
 
-// defaults.json: what GET /defaults returns.
-write("defaults.json", defaultSimParams());
+// defaults.json: what GET /defaults returns, default heatgate-fair knobs included.
+write("defaults.json", { ...defaultSimParams(), fairKnobs: DEFAULT_FAIR_KNOBS });
+
+// renderPolicy.json: what POST /policies/render returns for the default knobs. The only knobs fixture mode can render.
+const fairText = renderFairPolicy(DEFAULT_FAIR_KNOBS);
+const fairErrors = checkPolicyText(fairText, policySchema);
+write("renderPolicy.json", {
+  knobs: DEFAULT_FAIR_KNOBS,
+  text: fairText,
+  valid: fairErrors.length === 0,
+  errors: fairErrors,
+  rules: summarizeFairPolicy(DEFAULT_FAIR_KNOBS),
+});
 
 // breakEven.json: what GET /break-even returns, minus the stale flag the API adds. A byte-for-byte copy
 // of sim/results/break-even.json, so run npm run sim:breakeven first if that file is out of date.

@@ -8,6 +8,7 @@ import type {
   BreakEvenReport,
   DecideRequest,
   Decision,
+  FairKnobs,
   Outcome,
   PolicyVersion,
   SimParams,
@@ -26,6 +27,31 @@ export const SIMULATION_TIMEOUT_MS = 120_000;
 export interface PolicyInfo {
   id: PolicyVersion;
   label: string;
+}
+
+// GET /health.
+export interface HealthStatus {
+  status: "ok";
+}
+
+// GET /defaults: SimParams plus the default heatgate-fair knobs (always present here, optional in SimParams).
+export type Defaults = SimParams & { fairKnobs: FairKnobs };
+
+// One plain-language line per heatgate-fair rule, in file order. Mirrors FairRuleSummary in engine/src/fairKnobs.ts.
+// NO_PENALTY is not a decision outcome: it marks the decline-without-penalty rule.
+export interface FairRuleSummary {
+  id: string;
+  outcome: Outcome | "NO_PENALTY";
+  summary: string;
+}
+
+// POST /policies/render: heatgate-fair rendered from knobs. Nothing is logged or run.
+export interface RenderedPolicy {
+  knobs: FairKnobs; // every knob, missing ones filled with their default
+  text: string; // the Cedar policy text
+  valid: boolean; // passes the Cedar schema check
+  errors: string[]; // why not, when valid is false
+  rules: FairRuleSummary[];
 }
 
 export interface AuditQuery {
@@ -105,7 +131,8 @@ async function request<T>(method: "GET" | "POST", path: string, body?: unknown, 
 
 const fixtures = {
   policies: async () => (await import("../fixtures/policies.json")).default as PolicyInfo[],
-  defaults: async () => (await import("../fixtures/defaults.json")).default as unknown as SimParams,
+  defaults: async () => (await import("../fixtures/defaults.json")).default as unknown as Defaults,
+  renderPolicy: async () => (await import("../fixtures/renderPolicy.json")).default as unknown as RenderedPolicy,
   audit: async () => (await import("../fixtures/audit.json")).default as unknown as AuditPage,
   simResult: async () => (await import("../fixtures/simResult.json")).default as unknown as SimResult,
   breakEven: async () => (await import("../fixtures/breakEven.json")).default as unknown as BreakEvenReport,
@@ -125,10 +152,28 @@ export async function policies(signal?: AbortSignal): Promise<PolicyInfo[]> {
   return request("GET", "/policies", undefined, signal);
 }
 
-// GET /defaults: the default SimParams, a starting point for the Simulator sliders.
-export async function defaults(signal?: AbortSignal): Promise<SimParams> {
+// GET /health: { status: "ok" } when the API is up. Fixture mode answers ok without the network.
+export async function health(signal?: AbortSignal): Promise<HealthStatus> {
+  if (USE_FIXTURES) return { status: "ok" };
+  return request("GET", "/health", undefined, signal);
+}
+
+// GET /defaults: the default SimParams plus fairKnobs, the starting point for the Simulator sliders.
+export async function defaults(signal?: AbortSignal): Promise<Defaults> {
   if (USE_FIXTURES) return fixtures.defaults();
   return request("GET", "/defaults", undefined, signal);
+}
+
+// POST /policies/render: the heatgate-fair rules for these knobs. Missing knobs take their default; the API
+// answers 400 INVALID_REQUEST for out-of-range or unknown knobs. Fixture mode has the default knobs only.
+export async function renderPolicy(knobs: Partial<FairKnobs> = {}, signal?: AbortSignal): Promise<RenderedPolicy> {
+  if (USE_FIXTURES) {
+    const rendered = await fixtures.renderPolicy();
+    const isDefault = Object.entries(knobs).every(([k, v]) => v === undefined || rendered.knobs[k as keyof FairKnobs] === v);
+    if (!isDefault) throw new ApiRequestError("Rule editing needs the live API: fixture mode only has the default knobs.");
+    return rendered;
+  }
+  return request("POST", "/policies/render", { knobs }, signal);
 }
 
 // POST /decide: one decision. Logged to the audit log unless req.dryRun is true.
@@ -177,8 +222,8 @@ export async function getSimulation(simulationId: string, signal?: AbortSignal):
 // interview-pending economics. The API answers 404 NOT_FOUND if the file has not been generated.
 export async function breakEven(signal?: AbortSignal): Promise<BreakEvenReport> {
   if (USE_FIXTURES) {
-    const [report, params] = await Promise.all([fixtures.breakEven(), fixtures.defaults()]);
-    // Like the API: both fixtures come from defaultSimParams(), so the key order matches.
+    const [report, { fairKnobs: _, ...params }] = await Promise.all([fixtures.breakEven(), fixtures.defaults()]);
+    // Like the API: compare with defaultSimParams(), which has no fairKnobs. Both fixtures come from it, so the key order matches.
     return { ...report, stale: JSON.stringify(report.params) !== JSON.stringify(params) };
   }
   return request("GET", "/break-even", undefined, signal);

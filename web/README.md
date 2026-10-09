@@ -42,7 +42,11 @@ must stay in step with `contracts/types.ts` and the API; ask before changing it.
   page or component. `src/api.ts` is the only file that talks to the network.
   - `usePolicies()`, `useDefaults()`, `useAudit(query)`, `useGetSimulation(id)`: load on mount and
     return `{ data, loading, error, reload }`.
-  - `useDecide()`, `useCreateSimulation()`: run on demand. They return `{ data, loading, error, run }`.
+  - `useDefaults()` returns the default `SimParams` plus `fairKnobs`, the starting values for the knob sliders.
+  - `useDecide()`, `useCreateSimulation()`, `useRenderPolicy()`: run on demand. They return
+    `{ data, loading, error, run }`. `useRenderPolicy().run(knobs)` renders the heatgate-fair rules for
+    those knobs (debounce slider moves). In fixture mode only the default knobs render; any other knobs
+    give the error "Rule editing needs the live API".
   - `useSimulation()`: `run(params)` starts a simulation and polls it every second (120 s timeout).
     It returns `{ data, loading, error, status, simulationId, elapsedMs, run, cancel }`, and
     `status` goes `idle` → `queued` → `running` → `done` or `failed`.

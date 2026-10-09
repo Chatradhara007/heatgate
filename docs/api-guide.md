@@ -137,8 +137,9 @@ curl http://localhost:3001/health
 ```
 
 ```ts
-// No api.ts function for this one. Any other call failing with
-// "Could not reach the HeatGate API at … Is it running?" tells you the same thing.
+import { health } from "./api";            // no hook; any other call failing with
+const { status } = await health();          // "Could not reach the HeatGate API at … Is it running?" tells you the same
+// In fixture mode health() answers { status: "ok" } without the network.
 ```
 
 Response (200):
@@ -192,7 +193,7 @@ curl http://localhost:3001/defaults
 
 ```ts
 import { defaults } from "./api";          // hook: useDefaults()
-const params = await defaults();
+const params = await defaults();          // type Defaults = SimParams & { fairKnobs: FairKnobs }
 ```
 
 Response (200, real):
@@ -233,11 +234,9 @@ Response (200, real):
 }
 ```
 
-Note: the default humidity is **25 %** and the default peak is **40 °C**. (A comment in
-`contracts/types.ts` still says humidity 45; the API value above is the real one.)
+Note: the default humidity is **25 %** and the default peak is **40 °C**.
 
-In fixture mode (`VITE_USE_FIXTURES=true`), `web/fixtures/defaults.json` has no `fairKnobs`. Fall back
-to the defaults in section 4 if it is missing.
+In fixture mode (`VITE_USE_FIXTURES=true`), `web/fixtures/defaults.json` has the same `fairKnobs`.
 
 Errors: none.
 
@@ -469,10 +468,10 @@ curl -X POST http://localhost:3001/policies/render \
 ```
 
 ```ts
-// There is no api.ts function for this route yet (nor a hook). Until one is added to api.ts,
-// the call it would make is:
-//   request("POST", "/policies/render", { knobs: { workLimitMin: 90, rushHardLimitMin: 90 } })
-// Ask whoever owns web/src/api.ts to add renderPolicy(knobs) + a hook; pages must not call fetch.
+import { renderPolicy } from "./api";      // hook: useRenderPolicy() -> run(knobs)
+const rendered = await renderPolicy({ workLimitMin: 90, rushHardLimitMin: 90 }); // RenderedPolicy
+// Fixture mode (VITE_USE_FIXTURES=true) renders the default knobs only (web/fixtures/renderPolicy.json).
+// Any other knobs fail with "Rule editing needs the live API: fixture mode only has the default knobs."
 ```
 
 Response (200, real, `text` shortened):
@@ -1034,7 +1033,7 @@ These are not optional. Judges and riders will read the numbers.
 
 | Page / mode         | Route (web)  | Endpoints                                                                 | Hooks                                         |
 | ------------------- | ------------ | ------------------------------------------------------------------------- | --------------------------------------------- |
-| **Simulator** (sandbox) | `/simulator` | `GET /defaults` (slider starts), `GET /policies` (labels), `POST /policies/render` (knobs, no hook yet), `POST /simulations` + `GET /simulations/:id` (run) | `useDefaults`, `usePolicies`, `useSimulation` |
+| **Simulator** (sandbox) | `/simulator` | `GET /defaults` (slider starts), `GET /policies` (labels), `POST /policies/render` (knobs), `POST /simulations` + `GET /simulations/:id` (run) | `useDefaults`, `usePolicies`, `useRenderPolicy`, `useSimulation` |
 | **Compare**         | `/compare`   | `GET /policies`, `POST /simulations` + `GET /simulations/:id` (or a finished id), `GET /break-even` (headline money result) | `usePolicies`, `useSimulation` / `useGetSimulation`, `useBreakEven` |
 | **Audit**           | `/audit`     | `GET /audit` (filters + cursor), `GET /policies` (labels)                 | `useAudit`, `usePolicies`, `auditRowKey`      |
 | **Rider phone**     | `/rider`     | `POST /decide` (one decision for the shown rider), `GET /audit?rider=…` (their recent decisions), `GET /policies` | `useDecide`, `useAudit`, `usePolicies` |
