@@ -9,3 +9,5 @@ region = "ap-south-1"
 capabilities = "CAPABILITY_IAM"
 resolve_s3 = true
 confirm_changeset = true
+s3_prefix = "heatgate"
+image_repositories = []
