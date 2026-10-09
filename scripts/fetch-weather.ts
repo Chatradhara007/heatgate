@@ -2,10 +2,13 @@
 // hottest days per city as sim/data/weather/<id>.json. Commit those files: the simulator never fetches.
 // Run from the repo root: npm run fetch-weather
 //
-// One request per city covers every April-June in YEARS. Days are ranked by their peak heat index
+// One request per city covers every April-June in YEARS. Days are first ranked by their peak heat index
 // (engine heatIndexC: a proxy for outdoor heat stress, not a medical measure); peak temperature breaks ties.
 // The top DAYS_PER_CITY days that are at least MIN_GAP_DAYS apart are saved, so they are separate heat events.
-import { mkdirSync, writeFileSync } from "node:fs";
+// Then the well-known hot days: the top TEMP_DAYS_PER_CITY days by peak AIR TEMPERATURE (the highest of the
+// 24 hourly values; heat index breaks ties), same gap rule, skipping any day the heat-index ranking already has.
+// A file that already exists is never rewritten, so committed days (and every result built on them) stay as they are.
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { heatIndexC } from "../engine/src/heatIndex.ts";
 
@@ -17,6 +20,7 @@ const CITIES = [
 const YEARS = [2020, 2021, 2022, 2023, 2024, 2025];
 const MONTHS = [4, 5, 6]; // April-June: the pre-monsoon heatwave season
 const DAYS_PER_CITY = 3;
+const TEMP_DAYS_PER_CITY = 2;
 const MIN_GAP_DAYS = 3;
 const SOURCE = "Open-Meteo historical weather API";
 const OUT = join(import.meta.dirname, "..", "sim", "data", "weather");
@@ -69,12 +73,15 @@ function toDays(r: ArchiveResponse): Day[] {
     }));
 }
 
-function pick(days: Day[]): Day[] {
-  const ranked = [...days].sort((a, b) => b.peakHeatIndexC - a.peakHeatIndexC || b.peakTempC - a.peakTempC);
+const byHeatIndex = (a: Day, b: Day) => b.peakHeatIndexC - a.peakHeatIndexC || b.peakTempC - a.peakTempC;
+const byAirTemp = (a: Day, b: Day) => b.peakTempC - a.peakTempC || b.peakHeatIndexC - a.peakHeatIndexC;
+
+function pick(days: Day[], order: (a: Day, b: Day) => number, count: number): Day[] {
+  const ranked = [...days].sort(order);
   const chosen: Day[] = [];
   const dayNo = (d: Day) => Date.parse(d.date) / 86_400_000;
   for (const d of ranked) {
-    if (chosen.length === DAYS_PER_CITY) break;
+    if (chosen.length === count) break;
     if (chosen.every((c) => Math.abs(dayNo(c) - dayNo(d)) >= MIN_GAP_DAYS)) chosen.push(d);
   }
   return chosen;
@@ -88,8 +95,16 @@ for (const c of CITIES) {
   const data = (await res.json()) as ArchiveResponse;
   const days = toDays(data);
   console.log(`${c.city}: ${days.length} whole days in months ${MONTHS.join(",")} of ${YEARS[0]}-${YEARS[YEARS.length - 1]}`);
-  for (const d of pick(days)) {
+  const byHi = pick(days, byHeatIndex, DAYS_PER_CITY);
+  const byTemp = pick(days, byAirTemp, TEMP_DAYS_PER_CITY).filter((d) => !byHi.some((h) => h.date === d.date));
+  for (const [d, rankedBy] of [...byHi.map((d) => [d, "heat index"] as const), ...byTemp.map((d) => [d, "air temperature"] as const)]) {
     const id = `${c.slug}-${d.date}`;
+    const path = join(OUT, `${id}.json`);
+    const peaks = `peak ${d.peakTempC.toFixed(1)} °C, peak heat index ${d.peakHeatIndexC.toFixed(1)} °C (ranked by ${rankedBy})`;
+    if (existsSync(path)) {
+      console.log(`  ${id}: ${peaks}, already saved, kept as it is`);
+      continue;
+    }
     const file = {
       id,
       city: c.city,
@@ -103,8 +118,8 @@ for (const c of CITIES) {
       fetchedAt: new Date().toISOString().slice(0, 10),
       hourly: d.hourly,
     };
-    writeFileSync(join(OUT, `${id}.json`), JSON.stringify(file, null, 1) + "\n");
-    console.log(`  ${id}: peak ${d.peakTempC.toFixed(1)} °C, peak heat index ${d.peakHeatIndexC.toFixed(1)} °C`);
+    writeFileSync(path, JSON.stringify(file, null, 1) + "\n");
+    console.log(`  ${id}: ${peaks}, NEW`);
   }
 }
 console.log(`Saved to ${OUT}. List any new file in sim/data/weather/index.ts and commit them; the simulator reads them offline.`);

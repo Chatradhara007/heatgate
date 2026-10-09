@@ -7,6 +7,9 @@ Compare, Audit and Rider phone pages.
 responses, the simulation flow, the knobs, how to read a `SimResult`, the audit log, the honesty rules
 for the UI and which page needs which endpoint.
 
+**Before putting a number on screen or in the pitch, check the [pitch numbers sheet](../docs/pitch-numbers.md)**:
+the results with their seed ranges, the claims we can and cannot make, and the caveats.
+
 ## Run it
 
 From the repo root:
