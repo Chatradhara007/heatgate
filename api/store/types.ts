@@ -25,6 +25,7 @@ export interface Page<T> {
 
 export interface Store {
   // Audit log of decisions. Rider IDs are pseudonymous; never store names, phones or locations.
+  // Both versions store auditRecord(decision) (@heatgate/engine): the decision without its coolingPoint.
   putDecision(decision: Decision): Promise<void>;
   // The audit trail of one finished simulation (every entry carries this simulationId).
   // Replaces any earlier trail for the same id, then keeps only the last MAX_AUDITED_SIMULATIONS trails.

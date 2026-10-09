@@ -1,6 +1,6 @@
 // Golden tests from docs/spec/golden-tests.md. They feed the Cedar context directly.
 import { describe, expect, test } from "vitest";
-import type { DecideRequest, Outcome, PolicyVersion } from "@heatgate/contracts";
+import type { DecideRequest, Decision, Outcome, PolicyVersion } from "@heatgate/contracts";
 import { decideWithHeatIndex } from "./src/index.ts";
 
 interface Row {
@@ -159,4 +159,28 @@ describe("distance rounding", () => {
     expect(d.firedRules[0]).toBe("ndma-reduced-radius");
     expect(d.cedarContext.distanceKm).toBe(4);
   });
+});
+
+// Messages and the cooling point only describe a decision: the 11 golden rows must decide the same with them.
+describe("golden rows: messages and cooling point", () => {
+  const POINTS = [
+    { name: "Point A", x: 1, y: 1 },
+    { name: "Point B", x: 3, y: 4 },
+  ];
+  const core = ({ decisionId, messages, coolingPoint, ...rest }: Decision) => rest;
+  const now = new Date("2026-05-20T08:00:00Z");
+  for (const [n, row] of CASES) {
+    for (const policy of ["no-rules", "ndma-2025", "union-demand", "heatgate-fair"] as const) {
+      test(`case ${n} ${policy}`, () => {
+        const plain = decideWithHeatIndex(request(row), policy, row.heat, now);
+        const full = decideWithHeatIndex({ ...request(row), rider: { ...request(row).rider, x: 3, y: 3.5 } }, policy, row.heat, now, undefined, POINTS);
+        expect(core(full)).toEqual(core(plain));
+        for (const lang of ["hi", "te", "ur"] as const) expect(full.messages?.[lang]).toMatch(/\S/);
+        for (const text of [full.message, ...Object.values(full.messages ?? {})]) expect(text).not.toMatch(/[{}]/);
+        if (full.outcome === "FORCE_REST") expect(full.coolingPoint).toEqual({ name: "Point B", distanceM: 500 });
+        else expect(full.coolingPoint).toBeUndefined();
+        expect(plain.coolingPoint).toBeUndefined(); // no cooling points given, none named
+      });
+    }
+  }
 });

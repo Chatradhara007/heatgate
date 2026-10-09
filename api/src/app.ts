@@ -6,7 +6,7 @@ import cors from "cors";
 import express, { type ErrorRequestHandler, type Request } from "express";
 import { POLICY_LABELS, type ApiError, type BreakEvenReport, type Decision } from "@heatgate/contracts";
 import { DEFAULT_FAIR_KNOBS, checkPolicyText, decide, newDecisionId, policySchema, renderFairPolicy, summarizeFairPolicy } from "@heatgate/engine";
-import { defaultSimParams } from "@heatgate/sim";
+import { cityLayout, defaultSimParams } from "@heatgate/sim";
 import { BadCursorError, MAX_ACTIVE_SIMULATIONS, SIMULATION_STALE_MS, type AuditFilter, type Store } from "../store/types.ts";
 import { SimulationQueue, workerRunner, type SimRunner, type SimulationSubmitter } from "./simulations.ts";
 import { ApiFailure, OUTCOMES, POLICY_VERSIONS, decideRequest, renderRequest, riderId, simParams, simulationId } from "./validate.ts";
@@ -19,6 +19,9 @@ export interface AppOptions {
 }
 
 export const BREAK_EVEN_FILE = fileURLToPath(new URL("../../sim/results/break-even.json", import.meta.url));
+
+// The demo city's 8 cooling points (sim/city.ts), the same ones the simulator sends resting riders to.
+const COOLING_POINTS = cityLayout().coolingPoints;
 
 const errorBody = (code: string, message: string): ApiError => ({ error: { code, message } });
 
@@ -83,7 +86,9 @@ export function createApp({ store, runSimulation = workerRunner, simulations, br
 
   app.post("/decide", async (req, res) => {
     const request = decideRequest(req.body);
-    const decision: Decision = decide(request, request.policyVersion);
+    // The rider's position (request.rider.x, y) picks the nearest cooling point for a FORCE_REST. The response
+    // carries it; the audit log does not (the store writes auditRecord(decision)).
+    const decision: Decision = decide(request, request.policyVersion, new Date(), undefined, COOLING_POINTS);
     // dryRun = true means do not write to the audit log (contracts/types.ts).
     if (!request.dryRun) await store.putDecision(decision);
     res.json(decision);

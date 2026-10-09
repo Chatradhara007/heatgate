@@ -4,8 +4,8 @@ import { copyFileSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { POLICY_LABELS, type DecideRequest, type Decision, type PolicyVersion } from "@heatgate/contracts";
-import { DEFAULT_FAIR_KNOBS, checkPolicyText, decide, policySchema, renderFairPolicy, summarizeFairPolicy } from "@heatgate/engine";
-import { between, dayAlertLevel, defaultSimParams, dropDistanceKm, simulate, stream, temperatureAt } from "@heatgate/sim";
+import { DEFAULT_FAIR_KNOBS, auditRecord, checkPolicyText, decide, policySchema, renderFairPolicy, summarizeFairPolicy } from "@heatgate/engine";
+import { between, cityLayout, dayAlertLevel, defaultSimParams, dropDistanceKm, simulate, stream, temperatureAt } from "@heatgate/sim";
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
 mkdirSync(OUT, { recursive: true });
@@ -47,6 +47,9 @@ write("simResult.json", result, true); // compact, to stay under 1 MB
 
 // audit.json: what GET /audit returns. Real engine decisions under the same day's weather,
 // for riders and moments taken from the simulation's frames. Rider IDs are the sim's pseudonymous ones.
+// decide.json: the same decisions as POST /decide returns them (with coolingPoint for a FORCE_REST);
+// audit.json has them as the log stores them (auditRecord: no coolingPoint).
+const { coolingPoints } = cityLayout();
 const rng = stream(1, "fixtures");
 const alertLevel = dayAlertLevel(params.alertLevel, params.peakTempC);
 const IST_MIDNIGHT_MS = Date.UTC(2026, 4, 20) - 330 * 60_000; // 20 May 2026, 00:00 India time
@@ -77,11 +80,12 @@ for (const policy of params.policyVersions) {
       },
     };
     const at = new Date(IST_MIDNIGHT_MS + Math.round(hour * 60) * 60_000);
-    decisions.push(decide(request, policy, at));
+    decisions.push(decide(request, policy, at, undefined, coolingPoints));
   }
 }
 decisions.sort((a, b) => b.at.localeCompare(a.at) || b.decisionId.localeCompare(a.decisionId));
-write("audit.json", { items: decisions });
+write("decide.json", { items: decisions });
+write("audit.json", { items: decisions.map(auditRecord) });
 
 const counts: Record<string, number> = {};
 for (const d of decisions) counts[d.outcome] = (counts[d.outcome] ?? 0) + 1;

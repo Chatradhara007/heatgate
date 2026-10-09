@@ -16,7 +16,7 @@ import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } fro
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import type { Decision, SimResult, SimulationJob } from "@heatgate/contracts";
-import { newDecisionId } from "@heatgate/engine";
+import { auditRecord, newDecisionId } from "@heatgate/engine";
 import { BadCursorError, MAX_AUDITED_SIMULATIONS, SIMULATION_STALE_MS, type AuditFilter, type Page, type Store } from "./types.ts";
 
 export const LIVE = "live";
@@ -121,7 +121,7 @@ export class DynamoStore implements Store {
     await this.db.send(
       new PutCommand({
         TableName: this.auditTable,
-        Item: { simulationId: LIVE, decisionId: decision.decisionId, decision, expiresAt: expiresAt() },
+        Item: { simulationId: LIVE, decisionId: decision.decisionId, decision: auditRecord(decision), expiresAt: expiresAt() },
       }),
     );
   }
@@ -129,7 +129,7 @@ export class DynamoStore implements Store {
   async putSimulationDecisions(simulationId: string, decisions: Decision[]): Promise<void> {
     const seq = newDecisionId(new Date());
     const key = `audit/${simulationId}/${seq}.json`;
-    await this.objects.put(key, JSON.stringify(decisions.map((d) => ({ ...d, simulationId }))));
+    await this.objects.put(key, JSON.stringify(decisions.map((d) => ({ ...auditRecord(d), simulationId }))));
     const dropped = await this.updateTrails((trails) => trails.filter((t) => t.simulationId !== simulationId).concat({ simulationId, seq, key }));
     // The list no longer points at these, so GET /audit no longer shows them; deleting is tidy-up.
     for (const t of dropped) await this.objects.delete(t.key).catch((err) => console.error(`could not delete ${t.key}:`, err));

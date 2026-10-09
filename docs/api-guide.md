@@ -351,7 +351,7 @@ Body (`DecideRequest`). All fields required except the last two:
 | `policyVersion`                       | string                  | `no-rules`, `ndma-2025`, `union-demand`, `heatgate-fair`  |
 | `rider.id`                            | string                  | pseudonymous: letters, dash, digits, e.g. `R-014`, `rider-014` (max 20 chars). Names and phone numbers are refused. |
 | `rider.vehicle`                       | string                  | `bike`, `cycle`, `ev`                                     |
-| `rider.x`, `rider.y`                  | number (km)             | 0–10 (the 10 × 10 km city). Not stored in the decision.   |
+| `rider.x`, `rider.y`                  | number (km)             | 0–10 (the 10 × 10 km city). Used only to find the nearest cooling point; never stored. |
 | `order.id`, `order.zone`              | string                  | 1–64 characters                                           |
 | `order.distanceKm`                    | number                  | 0–100 (rounded **up** to a whole km before Cedar)         |
 | `order.tripMinutes`                   | number                  | 0–600                                                     |
@@ -392,12 +392,12 @@ const decision = await decide({
 ```
 
 Response (200, real): three NDMA rules fired; the strongest outcome (`FORCE_REST`) wins and its rule is
-listed first.
+listed first. The rider at (2, 3) km is sent to the nearest cooling point.
 
 ```json
 {
-  "decisionId": "01M4FT2RF20000000000000002",
-  "at": "2026-10-09T07:47:12.482Z",
+  "decisionId": "01M4G0RJM50000000000000001",
+  "at": "2026-10-09T09:43:58.853Z",
   "policyVersion": "ndma-2025",
   "riderId": "R-015",
   "orderId": "order-2",
@@ -407,6 +407,12 @@ listed first.
   "heatIndexC": 47,
   "firedRules": ["ndma-break-due", "ndma-peak-hours-pause", "ndma-reduced-radius"],
   "message": "Heat alert: 15-minute cooling break after 90 minutes of work. No penalty and no pay cut.",
+  "messages": {
+    "hi": "गर्मी की चेतावनी: 90 मिनट काम के बाद 15 मिनट का आराम ब्रेक। कोई जुर्माना नहीं, पैसे नहीं कटेंगे।",
+    "te": "వేడి హెచ్చరిక: 90 నిమిషాల పని తర్వాత 15 నిమిషాల విశ్రాంతి బ్రేక్. జరిమానా లేదు, డబ్బు కోత లేదు.",
+    "ur": "گرمی کی وارننگ: 90 منٹ کام کے بعد 15 منٹ کا آرام کا وقفہ۔ کوئی جرمانہ نہیں، پیسے نہیں کٹیں گے۔"
+  },
+  "coolingPoint": { "name": "Cooling point 5", "distanceM": 890 },
   "cedarContext": {
     "heatIndexC": 47, "hourOfDay": 14, "minutesSinceBreak": 80, "exposureMinutesToday": 200,
     "restMinutesRemaining": 0, "tripMinutes": 20, "demandLevel": 2, "alertLevel": 1, "distanceKm": 4
@@ -418,13 +424,15 @@ Two more real examples, shortened:
 
 ```json
 // no-rules on a cool morning
-{ "outcome": "ALLOW", "restMinutes": 0, "penaltyWaived": false, "heatIndexC": 30,
-  "firedRules": [], "message": "Order assigned.", "…": "…" }
+{ "outcome": "ALLOW", "restMinutes": 0, "penaltyWaived": false, "heatIndexC": 29,
+  "firedRules": [], "message": "Order assigned.",
+  "messages": { "hi": "ऑर्डर मिल गया।", "te": "ఆర్డర్ మీకు ఇవ్వబడింది.", "ur": "آرڈر مل گیا۔" }, "…": "…" }
 
 // heatgate-fair, 40 °C at 35 % humidity, a 4.1 km order (rounded up to 5)
 { "outcome": "DENY", "restMinutes": 0, "penaltyWaived": true, "heatIndexC": 46,
   "firedRules": ["fair-extreme-heat-stop", "fair-short-trips-only"],
-  "message": "Extreme heat. Deliveries paused. Your incentive target is reduced for this time.", "…": "…" }
+  "message": "Extreme heat. Deliveries paused. Your incentive target is reduced for this time.",
+  "messages": { "hi": "बहुत ज़्यादा गर्मी। डिलीवरी रुकी है। …", "te": "తీవ్రమైన వేడి. …", "ur": "شدید گرمی۔ …" }, "…": "…" }
 ```
 
 What the outcomes mean (show these words to riders):
@@ -437,9 +445,28 @@ What the outcomes mean (show these words to riders):
 | `FORCE_REST` | The rider takes a cooling break of `restMinutes` (15 or 20).              |
 
 `penaltyWaived: true` means declining costs the rider nothing (rating, acceptance rate).
-`message` is the English text for the rider. `messages` (Hindi/Telugu/Urdu) and `coolingPoint` are in
-the `Decision` type but **none of today's decisions include them** (no rule has translations yet, and
-the API does not look up cooling points). Hide those parts of the UI when they are missing.
+**What the rider is told.** These fields only describe the decision; they never change it.
+
+- `message`: the English text. Always there.
+- `messages`: the same text in Hindi (`hi`), Telugu (`te`) and Urdu (`ur`). Every decision has all three today,
+  ALLOW included ("Order assigned."). The text is complete: there are no `{placeholders}` to fill in.
+  Show Urdu right-to-left (`dir="rtl"`). **The translations are machine-written and not yet checked by a
+  native speaker** (`reviewed=false` in `docs/translations/messages.csv`, list in
+  `docs/translations/REVIEW.md`); label them "draft translation" on screen until they are reviewed. Still
+  treat `messages` and each language as optional: a rule with new English words has no translation until
+  someone adds one.
+- `coolingPoint`: only on `FORCE_REST`. `name` is the nearest of the city's 8 cooling points (the same
+  ones the simulator sends resting riders to, "Cooling point 1" to "Cooling point 8") and `distanceM` is the
+  straight-line distance from `rider.x`, `rider.y` in metres, rounded to 10 m. The messages that say
+  "Nearest shade and water below" mean this card: show it under the message.
+
+**`coolingPoint` is in the `/decide` response only, never in the audit log.** A distance to a known,
+fixed point would say where the rider was, and the log never stores a rider location; `GET /audit` rows
+carry `message` and `messages` but no `coolingPoint`. The rider's `x`, `y` are not in either.
+
+Translations live in `docs/translations/messages.csv`. To add or fix one, edit the CSV and run
+`npm run export-messages` (it regenerates `engine/src/translations.ts`; `npm run export-messages -- --check`
+fails if either file is out of date or a translation is missing).
 
 Errors (real messages):
 
@@ -698,6 +725,11 @@ Response (200, real, one row from a simulation):
       "heatIndexC": 36,
       "firedRules": ["union-rest-due"],
       "message": "Heatwave day: paid 20-minute cooling break after 2 hours of work. Nearest shade and water below. No penalty.",
+      "messages": {
+        "hi": "लू का दिन: 2 घंटे काम के बाद पैसे सहित 20 मिनट का आराम ब्रेक। पास की छाँव और पानी नीचे देखें। कोई जुर्माना नहीं।",
+        "te": "వడగాల్పుల రోజు: 2 గంటల పని తర్వాత జీతంతో 20 నిమిషాల విశ్రాంతి బ్రేక్. దగ్గరి నీడ, నీళ్లు కింద చూడండి. జరిమానా లేదు.",
+        "ur": "لُو کا دن: 2 گھنٹے کام کے بعد پیسوں کے ساتھ 20 منٹ کا آرام کا وقفہ۔ قریب ترین سایہ اور پانی نیچے دیکھیں۔ کوئی جرمانہ نہیں۔"
+      },
       "cedarContext": {
         "heatIndexC": 36, "hourOfDay": 19, "minutesSinceBreak": 209, "exposureMinutesToday": 209,
         "restMinutesRemaining": 0, "tripMinutes": 52, "demandLevel": 0, "alertLevel": 1, "distanceKm": 4
@@ -708,7 +740,7 @@ Response (200, real, one row from a simulation):
 }
 ```
 
-No `nextCursor` means this is the last page.
+No `nextCursor` means this is the last page. Audit rows never have `coolingPoint` (see POST /decide).
 
 Errors (real messages):
 
@@ -999,7 +1031,9 @@ same settings therefore produce the same ids: for example, two default runs both
 (`simulationId`, `decisionId`) is unique, which is what `auditRowKey` uses.
 
 **Showing a row.** Show time, rider id, rule set label, outcome badge, the first fired rule, the message
-and the heat index. `cedarContext` holds the exact rounded inputs, so a "details" panel can show why the
+(with a language switch for `messages`, marked as draft translations) and the heat index. Simulation
+rows carry the same `messages` the rider would have seen. A FORCE_REST row can say "sent to the nearest
+cooling point", but not which one: the log does not keep it. `cedarContext` holds the exact rounded inputs, so a "details" panel can show why the
 decision was made. Never show or ask for names or phone numbers; rider ids are pseudonymous, and that is
 probably still personal data under DPDP, so don't make them look like real people.
 

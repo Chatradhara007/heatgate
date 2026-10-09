@@ -283,3 +283,19 @@ test("createStore: memory by default, dynamo needs its environment, anything els
   );
   expect(() => createStore({ STORE: "postgres" })).toThrow(/memory/);
 });
+
+test.each([
+  ["memory", () => new MemoryStore()],
+  ["dynamo", () => dynamo().store],
+] as const)("%s store: audit entries keep the messages but never the cooling point (it would locate the rider)", async (_name, make) => {
+  const store: Store = make();
+  const told = { messages: { hi: "h", te: "t", ur: "u" }, coolingPoint: { name: "Cooling point 3", distanceM: 420 } };
+  await store.putDecision({ ...decision(undefined, "R-001", 1, "FORCE_REST"), ...told });
+  await store.putSimulationDecisions("sim-a", [{ ...decision("sim-a", "rider-001", 600, "FORCE_REST"), ...told }]);
+  const items = await allPages(store, {}, 10);
+  expect(items).toHaveLength(2);
+  for (const d of items) {
+    expect(d.messages).toEqual(told.messages);
+    expect(d).not.toHaveProperty("coolingPoint");
+  }
+});
