@@ -19,6 +19,7 @@
     "sim:full": "tsx sim/scripts/full.ts",
     "sim:sensitivity": "tsx sim/scripts/sensitivity.ts",
     "sim:breakeven": "tsx sim/scripts/breakeven.ts",
+    "sim:weather": "tsx sim/scripts/weather-days.ts",
     "smoke": "tsx api/scripts/smoke.ts",
     "deploy:web": "tsx scripts/deploy-web.ts"
   },
