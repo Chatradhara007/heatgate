@@ -84,6 +84,13 @@ the simulation flow, the rule knobs, how to read results and the honesty rules f
 
 ---
 
+## Pitch numbers
+
+Quoting a result? Use the [pitch numbers sheet](docs/pitch-numbers.md): every scenario's results as mean and
+range over the seeds, the claims the numbers support (with the command that reproduces each), the claims we
+must not make, and the caveats to say out loud. Regenerate it with `npm run pitch-numbers`; a test fails
+when it is stale.
+
 ## License
 
 [MIT](LICENSE)
