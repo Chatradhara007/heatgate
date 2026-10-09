@@ -45,4 +45,12 @@ export class MemoryStore implements Store {
     const job = this.simulations.get(simulationId);
     return job && structuredClone(job);
   }
+
+  async countActiveSimulations(since: Date): Promise<number> {
+    let count = 0;
+    for (const job of this.simulations.values()) {
+      if ((job.status === "queued" || job.status === "running") && Date.parse(job.createdAt) > since.getTime()) count++;
+    }
+    return count;
+  }
 }

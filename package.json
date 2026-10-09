@@ -18,7 +18,8 @@
     "sim:full": "tsx sim/scripts/full.ts",
     "sim:sensitivity": "tsx sim/scripts/sensitivity.ts",
     "sim:breakeven": "tsx sim/scripts/breakeven.ts",
-    "smoke": "tsx api/scripts/smoke.ts"
+    "smoke": "tsx api/scripts/smoke.ts",
+    "deploy:web": "tsx scripts/deploy-web.ts"
   },
   "keywords": [
     "cedar",
