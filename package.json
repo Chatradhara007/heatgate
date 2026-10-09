@@ -15,6 +15,7 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p engine && tsc -p sim && tsc -p api",
     "check-policies": "tsx scripts/check-policies.ts",
     "export-messages": "tsx scripts/export-messages.ts",
+    "fetch-weather": "tsx scripts/fetch-weather.ts",
     "sim:full": "tsx sim/scripts/full.ts",
     "sim:sensitivity": "tsx sim/scripts/sensitivity.ts",
     "sim:breakeven": "tsx sim/scripts/breakeven.ts",
