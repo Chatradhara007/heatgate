@@ -12,9 +12,9 @@ export function defaultSimParams(overrides: Partial<SimParams> = {}): SimParams 
     alertLevel: "auto",
     startHour: 8,
     endHour: 20,
-    // Tuned on a 34 °C no-rules day (5 seeds): 50 gives 21 / 29 / 50 quiet / normal / rush, the closest
-    // any value gets to the 20 / 50 / 30 target. Staggered shifts leave mornings and evenings short of riders.
-    ordersPerHour: 50,
+    // Tuned on a 34 °C no-rules day (5 seeds) together with the two login waves in sim/dispatcher.ts
+    // (an assumption): 34 gives 21 / 51 / 28 quiet / normal / rush against the 20 / 50 / 30 target.
+    ordersPerHour: 34,
     shiftHours: { min: 6, max: 8 },
     multiAppPct: 40,
     feeDemandDropPctPerInr: 1,
