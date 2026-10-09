@@ -54,6 +54,7 @@ interface SimRider {
   restMinutes: number;
   restOrPauseMinutes: number;
   shadeMinutes: number; // continuous minutes idle at a hub (shade waiting, sim/fair.ts)
+  shiftMinutes: number; // minutes on shift in this run
 }
 
 export interface DayResult {
@@ -122,6 +123,7 @@ export function makeRiders(params: SimParams, seed: number): SimRider[] {
       restMinutes: 0,
       restOrPauseMinutes: 0,
       shadeMinutes: 0,
+      shiftMinutes: 0,
     };
   });
 }
@@ -227,6 +229,7 @@ export function runDay(
       else if (r.state !== "offline" && minute >= r.logoutMin && r.state !== "delivering") r.state = "offline";
     }
     const onShift = riders.filter((r) => r.state !== "offline");
+    for (const r of onShift) r.shiftMinutes++;
 
     // 2. Demand level.
     const demandLevel = demandLevelFor(onShift.filter((r) => r.state === "delivering").length, onShift.length);
@@ -395,6 +398,7 @@ export function runDay(
     orderPayInr: r.orderPayInr,
     restMinutes: r.restMinutes,
     restOrPauseMinutes: r.restOrPauseMinutes,
+    shiftMinutes: r.shiftMinutes,
   }));
   let noRulesRun: DayResult | undefined;
   const noRulesDay = () => (noRulesRun ??= runDay(params, "no-rules", seed, simulationId));

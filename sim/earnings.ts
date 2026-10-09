@@ -18,6 +18,12 @@ import type { Economics, PayProtections } from "@heatgate/contracts";
 
 export const PROTECTED_MIN_PER_ORDER = 30; // every 30 min of forced rest or pause lowers the target by 1 order
 
+// The lowest-earning rider leaves out riders with less than 2 hours on shift in the run. With logins in
+// waves, some riders log in shortly before the day ends (or the run ends early, as in a short test day)
+// and earn next to nothing because they barely worked, not because the rules cost them money. Counting
+// them would make "lowest rider" measure the clock, not the rules. The average still counts every rider.
+export const MIN_SHIFT_MIN_FOR_LOWEST = 120;
+
 // What one rider did in one simulated day.
 export interface RiderTally {
   id: string; // pseudonymous
@@ -25,6 +31,7 @@ export interface RiderTally {
   orderPayInr: number; // sum of orderPayInr() over the delivered orders
   restMinutes: number; // minutes spent in a forced rest (from arrival at the cooling point)
   restOrPauseMinutes: number; // restMinutes plus minutes paused by DENY
+  shiftMinutes: number; // minutes on shift in this run (logged in, including a delivery that runs past logout)
 }
 
 export interface RiderEarnings {
@@ -75,14 +82,15 @@ export function riderEarnings(t: RiderTally, target: number, econ: Economics, pa
 }
 
 // The money fields of Metrics (heatFeeCollectedInr comes from sim/fair.ts). Every rider counts,
-// including those who delivered nothing.
+// including those who delivered nothing, except in the lowest rider (see MIN_SHIFT_MIN_FOR_LOWEST).
 export function earningsSummary(tallies: RiderTally[], target: number, econ: Economics, pay: PayProtections): EarningsSummary {
   if (tallies.length === 0) return { avgEarningsPerRiderInr: 0, minEarningsPerRiderInr: 0, incentiveHitRatePct: 0, restPayTotalInr: 0 };
   const each = tallies.map((t) => riderEarnings(t, target, econ, pay));
   const totals = each.map((e) => e.totalInr);
+  const longEnough = totals.filter((_, i) => tallies[i].shiftMinutes >= MIN_SHIFT_MIN_FOR_LOWEST);
   return {
     avgEarningsPerRiderInr: totals.reduce((a, b) => a + b, 0) / totals.length,
-    minEarningsPerRiderInr: Math.min(...totals),
+    minEarningsPerRiderInr: longEnough.length > 0 ? Math.min(...longEnough) : 0,
     incentiveHitRatePct: (100 * each.filter((e) => e.hitTarget).length) / each.length,
     restPayTotalInr: each.reduce((a, e) => a + e.restPayInr, 0),
   };
