@@ -72,12 +72,15 @@ npm run check-policies
 # 3. Run unit and golden tests
 npm test
 
-# 4. Start the local API server
-npm run dev:api
+# 4. Start the local API server (http://localhost:3001)
+npm start --workspace api
 
-# 5. Start the frontend web application
-npm run dev:web
+# 5. Start the frontend web application (http://localhost:5173)
+npm run dev --workspace web
 ```
+
+Building the website? Read the [API guide](docs/api-guide.md): every endpoint with real examples,
+the simulation flow, the rule knobs, how to read results and the honesty rules for the UI.
 
 ---
 

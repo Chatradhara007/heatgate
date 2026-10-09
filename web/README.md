@@ -3,6 +3,10 @@
 Vite + React + TypeScript + Tailwind. It shows the HeatGate API: the Simulator (sandbox),
 Compare, Audit and Rider phone pages.
 
+**Start with the [API guide](../docs/api-guide.md)**: every endpoint with real example requests and
+responses, the simulation flow, the knobs, how to read a `SimResult`, the audit log, the honesty rules
+for the UI and which page needs which endpoint.
+
 ## Run it
 
 From the repo root:
