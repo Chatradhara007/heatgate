@@ -10,7 +10,7 @@ interface ScenarioBarProps {
 // Two slider presets. These are inputs for a run, not results.
 const PRESETS = [
   { key: "normal", label: "Normal Day", icon: "wb_sunny", peakTempC: 34, humidityPct: 40, alertLevel: 0 as AlertSetting },
-  { key: "heatwave", label: "Heatwave Day", icon: "local_fire_department", peakTempC: 44, humidityPct: 45, alertLevel: "auto" as AlertSetting },
+  { key: "heatwave", label: "Heatwave Day", icon: "local_fire_department", peakTempC: 40, humidityPct: 25, alertLevel: "auto" as AlertSetting },
 ] as const;
 
 const alertText = (a: AlertSetting) => (a === "auto" ? "Alert auto" : `Alert ${a}`);
