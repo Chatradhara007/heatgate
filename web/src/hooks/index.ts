@@ -6,7 +6,7 @@ export { useDecide } from "./useDecide.ts";
 export { useDataSource, type DataSource } from "./useDataSource.ts";
 export { useDefaults } from "./useDefaults.ts";
 export { useGetSimulation } from "./useGetSimulation.ts";
-export { usePolicies } from "./usePolicies.ts";
+export { usePolicies, usePolicyLabels } from "./usePolicies.ts";
 export { useRenderPolicy } from "./useRenderPolicy.ts";
 export { useSimulation, type SimulationState } from "./useSimulation.ts";
 export { useWeatherDays } from "./useWeatherDays.ts";

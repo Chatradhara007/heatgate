@@ -13,6 +13,7 @@ const MAP_LABEL = "Illustration: simulated riders placed on a real city map. Pos
 interface CitySimulationProps {
   sim: SimResult | undefined;
   policy: PolicyVersion;
+  canRun?: boolean; // false while there are no settings, so no Run button (e.g. the API is down)
 }
 
 const FRAME_MS = 200; // at 1x; one frame = 5 simulated minutes
@@ -33,7 +34,7 @@ const STATE_COLOR: Record<RiderState, string> = {
   paused: "#DC2626",
 };
 
-export function CitySimulation({ sim, policy }: CitySimulationProps) {
+export function CitySimulation({ sim, policy, canRun = true }: CitySimulationProps) {
   const [frameIndex, setFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
@@ -69,7 +70,9 @@ export function CitySimulation({ sim, policy }: CitySimulationProps) {
   if (!sim || !frame) {
     return (
       <div className="lg:col-span-8 flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-outline-variant bg-surface-container-lowest text-xs text-on-surface-variant">
-        No simulation yet. Press Run Simulation below to see the city.
+        {canRun
+          ? "No simulation yet. Press Run Simulation below to see the city."
+          : "No simulation yet. The Run Simulation button appears once the API answers."}
       </div>
     );
   }
@@ -182,13 +185,13 @@ export function CitySimulation({ sim, policy }: CitySimulationProps) {
         </svg>
         )}
 
-        <div className="absolute z-[1000] top-3 left-3 bg-surface-container-lowest/95 border border-outline-variant px-3 py-2 rounded-xl shadow-md pointer-events-none">
-          <div className="font-bold text-on-surface leading-none" style={{ letterSpacing: "0.06em", fontFamily: '"Bebas Neue", sans-serif', fontSize: "32px" }}>
+        <div className="absolute z-[1000] top-2 left-2 sm:top-3 sm:left-3 bg-surface-container-lowest/95 border border-outline-variant px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl shadow-md pointer-events-none">
+          <div className="font-bold text-on-surface leading-none text-[24px] sm:text-[32px]" style={{ letterSpacing: "0.06em", fontFamily: '"Bebas Neue", sans-serif' }}>
             {formatTime(startHour, frame.minute)}
           </div>
           <div className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mt-0.5">1 frame = 5 min</div>
         </div>
-        <div className="absolute z-[1000] top-3 right-3 flex items-center gap-2 pointer-events-none">
+        <div className="absolute z-[1000] top-2 right-2 sm:top-3 sm:right-3 flex flex-col items-end sm:flex-row sm:items-center gap-1.5 sm:gap-2 pointer-events-none">
           <span className="px-2.5 py-1 rounded-lg bg-surface-container-lowest/95 border border-error/30 text-error shadow-md text-xs font-bold">
             Heat index {frame.heatIndexC}°C
           </span>
