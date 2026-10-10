@@ -43,7 +43,8 @@ export default function LeafletCityMap({ centre, frame, coolingPoints, tweenMs, 
       zoomSnap: 0.25, // lets the 10 km square fill the box instead of jumping a whole zoom level
     });
     map.attributionControl.setPrefix(false);
-    map.fitBounds(bounds, { padding: [8, 8] });
+    // Keep the square clear of the clock (top) and the illustration label (bottom) drawn over the map.
+    map.fitBounds(bounds, { paddingTopLeft: [8, 48], paddingBottomRight: [8, 64] });
     mapRef.current = map;
 
     // Tiles: give up (back to the grid) when none has loaded in time, or several fail before any loads.

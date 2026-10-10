@@ -70,6 +70,9 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const [runId, setRunId] = useState<string | undefined>(() => urlRun ?? readStoredRun());
   const [restoring, setRestoring] = useState<string | undefined>(undefined);
   const [restoreError, setRestoreError] = useState<string | undefined>(undefined);
+  // Ids we gave up on (gone, failed or cancelled). The URL drops ?run one render after state does, so without
+  // this the stale URL would put the id straight back and the page would fetch it again in a loop.
+  const droppedRef = useRef(new Set<string>());
   const { run, resume, cancel: cancelSim } = sim;
 
   const setUrlRun = useCallback(
@@ -88,7 +91,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
 
   // URL -> state: a link or the back button brought a different run.
   useEffect(() => {
-    if (urlRun && urlRun !== runId) setRunId(urlRun);
+    if (urlRun && urlRun !== runId && !droppedRef.current.has(urlRun)) setRunId(urlRun);
   }, [urlRun, runId]);
 
   // State -> URL: keep ?run=<id> on every page, so a reload or a shared link shows the same run.
@@ -98,13 +101,15 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
 
   // Fetch the saved run again (it may still be running: then keep polling).
   useEffect(() => {
-    if (!runId || activeSim?.simulationId === runId) return;
+    if (!runId || activeSim?.simulationId === runId || droppedRef.current.has(runId)) return;
     let pending = true;
+    let superseded = false; // a later run of this effect owns the restore now: ignore this attempt's outcome
     setRestoring(runId);
     setRestoreError(undefined);
     resume(runId).then(
       (res) => {
         pending = false;
+        if (superseded) return;
         setRestoring(undefined);
         if (!res) return;
         setActiveSim(res);
@@ -112,11 +117,13 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       },
       (err) => {
         pending = false;
+        if (superseded) return;
         setRestoring(undefined);
         const { message, gone } = restoreFailure(runId, err);
         setRestoreError(message);
         cancelSim(); // the failure is shown as restoreError, not as a failed new run
         if (gone) {
+          droppedRef.current.add(runId);
           storeRun(undefined);
           setRunId(undefined);
           setUrlRun(undefined);
@@ -124,6 +131,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       },
     );
     return () => {
+      superseded = true;
       if (pending) cancelSim();
     };
   }, [runId, activeSim?.simulationId, resume, cancelSim, setUrlRun]);
@@ -161,6 +169,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     setRestoring(undefined);
     // Cancelling a reload's fetch drops that run; otherwise keep the last finished one.
     if (runId !== activeSim?.simulationId) {
+      if (runId) droppedRef.current.add(runId);
       const keep = activeSim?.simulationId;
       setRunId(keep);
       setUrlRun(keep);
