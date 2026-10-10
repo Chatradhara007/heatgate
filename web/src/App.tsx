@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "./Layout.tsx";
+import { SimulationProvider } from "./context/SimulationContext.tsx";
 import { AuditPage } from "./pages/AuditPage.tsx";
 import { ComparePage } from "./pages/ComparePage.tsx";
 import { RiderPhonePage } from "./pages/RiderPhonePage.tsx";
@@ -12,12 +13,11 @@ export const ROUTES = [
   { path: "/compare", label: "Platform View", element: <ComparePage /> },
 ] as const;
 
-import { SimulationProvider } from "./context/SimulationContext.tsx";
 
 export function App() {
   return (
-    <SimulationProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <SimulationProvider>
         <Routes>
           <Route element={<Layout routes={ROUTES} />}>
             <Route index element={<Navigate to="/simulator" replace />} />
@@ -27,7 +27,7 @@ export function App() {
             <Route path="*" element={<Navigate to="/simulator" replace />} />
           </Route>
         </Routes>
-      </BrowserRouter>
-    </SimulationProvider>
+      </SimulationProvider>
+    </BrowserRouter>
   );
 }
