@@ -65,13 +65,14 @@ must stay in step with `contracts/types.ts` and the API; ask before changing it.
     `{ kind: "slider" }` (the default) uses `peakTempC` and `humidityPct`. In fixture mode a replay returns
     the one fixture result with `data.fixtureNote` saying the weather day was ignored: show it.
   - Always handle all three states. `components/AsyncView.tsx` does loading and error for you.
-- **City map.** The simulator's map has two views: the grid (default) and "City map"
+- **City map.** The simulator's map has two views: "City map" (the default) and the grid
   (`components/LeafletCityMap.tsx`, Leaflet bundled from npm and loaded lazily, OpenStreetMap tiles with
   their attribution). The 10 × 10 km grid is drawn as a square centred on the run's city (the weather day's
   city; Hyderabad for the slider day). Riders come from the frames; cooling points are read from the frames
   too (`lib/cityMap.ts`) and labelled "CP 1"–"CP 8" only. The result has no hubs, so none are drawn. The map
   always carries the "Illustration: …" label. If no tile loads within 4 s (or several fail), it switches back
-  to the grid and says why.
+  to the grid and says why. The viewer's Grid / City map choice is remembered in localStorage;
+  `?view=grid` or `?view=map` in the URL forces a view (handy for a demo).
 - **Look: use the tokens** in `src/theme.ts` through Tailwind classes (`bg-surface`, `text-ink-muted`,
   `p-md`, `gap-lg`, `rounded-lg`, `font-display`, …). Outcome colours: `bg-outcome-allow`,
   `bg-outcome-skip-order`, `bg-outcome-deny`, `bg-outcome-force-rest` (or `outcomeColors` from

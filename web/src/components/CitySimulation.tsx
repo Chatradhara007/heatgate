@@ -1,12 +1,36 @@
 // The abstract 10 x 10 km simulated city, animated from result.runs[policy].frames (first seed only).
-// Two views: the grid (default) and "City map", the same grid laid on a real city's OpenStreetMap tiles as an
-// illustration. Positions are km on a made-up grid in both (docs/api-guide.md §5); nothing is a real location.
+// Two views: "City map" (default), the grid laid on a real city's OpenStreetMap tiles as an illustration, and
+// the plain grid. Positions are km on a made-up grid in both (docs/api-guide.md §5); nothing is a real location.
+// Which view: ?view=grid|map (for the demo) > the viewer's last choice (localStorage) > City map.
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { PolicyVersion, RiderState, SimResult } from "@heatgate/contracts";
 import { POLICY_LABELS } from "@heatgate/contracts";
 import { CITY_CENTRES, cityFor, coolingPointsFrom } from "../lib/cityMap.ts";
 
 const LeafletCityMap = lazy(() => import("./LeafletCityMap.tsx"));
+
+type MapView = "grid" | "map";
+const VIEW_KEY = "heatgate.mapView";
+const isView = (v: string | null | undefined): v is MapView => v === "grid" || v === "map";
+
+// Storage can be missing or throw (private mode, blocked site data); then the choice just isn't remembered.
+function readStoredView(): MapView | undefined {
+  try {
+    const v = window.localStorage.getItem(VIEW_KEY);
+    return isView(v) ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function storeView(v: MapView) {
+  try {
+    window.localStorage.setItem(VIEW_KEY, v);
+  } catch {
+    // ignore: see readStoredView
+  }
+}
 
 const MAP_LABEL = "Illustration: simulated riders placed on a real city map. Positions and cooling points are not real locations.";
 
@@ -38,7 +62,29 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
   const [frameIndex, setFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
-  const [view, setView] = useState<"grid" | "map">("grid");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlView = searchParams.get("view");
+  const [view, setView] = useState<MapView>(() => (isView(urlView) ? urlView : (readStoredView() ?? "map")));
+  // A ?view= link (or the back button) forces that view.
+  useEffect(() => {
+    if (isView(urlView)) setView(urlView);
+  }, [urlView]);
+  // The viewer's own choice: remembered, and written over ?view= so a reload keeps it.
+  const chooseView = (v: MapView) => {
+    setMapProblem(undefined);
+    setView(v);
+    storeView(v);
+    if (isView(urlView) && urlView !== v) {
+      setSearchParams(
+        (p) => {
+          const next = new URLSearchParams(p);
+          next.set("view", v);
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  };
   const [mapProblem, setMapProblem] = useState<string | undefined>(undefined);
 
   const frames = sim?.runs[policy]?.frames ?? [];
@@ -65,6 +111,7 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
 
   const coolingPoints = useMemo(() => (sim ? coolingPointsFrom(sim) : []), [sim]);
   const city = sim ? cityFor(sim.params) : undefined;
+  const shown: MapView = view === "map" && city ? "map" : "grid"; // no city centre for this day: grid
 
   const frame = frames[frameIndex];
   if (!sim || !frame) {
@@ -89,7 +136,7 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
           Simulated city · {POLICY_LABELS[policy]}
         </h2>
         <p className="text-xs text-on-surface-variant">
-          {view === "map" && city
+          {shown === "map"
             ? `The simulator's abstract 10 × 10 km grid drawn over ${city} as an illustration. `
             : "Abstract 10 × 10 km grid, not a real map. "}
           {sim.params.riders} simulated riders; the map shows the first seed only. Resting riders sit at a cooling point
@@ -103,13 +150,10 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
                 key={v}
                 type="button"
                 role="radio"
-                aria-checked={view === v}
+                aria-checked={shown === v}
                 disabled={v === "map" && !city}
-                onClick={() => {
-                  setMapProblem(undefined);
-                  setView(v);
-                }}
-                className={`px-3 py-1 rounded text-xs font-bold disabled:opacity-40 ${view === v ? "bg-primary text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+                onClick={() => chooseView(v)}
+                className={`px-3 py-1 rounded text-xs font-bold disabled:opacity-40 ${shown === v ? "bg-primary text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}
               >
                 {v === "grid" ? "Grid" : "City map"}
               </button>
@@ -125,7 +169,7 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
       </div>
 
       <div className="relative w-full aspect-square max-h-[560px] mx-auto bg-[#EFEFEA] rounded-xl border border-outline-variant overflow-hidden">
-        {view === "map" && city ? (
+        {shown === "map" && city ? (
           <>
             <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-xs text-on-surface-variant">Loading the city map…</div>}>
               <LeafletCityMap
