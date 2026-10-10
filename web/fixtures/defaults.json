@@ -54,5 +54,14 @@
  "fairFeatures": {
   "heatFee": true,
   "shadeWaitCountsAsRest": false
+ },
+ "fairKnobs": {
+  "restHeatC": 38,
+  "workLimitMin": 100,
+  "rushHardLimitMin": 120,
+  "earlyRestMin": 70,
+  "shortTripHeatC": 41,
+  "shortTripMaxKm": 3,
+  "extremeHeatC": 46
  }
 }

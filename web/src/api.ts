@@ -8,12 +8,14 @@ import type {
   BreakEvenReport,
   DecideRequest,
   Decision,
+  FairKnobs,
   Outcome,
   PolicyVersion,
   SimParams,
   SimResult,
   SimulationJob,
   SimulationStatus,
+  WeatherSource,
 } from "@heatgate/contracts";
 
 export const API_URL: string = (import.meta.env.VITE_API_URL || "http://localhost:3001").replace(/\/+$/, "");
@@ -26,6 +28,31 @@ export const SIMULATION_TIMEOUT_MS = 120_000;
 export interface PolicyInfo {
   id: PolicyVersion;
   label: string;
+}
+
+// GET /health.
+export interface HealthStatus {
+  status: "ok";
+}
+
+// GET /defaults: SimParams plus the default heatgate-fair knobs (always present here, optional in SimParams).
+export type Defaults = SimParams & { fairKnobs: FairKnobs };
+
+// One plain-language line per heatgate-fair rule, in file order. Mirrors FairRuleSummary in engine/src/fairKnobs.ts.
+// NO_PENALTY is not a decision outcome: it marks the decline-without-penalty rule.
+export interface FairRuleSummary {
+  id: string;
+  outcome: Outcome | "NO_PENALTY";
+  summary: string;
+}
+
+// POST /policies/render: heatgate-fair rendered from knobs. Nothing is logged or run.
+export interface RenderedPolicy {
+  knobs: FairKnobs; // every knob, missing ones filled with their default
+  text: string; // the Cedar policy text
+  valid: boolean; // passes the Cedar schema check
+  errors: string[]; // why not, when valid is false
+  rules: FairRuleSummary[];
 }
 
 export interface AuditQuery {
@@ -48,6 +75,22 @@ export interface AuditPage {
 export function auditRowKey(d: Pick<Decision, "simulationId" | "decisionId">): string {
   return `${d.simulationId ?? ""}:${d.decisionId}`;
 }
+
+// GET /weather-days: one real hot day a simulation can replay. Mirrors WeatherDaySummary in sim/weather.ts
+// (copied here because the web app depends only on contracts). Peaks are the highest of the 24 hourly
+// values; the heat index is a proxy for outdoor heat stress, not a medical measure.
+export interface WeatherDaySummary {
+  id: string; // send as weather: { kind: "replay", weatherDayId: id } to POST /simulations
+  city: string;
+  date: string; // YYYY-MM-DD
+  peakTempC: number;
+  peakHeatIndexC: number;
+  source: string; // "Open-Meteo historical weather API"
+}
+
+// A SimResult as the web app gets it. fixtureNote is only set in fixture mode, when the fixture result
+// stands in for a run the fixtures cannot make (a weather day replay). Show it next to the result.
+export type WebSimResult = SimResult & { fixtureNote?: string };
 
 export interface SimulationAccepted {
   simulationId: string;
@@ -105,143 +148,129 @@ async function request<T>(method: "GET" | "POST", path: string, body?: unknown, 
 
 const fixtures = {
   policies: async () => (await import("../fixtures/policies.json")).default as PolicyInfo[],
-  defaults: async () => (await import("../fixtures/defaults.json")).default as unknown as SimParams,
+  defaults: async () => (await import("../fixtures/defaults.json")).default as unknown as Defaults,
+  renderPolicy: async () => (await import("../fixtures/renderPolicy.json")).default as unknown as RenderedPolicy,
   audit: async () => (await import("../fixtures/audit.json")).default as unknown as AuditPage,
+  decide: async () => (await import("../fixtures/decide.json")).default as unknown as AuditPage, // full POST /decide answers
   simResult: async () => (await import("../fixtures/simResult.json")).default as unknown as SimResult,
   breakEven: async () => (await import("../fixtures/breakEven.json")).default as unknown as BreakEvenReport,
+  weatherDays: async () => (await import("../fixtures/weatherDays.json")).default as WeatherDaySummary[],
 };
 
+// Fixture mode has one simulation result. A replay request gets that result under an id that remembers the
+// weather day ("<fixture id>-replay-<weatherDayId>"), so getSimulation can say the day was ignored.
+const FIXTURE_REPLAY = "-replay-";
+
+async function fixtureCreateSimulation(weather: WeatherSource | undefined): Promise<SimulationAccepted> {
+  const { simulationId } = await fixtures.simResult();
+  if (weather?.kind !== "replay") return { simulationId, status: "queued" };
+  const days = await fixtures.weatherDays();
+  if (!days.some((d) => d.id === weather.weatherDayId)) {
+    // The same answer the API gives for an unknown id.
+    throw new ApiRequestError(
+      `weather.weatherDayId: no weather day "${weather.weatherDayId}" (see GET /weather-days) (INVALID_REQUEST)`,
+      400,
+      "INVALID_REQUEST",
+    );
+  }
+  return { simulationId: simulationId + FIXTURE_REPLAY + weather.weatherDayId, status: "queued" };
+}
+
+async function fixtureSimulation(simulationId: string): Promise<SimulationJob & { result: WebSimResult }> {
+  const result: WebSimResult = { ...(await fixtures.simResult()), simulationId };
+  const at = simulationId.indexOf(FIXTURE_REPLAY);
+  if (at >= 0) {
+    const weatherDayId = simulationId.slice(at + FIXTURE_REPLAY.length);
+    result.fixtureNote =
+      `Fixture mode ignores the weather day: this is the fixture's slider-day result, not a replay of ${weatherDayId}. ` +
+      "Run against the live API to replay a real day.";
+  }
+  const now = new Date().toISOString();
+  return { simulationId, status: "done", createdAt: now, finishedAt: now, result };
+}
+
 async function fixtureDecision(req: DecideRequest): Promise<Decision> {
-  const { items } = await fixtures.audit();
+  const { items } = await fixtures.decide();
   const match = items.find((d) => d.policyVersion === req.policyVersion) ?? items[0];
   return { ...match, riderId: req.rider.id, orderId: req.order.id, policyVersion: req.policyVersion, simulationId: req.simulationId };
 }
 
-// State tracking for live connection health (consumed by Layout & UI indicators)
-export let isBackendConnected = false;
-let hasLoggedHybridNotice = false;
-
-function logHybridFallback(endpoint: string, err: unknown) {
-  if (!hasLoggedHybridNotice) {
-    console.info(
-      `[HeatGate Hybrid Mode] Backend at ${API_URL} is offline or unreachable (${(err as Error)?.message || err}). Seamlessly falling back to verified local fixtures.`
-    );
-    hasLoggedHybridNotice = true;
-  }
-}
+// ---- the API -----------------------------------------------------------------------------------
 
 // GET /policies: the four rule sets with their on-screen labels.
 export async function policies(signal?: AbortSignal): Promise<PolicyInfo[]> {
   if (USE_FIXTURES) return fixtures.policies();
-  try {
-    const res = await request<PolicyInfo[]>("GET", "/policies", undefined, signal);
-    isBackendConnected = true;
-    return res;
-  } catch (err) {
-    if (signal?.aborted) throw err;
-    isBackendConnected = false;
-    logHybridFallback("/policies", err);
-    return fixtures.policies();
-  }
+  return request("GET", "/policies", undefined, signal);
 }
 
-// GET /defaults: the default SimParams, a starting point for the Simulator sliders.
-export async function defaults(signal?: AbortSignal): Promise<SimParams> {
+// GET /health: { status: "ok" } when the API is up. Fixture mode answers ok without the network.
+export async function health(signal?: AbortSignal): Promise<HealthStatus> {
+  if (USE_FIXTURES) return { status: "ok" };
+  return request("GET", "/health", undefined, signal);
+}
+
+// GET /defaults: the default SimParams plus fairKnobs, the starting point for the Simulator sliders.
+export async function defaults(signal?: AbortSignal): Promise<Defaults> {
   if (USE_FIXTURES) return fixtures.defaults();
-  try {
-    const res = await request<SimParams>("GET", "/defaults", undefined, signal);
-    isBackendConnected = true;
-    return res;
-  } catch (err) {
-    if (signal?.aborted) throw err;
-    isBackendConnected = false;
-    logHybridFallback("/defaults", err);
-    return fixtures.defaults();
+  return request("GET", "/defaults", undefined, signal);
+}
+
+// POST /policies/render: the heatgate-fair rules for these knobs. Missing knobs take their default; the API
+// answers 400 INVALID_REQUEST for out-of-range or unknown knobs. Fixture mode has the default knobs only.
+export async function renderPolicy(knobs: Partial<FairKnobs> = {}, signal?: AbortSignal): Promise<RenderedPolicy> {
+  if (USE_FIXTURES) {
+    const rendered = await fixtures.renderPolicy();
+    const isDefault = Object.entries(knobs).every(([k, v]) => v === undefined || rendered.knobs[k as keyof FairKnobs] === v);
+    if (!isDefault) throw new ApiRequestError("Rule editing needs the live API: fixture mode only has the default knobs.");
+    return rendered;
   }
+  return request("POST", "/policies/render", { knobs }, signal);
 }
 
 // POST /decide: one decision. Logged to the audit log unless req.dryRun is true.
 export async function decide(req: DecideRequest, signal?: AbortSignal): Promise<Decision> {
   if (USE_FIXTURES) return fixtureDecision(req);
-  try {
-    const res = await request<Decision>("POST", "/decide", req, signal);
-    isBackendConnected = true;
-    return res;
-  } catch (err) {
-    if (signal?.aborted) throw err;
-    isBackendConnected = false;
-    logHybridFallback("/decide", err);
-    return fixtureDecision(req);
-  }
-}
-
-// Helper to filter fixture audit records by query
-async function getFilteredFixtureAudit(query: AuditQuery): Promise<AuditPage> {
-  const page = await fixtures.audit();
-  const items = page.items.filter(
-    (d) =>
-      (query.rider === undefined || d.riderId.toLowerCase() === query.rider.toLowerCase() || d.riderId.toLowerCase() === query.rider.replace("-", "").toLowerCase()) &&
-      (query.outcome === undefined || d.outcome === query.outcome) &&
-      (query.policy === undefined || d.policyVersion === query.policy) &&
-      (query.simulationId === undefined || d.simulationId === query.simulationId),
-  );
-  return { items: items.slice(0, query.limit ?? 50) };
+  return request("POST", "/decide", req, signal);
 }
 
 // GET /audit: logged decisions, newest first, one page at a time. query.simulationId narrows it to one run.
 export async function audit(query: AuditQuery = {}, signal?: AbortSignal): Promise<AuditPage> {
   if (USE_FIXTURES) {
-    return getFilteredFixtureAudit(query);
+    const page = await fixtures.audit();
+    const items = page.items.filter(
+      (d) =>
+        (query.rider === undefined || d.riderId === query.rider) &&
+        (query.outcome === undefined || d.outcome === query.outcome) &&
+        (query.policy === undefined || d.policyVersion === query.policy) &&
+        (query.simulationId === undefined || d.simulationId === query.simulationId),
+    );
+    return { items: items.slice(0, query.limit ?? 50) };
   }
-  try {
-    const qs = new URLSearchParams();
-    for (const [k, v] of Object.entries(query)) if (v !== undefined) qs.set(k, String(v));
-    const search = qs.toString();
-    const res = await request<AuditPage>("GET", search ? `/audit?${search}` : "/audit", undefined, signal);
-    isBackendConnected = true;
-    return res;
-  } catch (err) {
-    if (signal?.aborted) throw err;
-    isBackendConnected = false;
-    logHybridFallback("/audit", err);
-    return getFilteredFixtureAudit(query);
-  }
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(query)) if (v !== undefined) qs.set(k, String(v));
+  const search = qs.toString();
+  return request("GET", search ? `/audit?${search}` : "/audit", undefined, signal);
+}
+
+// GET /weather-days: the real hot days a simulation can replay (committed in sim/data/weather; nothing is fetched).
+export async function weatherDays(signal?: AbortSignal): Promise<WeatherDaySummary[]> {
+  if (USE_FIXTURES) return fixtures.weatherDays();
+  return request("GET", "/weather-days", undefined, signal);
 }
 
 // POST /simulations: starts a simulation. The API answers 202 with a simulationId.
+// params.weather is { kind: "slider" } (the default: peakTempC + humidityPct) or
+// { kind: "replay", weatherDayId } with an id from weatherDays(). An unknown id is a 400 INVALID_REQUEST.
+// Fixture mode returns the one fixture result for every request; for a replay, result.fixtureNote says so.
 export async function createSimulation(params: SimParams, signal?: AbortSignal): Promise<SimulationAccepted> {
-  if (USE_FIXTURES) return { simulationId: (await fixtures.simResult()).simulationId, status: "queued" };
-  try {
-    const res = await request<SimulationAccepted>("POST", "/simulations", params, signal);
-    isBackendConnected = true;
-    return res;
-  } catch (err) {
-    if (signal?.aborted) throw err;
-    isBackendConnected = false;
-    logHybridFallback("/simulations", err);
-    return { simulationId: (await fixtures.simResult()).simulationId, status: "queued" };
-  }
+  if (USE_FIXTURES) return fixtureCreateSimulation(params.weather);
+  return request("POST", "/simulations", params, signal);
 }
 
 // GET /simulations/:id: the job, with its result once status is "done".
-export async function getSimulation(simulationId: string, signal?: AbortSignal): Promise<SimulationJob> {
-  if (USE_FIXTURES) {
-    const result = await fixtures.simResult();
-    const now = new Date().toISOString();
-    return { simulationId, status: "done", createdAt: now, finishedAt: now, result: { ...result, simulationId } };
-  }
-  try {
-    const res = await request<SimulationJob>("GET", `/simulations/${encodeURIComponent(simulationId)}`, undefined, signal);
-    isBackendConnected = true;
-    return res;
-  } catch (err) {
-    if (signal?.aborted) throw err;
-    isBackendConnected = false;
-    logHybridFallback(`/simulations/${simulationId}`, err);
-    const result = await fixtures.simResult();
-    const now = new Date().toISOString();
-    return { simulationId, status: "done", createdAt: now, finishedAt: now, result: { ...result, simulationId } };
-  }
+export async function getSimulation(simulationId: string, signal?: AbortSignal): Promise<SimulationJob & { result?: WebSimResult }> {
+  if (USE_FIXTURES) return fixtureSimulation(simulationId);
+  return request("GET", `/simulations/${encodeURIComponent(simulationId)}`, undefined, signal);
 }
 
 // GET /break-even: the committed break-even rest pay sweep (sim/results/break-even.json), with stale = true
@@ -249,21 +278,11 @@ export async function getSimulation(simulationId: string, signal?: AbortSignal):
 // interview-pending economics. The API answers 404 NOT_FOUND if the file has not been generated.
 export async function breakEven(signal?: AbortSignal): Promise<BreakEvenReport> {
   if (USE_FIXTURES) {
-    const [report, params] = await Promise.all([fixtures.breakEven(), fixtures.defaults()]);
-    // Like the API: both fixtures come from defaultSimParams(), so the key order matches.
+    const [report, { fairKnobs: _, ...params }] = await Promise.all([fixtures.breakEven(), fixtures.defaults()]);
+    // Like the API: compare with defaultSimParams(), which has no fairKnobs. Both fixtures come from it, so the key order matches.
     return { ...report, stale: JSON.stringify(report.params) !== JSON.stringify(params) };
   }
-  try {
-    const res = await request<BreakEvenReport>("GET", "/break-even", undefined, signal);
-    isBackendConnected = true;
-    return res;
-  } catch (err) {
-    if (signal?.aborted) throw err;
-    isBackendConnected = false;
-    logHybridFallback("/break-even", err);
-    const [report, params] = await Promise.all([fixtures.breakEven(), fixtures.defaults()]);
-    return { ...report, stale: JSON.stringify(report.params) !== JSON.stringify(params) };
-  }
+  return request("GET", "/break-even", undefined, signal);
 }
 
 const sleep = (ms: number, signal?: AbortSignal) =>
@@ -280,7 +299,7 @@ const sleep = (ms: number, signal?: AbortSignal) =>
 export async function waitForSimulation(
   simulationId: string,
   opts: { signal?: AbortSignal; onStatus?: (job: SimulationJob) => void } = {},
-): Promise<SimResult> {
+): Promise<WebSimResult> {
   const deadline = Date.now() + SIMULATION_TIMEOUT_MS;
   for (;;) {
     const job = await getSimulation(simulationId, opts.signal);

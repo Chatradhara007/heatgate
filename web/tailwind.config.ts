@@ -34,7 +34,8 @@ export default {
         "metric-md": ["JetBrains Mono", "monospace"],
         "code-sm": ["JetBrains Mono", "monospace"],
       },
-      fontSize: fontSizes,
+      // Tailwind wants mutable tuples; the tokens are `as const`.
+      fontSize: fontSizes as unknown as Record<string, string | [string, Record<string, string>]>,
     },
   },
   plugins: [],

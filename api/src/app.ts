@@ -5,19 +5,23 @@ import { isDeepStrictEqual } from "node:util";
 import cors from "cors";
 import express, { type ErrorRequestHandler, type Request } from "express";
 import { POLICY_LABELS, type ApiError, type BreakEvenReport, type Decision } from "@heatgate/contracts";
-import { decide, newDecisionId } from "@heatgate/engine";
-import { defaultSimParams } from "@heatgate/sim";
-import { BadCursorError, type AuditFilter, type Store } from "../store/types.ts";
-import { SimulationQueue, workerRunner, type SimRunner } from "./simulations.ts";
-import { ApiFailure, OUTCOMES, POLICY_VERSIONS, decideRequest, riderId, simParams, simulationId } from "./validate.ts";
+import { DEFAULT_FAIR_KNOBS, checkPolicyText, decide, newDecisionId, policySchema, renderFairPolicy, summarizeFairPolicy } from "@heatgate/engine";
+import { WEATHER_DAYS, cityLayout, defaultSimParams, weatherDaySummary } from "@heatgate/sim";
+import { BadCursorError, MAX_ACTIVE_SIMULATIONS, SIMULATION_STALE_MS, type AuditFilter, type Store } from "../store/types.ts";
+import { SimulationQueue, workerRunner, type SimRunner, type SimulationSubmitter } from "./simulations.ts";
+import { ApiFailure, OUTCOMES, POLICY_VERSIONS, decideRequest, renderRequest, riderId, simParams, simulationId } from "./validate.ts";
 
 export interface AppOptions {
   store: Store;
   runSimulation?: SimRunner; // default: worker thread
+  simulations?: SimulationSubmitter; // default: an in-process SimulationQueue using runSimulation
   breakEvenPath?: string; // default: sim/results/break-even.json (npm run sim:breakeven)
 }
 
 export const BREAK_EVEN_FILE = fileURLToPath(new URL("../../sim/results/break-even.json", import.meta.url));
+
+// The demo city's 8 cooling points (sim/city.ts), the same ones the simulator sends resting riders to.
+const COOLING_POINTS = cityLayout().coolingPoints;
 
 const errorBody = (code: string, message: string): ApiError => ({ error: { code, message } });
 
@@ -28,9 +32,9 @@ function query(req: Request, name: string): string | undefined {
   return v;
 }
 
-export function createApp({ store, runSimulation = workerRunner, breakEvenPath = BREAK_EVEN_FILE }: AppOptions) {
+export function createApp({ store, runSimulation = workerRunner, simulations, breakEvenPath = BREAK_EVEN_FILE }: AppOptions) {
   const app = express();
-  const simulations = new SimulationQueue(store, runSimulation);
+  const jobs = simulations ?? new SimulationQueue(store, runSimulation);
 
   app.use(cors());
   app.use(express.json({ limit: "100kb" }));
@@ -43,8 +47,24 @@ export function createApp({ store, runSimulation = workerRunner, breakEvenPath =
     res.json(POLICY_VERSIONS.map((id) => ({ id, label: POLICY_LABELS[id] })));
   });
 
+  // The real hot days a simulation can replay (sim/data/weather, committed; nothing is fetched).
+  // Send an id as weather: { kind: "replay", weatherDayId } to POST /simulations.
+  app.get("/weather-days", (_req, res) => {
+    res.json(WEATHER_DAYS.map(weatherDaySummary));
+  });
+
+  // Default SimParams plus the default heatgate-fair knobs, so the sandbox sliders start at the right values.
+  // Sending these knobs back gives the same result as sending none.
   app.get("/defaults", (_req, res) => {
-    res.json(defaultSimParams());
+    res.json({ ...defaultSimParams(), fairKnobs: DEFAULT_FAIR_KNOBS });
+  });
+
+  // heatgate-fair rendered from number knobs, checked against the schema. Nothing is logged or run.
+  app.post("/policies/render", (req, res) => {
+    const knobs = renderRequest(req.body);
+    const text = renderFairPolicy(knobs);
+    const errors = checkPolicyText(text, policySchema);
+    res.json({ knobs, text, valid: errors.length === 0, errors, rules: summarizeFairPolicy(knobs) });
   });
 
   // The committed break-even sweep. All rupee amounts are placeholders from interview-pending economics.
@@ -72,7 +92,9 @@ export function createApp({ store, runSimulation = workerRunner, breakEvenPath =
 
   app.post("/decide", async (req, res) => {
     const request = decideRequest(req.body);
-    const decision: Decision = decide(request, request.policyVersion);
+    // The rider's position (request.rider.x, y) picks the nearest cooling point for a FORCE_REST. The response
+    // carries it; the audit log does not (the store writes auditRecord(decision)).
+    const decision: Decision = decide(request, request.policyVersion, new Date(), undefined, COOLING_POINTS);
     // dryRun = true means do not write to the audit log (contracts/types.ts).
     if (!request.dryRun) await store.putDecision(decision);
     res.json(decision);
@@ -80,7 +102,18 @@ export function createApp({ store, runSimulation = workerRunner, breakEvenPath =
 
   app.post("/simulations", async (req, res) => {
     const params = simParams(req.body);
-    const job = await simulations.submit(`sim-${newDecisionId(new Date())}`, params);
+    // Knobs are range-checked already; still never queue a run whose rendered rules fail the schema.
+    if (params.fairKnobs) {
+      const errors = checkPolicyText(renderFairPolicy(params.fairKnobs), policySchema);
+      if (errors.length > 0) throw new ApiFailure(400, "INVALID_POLICY", `fairKnobs give rules that fail the schema check: ${errors.join("; ")}`);
+    }
+    // A cheap guard against runaway cost in the cloud (each job is its own Lambda run). Not atomic: two
+    // requests at the same moment can both pass.
+    const active = await store.countActiveSimulations(new Date(Date.now() - SIMULATION_STALE_MS));
+    if (active >= MAX_ACTIVE_SIMULATIONS) {
+      throw new ApiFailure(429, "TOO_MANY_RUNNING", `${active} simulations are already queued or running; try again when one has finished`);
+    }
+    const job = await jobs.submit(`sim-${newDecisionId(new Date())}`, params);
     res.status(202).json({ simulationId: job.simulationId, status: job.status });
   });
 

@@ -1,313 +1,181 @@
-import React from "react";
-import type { SimParams } from "@heatgate/contracts";
+// HeatGate Fair sandbox: the rendered rules (POST /policies/render) and the three knob sliders (api-guide §4).
+import { useEffect, useState } from "react";
+import type { FairKnobs, SimParams } from "@heatgate/contracts";
+import { useRenderPolicy } from "../hooks/index.ts";
+import type { FairRuleSummary } from "../hooks/index.ts";
 
 interface BottomCardsProps {
   params: SimParams;
   setParams: (p: SimParams) => void;
   runSimulation?: () => void;
+  running?: boolean;
 }
 
-export function BottomCards({ params, setParams, runSimulation }: BottomCardsProps) {
-  const fairKnobs = params.fairKnobs || {
-    restHeatC: 38,
-    workLimitMin: 100,
-    rushHardLimitMin: 120,
-    earlyRestMin: 70,
-    shortTripHeatC: 41,
-    shortTripMaxKm: 3,
-    extremeHeatC: 46
-  };
+// The API's allowed ranges (contracts/types.ts FairKnobs, docs/api-guide.md §4). Only these three are on screen.
+const SLIDERS: { key: keyof FairKnobs; label: string; unit: string; min: number; max: number; mark?: { at: number; label: string } }[] = [
+  { key: "restHeatC", label: "Rest heat index threshold", unit: "°C", min: 32, max: 46 },
+  { key: "workLimitMin", label: "Work limit before a paid break", unit: "min", min: 60, max: 120, mark: { at: 90, label: "NDMA 90" } },
+  { key: "rushHardLimitMin", label: "Rush-hour hard limit", unit: "min", min: 90, max: 150, mark: { at: 120, label: "Union 120" } },
+];
 
-  const updateKnob = (key: keyof typeof fairKnobs, val: number) => {
-    setParams({
-      ...params,
-      fairKnobs: {
-        ...fairKnobs,
-        [key]: val
-      }
-    });
-  };
+const RENDER_DEBOUNCE_MS = 300;
+
+// Keeps the cross-rules so the user cannot build a set the API refuses:
+// rushHardLimitMin >= workLimitMin, and earlyRestMin < workLimitMin.
+function withKnob(knobs: FairKnobs, key: keyof FairKnobs, value: number): FairKnobs {
+  const next = { ...knobs, [key]: value };
+  if (key === "workLimitMin") {
+    next.workLimitMin = Math.max(value, knobs.earlyRestMin + 1);
+    if (next.rushHardLimitMin < next.workLimitMin) next.rushHardLimitMin = next.workLimitMin;
+  }
+  if (key === "rushHardLimitMin") next.rushHardLimitMin = Math.max(value, knobs.workLimitMin);
+  return next;
+}
+
+const BADGE: Record<FairRuleSummary["outcome"], string> = {
+  ALLOW: "bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]",
+  SKIP_ORDER: "bg-[#F3F4F6] text-[#374151] border-[#E5E7EB]",
+  DENY: "bg-[#FEE2E2] text-[#991B1B] border-[#FECACA]",
+  FORCE_REST: "bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]",
+  NO_PENALTY: "bg-[#ECFDF5] text-[#065F46] border-[#A7F3D0]",
+};
+
+const titleStyle = { fontFamily: '"Bebas Neue", sans-serif', letterSpacing: "0.04em", fontSize: "22px" };
+
+export function BottomCards({ params, setParams, runSimulation, running }: BottomCardsProps) {
+  const knobs = params.fairKnobs;
+  const render = useRenderPolicy();
+  const { run: renderRun } = render;
+  const [showCedar, setShowCedar] = useState(false);
+
+  const knobsKey = JSON.stringify(knobs ?? {});
+  useEffect(() => {
+    if (!knobs) return;
+    const t = setTimeout(() => renderRun(knobs), RENDER_DEBOUNCE_MS);
+    return () => clearTimeout(t);
+    // knobsKey stands in for knobs, which is a new object on every params change.
+  }, [knobsKey, renderRun]);
+
+  const rendered = render.data;
+  const blocked = !knobs || !!render.error || (rendered !== undefined && !rendered.valid);
 
   return (
-    <div className="w-full">
-      {/* ROW 4: THREE CARDS SIDE BY SIDE (Equal 3-Column Split) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-stretch">
-        
-        {/* CARD A: Heat Sweep Line Chart (Expanded & Highly Legible) */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 lg:p-5 shadow-xs flex flex-col justify-between gap-3">
-          <div>
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <h3 className="font-headline-md font-bold text-on-surface" style={{ fontFamily: '"Bebas Neue", sans-serif', letterSpacing: "0.04em", fontSize: "22px" }}>
-                Heat Sweep: Exposure vs Ambient Peak
-              </h3>
-            </div>
-
-            {/* View Toggle */}
-            <div className="flex items-center border border-outline-variant rounded-lg p-0.5 bg-surface-container mb-2 text-xs font-semibold shadow-xs">
-              <button className="flex-1 py-1 rounded-md bg-surface-container-lowest text-primary font-bold shadow-xs text-xs" type="button">
-                Unsafe exposure (hours)
-              </button>
-              <button className="flex-1 py-1 rounded-md text-on-surface-variant hover:text-on-surface text-xs" type="button">
-                Earnings vs exposure
-              </button>
-            </div>
-
-            {/* Quick Summary Legend Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] mb-2 px-1 text-on-surface-variant">
-              <span className="flex items-center gap-1 font-bold text-[#1F2937]">
-                <span className="w-2.5 h-0.5 bg-[#1F2937] inline-block"></span> Voluntary (118h)
-              </span>
-              <span className="flex items-center gap-1 font-medium text-[#4B5563]">
-                <span className="w-2.5 h-0.5 border-t border-dashed border-[#4B5563] inline-block"></span> Union (72h)
-              </span>
-              <span className="flex items-center gap-1 font-medium text-[#6B7280]">
-                <span className="w-2.5 h-0.5 border-t border-dotted border-[#6B7280] inline-block"></span> NDMA (64h)
-              </span>
-              <span className="flex items-center gap-1 font-bold text-primary">
-                <span className="w-2.5 h-1 bg-primary rounded-full inline-block"></span> HeatGate (32h)
-              </span>
-            </div>
-
-            {/* SVG Line Chart: 34°C to 46°C vs 0-120 rider-hours */}
-            <div className="w-full h-[250px] bg-[#FAF9F5] rounded-xl border border-outline-variant/70 p-2 shadow-inner">
-              <svg className="w-full h-full" viewBox="0 0 450 240" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="heatgate-glow" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#005C55" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="#005C55" stopOpacity="0.02" />
-                  </linearGradient>
-                </defs>
-
-                {/* Y-Axis Label */}
-                <text x="50" y="16" fill="#6E7977" fontFamily="'Inter', sans-serif" fontSize="10" fontWeight="700" textAnchor="end">
-                  HOURS
-                </text>
-
-                {/* Horizontal Grid lines */}
-                <g stroke="#E2E0D8" strokeWidth="1">
-                  <line x1="56" x2="330" y1="28" y2="28" />
-                  <line x1="56" x2="330" y1="70" y2="70" />
-                  <line x1="56" x2="330" y1="112" y2="112" />
-                  <line x1="56" x2="330" y1="154" y2="154" />
-                  <line stroke="#8F928F" strokeWidth="1.5" x1="56" x2="330" y1="195" y2="195" />
-                </g>
-
-                {/* Y-Axis Labels */}
-                <g fill="#4B5563" fontFamily="'JetBrains Mono', monospace" fontSize="11" fontWeight="600" textAnchor="end">
-                  <text x="48" y="32">120h</text>
-                  <text x="48" y="74">80h</text>
-                  <text x="48" y="116">40h</text>
-                  <text x="48" y="158">10h</text>
-                  <text x="48" y="198">0h</text>
-                </g>
-
-                {/* Vertical subtle tick lines at each temperature */}
-                <g stroke="#E8E6DF" strokeWidth="1" strokeDasharray="2 2">
-                  <line x1="65" x2="65" y1="28" y2="195" />
-                  <line x1="130" x2="130" y1="28" y2="195" />
-                  <line x1="195" x2="195" y1="28" y2="195" />
-                  <line x1="260" x2="260" y1="28" y2="195" />
-                  <line x1="325" x2="325" y1="28" y2="195" />
-                </g>
-
-                {/* X-Axis Labels */}
-                <g fill="#1F2937" fontFamily="'JetBrains Mono', monospace" fontSize="11" fontWeight="700" textAnchor="middle">
-                  <text x="65" y="212">34°C</text>
-                  <text x="130" y="212">38°C</text>
-                  <text x="195" y="212">41°C</text>
-                  <text x="260" y="212">44°C</text>
-                  <text x="325" y="212">46°C</text>
-                </g>
-                <text x="195" y="230" fill="#6E7977" fontFamily="'Inter', sans-serif" fontSize="10" fontWeight="600" textAnchor="middle">
-                  Peak Ambient Temperature (°C)
-                </text>
-
-                {/* AREA FILL UNDER HEATGATE FAIR */}
-                <path d="M 65 192 Q 185 186 260 172 T 325 156 L 325 195 L 65 195 Z" fill="url(#heatgate-glow)" />
-
-                {/* 1. Voluntary Baseline (Solid Dark Charcoal) */}
-                <path d="M 65 190 Q 155 175 225 100 T 325 32" fill="none" stroke="#1F2937" strokeLinecap="round" strokeWidth="2.5" />
-                <circle cx="325" cy="32" fill="#1F2937" r="3.5" />
-
-                {/* 2. Union IFAT (Dotted Dark Grey) */}
-                <path d="M 65 190 Q 165 180 245 125 T 325 78" fill="none" stroke="#4B5563" strokeDasharray="3 3" strokeWidth="2" />
-                <circle cx="325" cy="78" fill="#4B5563" r="3" />
-
-                {/* 3. NDMA Advisory (Dashed Slate) */}
-                <path d="M 65 190 Q 175 182 250 135 T 325 96" fill="none" stroke="#6B7280" strokeDasharray="6 3" strokeWidth="2" />
-                <circle cx="325" cy="96" fill="#6B7280" r="3" />
-
-                {/* 4. HeatGate Fair: Thick Solid Deep Teal with Glow */}
-                <path d="M 65 190 Q 185 186 260 172 T 325 156" fill="none" stroke="#005C55" strokeLinecap="round" strokeWidth="3.5" />
-                <circle cx="325" cy="156" fill="#005C55" r="4.5" stroke="#FFFFFF" strokeWidth="1.5" />
-
-                {/* DEDICATED CALLOUT LABELS ON THE RIGHT (Spacious, No Overlap) */}
-                <g fontFamily="'Inter', sans-serif" fontSize="11" fontWeight="700">
-                  {/* Voluntary Callout */}
-                  <line x1="327" x2="338" y1="32" y2="32" stroke="#1F2937" strokeWidth="1" />
-                  <text fill="#1F2937" x="342" y="36">Voluntary (118h)</text>
-
-                  {/* Union Callout */}
-                  <line x1="327" x2="338" y1="78" y2="78" stroke="#4B5563" strokeWidth="1" />
-                  <text fill="#4B5563" x="342" y="82">Union (72h)</text>
-
-                  {/* NDMA Callout */}
-                  <line x1="327" x2="338" y1="96" y2="96" stroke="#6B7280" strokeWidth="1" />
-                  <text fill="#6B7280" x="342" y="100">NDMA (64h)</text>
-
-                  {/* HeatGate Callout with Teal Badge */}
-                  <line x1="329" x2="338" y1="156" y2="156" stroke="#005C55" strokeWidth="1.5" />
-                  <text fill="#005C55" fontSize="12" fontWeight="800" x="342" y="159">HeatGate (32h)</text>
-                  <text fill="#0F766E" fontSize="9" fontWeight="700" x="342" y="172">🛡️ 73% safer cap</text>
-                </g>
-              </svg>
-            </div>
-          </div>
-
-          {/* Key Insight Box */}
-          <div className="p-2.5 rounded-xl bg-primary/5 border border-primary/20 text-xs text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px] text-primary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>
-              verified
-            </span>
-            <p className="text-[11px] leading-tight text-on-surface">
-              <strong>HeatGate Fair</strong> holds cumulative unsafe rider hours under <strong>35h</strong> across severe heat spikes above 44°C.
-            </p>
-          </div>
-        </div>
-
-        {/* CARD B: Cedar Policy Viewer */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 lg:p-5 shadow-xs flex flex-col justify-between gap-3">
-          <div>
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <h3 className="font-headline-md font-bold text-on-surface" style={{ fontFamily: '"Bebas Neue", sans-serif', letterSpacing: "0.04em", fontSize: "22px" }}>
-                Rule Source (Cedar Policy)
-              </h3>
-            </div>
-            {/* Policy Tabs */}
-            <div className="flex items-center border border-outline-variant rounded-lg p-0.5 bg-surface-container mb-2 text-xs font-semibold shadow-xs">
-              <button className="flex-1 py-1 rounded-md bg-surface-container-lowest text-primary font-bold shadow-xs text-xs" type="button">HeatGate Fair</button>
-              <button className="flex-1 py-1 rounded-md text-on-surface-variant hover:text-on-surface text-xs" type="button">NDMA Advisory</button>
-              <button className="flex-1 py-1 rounded-md text-on-surface-variant hover:text-on-surface text-xs" type="button">Union IFAT</button>
-            </div>
-            {/* Syntax Highlighted Cedar Code Snippet */}
-            <div className="bg-[#FAF9F5] p-3 rounded-xl border border-outline-variant/70 font-mono text-xs leading-relaxed text-[#1B1F23] h-[250px] overflow-y-auto shadow-inner">
-              <div className="text-[#6E7977]">// HeatGate Core Safety Ruleset v2.1</div>
-              <div className="mt-1 text-[#6E7977]">@id("baseline-permit")</div>
-              <div>permit(principal, action == Action::"Dispatch", resource);</div>
-              <div className="my-2 p-2 bg-[#E6F4F1] rounded-lg border-l-4 border-primary">
-                <span className="text-primary font-bold">@id("fair-rest-due")</span><br />
-                <span className="text-[#A15600] font-semibold">@outcome("FORCE_REST")</span><br />
-                <span className="text-on-surface-variant font-medium text-[11px]">@message("Mandatory heat rest cycle triggered")</span><br />
-                <span className="text-primary font-bold mt-1 inline-block">forbid(principal, action == Action::"Dispatch", resource)</span><br />
-                <span className="text-[#1B1F23] font-semibold">when {"{"}</span>
-                <div className="pl-3 text-on-surface font-semibold">
-                  context.heat_index &gt;= {fairKnobs.restHeatC} &amp;&amp;<br />
-                  context.active_stint_min &gt;= {fairKnobs.workLimitMin}
-                </div>
-                <div className="text-[#1B1F23] font-semibold">{"};"}</div>
-              </div>
-              <div className="text-[#6E7977]">@id("peak-halt-override")</div>
-              <div>forbid(principal, action, resource) when {"{ context.heat_index >= 48 }"};</div>
-            </div>
-          </div>
-          <div className="flex items-center justify-between text-xs text-on-surface-variant pt-2 border-t border-outline-variant/60">
-            <span className="font-mono text-[11px]">Status: Validated AST</span>
-            <span className="font-mono text-primary font-bold text-[11px]">Verified Deterministic</span>
-          </div>
-        </div>
-
-        {/* CARD C: Rules Sliders Interactive Sandbox */}
-        <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 lg:p-5 shadow-xs flex flex-col justify-between gap-3">
-          <div>
-            <div className="mb-2">
-              <h3 className="font-headline-md font-bold text-on-surface" style={{ fontFamily: '"Bebas Neue", sans-serif', letterSpacing: "0.04em", fontSize: "22px" }}>
-                Parameter Tuning
-              </h3>
-              <p className="font-body-sm text-xs text-on-surface-variant">Judges can change the rules and re-run.</p>
-            </div>
-            <div className="flex flex-col gap-3.5 mt-2">
-              
-              {/* Slider 1: Rest heat index */}
-              <div className="flex flex-col gap-1 bg-[#FAF9F5] p-2.5 rounded-xl border border-outline-variant/60">
-                <div className="flex justify-between items-center text-xs font-semibold text-on-surface">
-                  <span>Rest heat index threshold</span>
-                  <span className="font-mono text-xs text-primary font-bold bg-[#E6F4F1] border border-primary/20 px-2 py-0.5 rounded">
-                    {fairKnobs.restHeatC}°C
-                  </span>
-                </div>
-                <input 
-                  className="accent-primary w-full h-2 bg-surface-container rounded-lg cursor-pointer mt-1" 
-                  max="44" min="32" 
-                  type="range" 
-                  value={fairKnobs.restHeatC}
-                  onChange={(e) => updateKnob("restHeatC", parseInt(e.target.value))}
-                />
-                <div className="flex justify-between text-[10px] font-mono text-on-surface-variant">
-                  <span>32°C</span>
-                  <span>38°C</span>
-                  <span>44°C</span>
-                </div>
-              </div>
-              
-              {/* Slider 2: Work limit before rest */}
-              <div className="flex flex-col gap-1 bg-[#FAF9F5] p-2.5 rounded-xl border border-outline-variant/60">
-                <div className="flex justify-between items-center text-xs font-semibold text-on-surface">
-                  <span>Work limit before rest</span>
-                  <span className="font-mono text-xs text-primary font-bold bg-[#E6F4F1] border border-primary/20 px-2 py-0.5 rounded">
-                    {fairKnobs.workLimitMin} min
-                  </span>
-                </div>
-                <input 
-                  className="accent-primary w-full h-2 bg-surface-container rounded-lg cursor-pointer mt-1" 
-                  max="150" min="60" 
-                  type="range" 
-                  value={fairKnobs.workLimitMin}
-                  onChange={(e) => updateKnob("workLimitMin", parseInt(e.target.value))}
-                />
-                <div className="flex justify-between text-[10px] font-mono text-on-surface-variant">
-                  <span>60 min</span>
-                  <span className="text-primary font-bold">▲ 90 min (NDMA)</span>
-                  <span>150 min</span>
-                </div>
-              </div>
-              
-              {/* Slider 3: Rush hard limit */}
-              <div className="flex flex-col gap-1 bg-[#FAF9F5] p-2.5 rounded-xl border border-outline-variant/60">
-                <div className="flex justify-between items-center text-xs font-semibold text-on-surface">
-                  <span>Rush hard limit</span>
-                  <span className="font-mono text-xs text-primary font-bold bg-[#E6F4F1] border border-primary/20 px-2 py-0.5 rounded">
-                    {fairKnobs.rushHardLimitMin} min
-                  </span>
-                </div>
-                <input 
-                  className="accent-primary w-full h-2 bg-surface-container rounded-lg cursor-pointer mt-1" 
-                  max="180" min="80" 
-                  type="range" 
-                  value={fairKnobs.rushHardLimitMin}
-                  onChange={(e) => updateKnob("rushHardLimitMin", parseInt(e.target.value))}
-                />
-                <div className="flex justify-between text-[10px] font-mono text-on-surface-variant">
-                  <span>80 min</span>
-                  <span className="text-on-surface font-bold">▲ 120 min (Union)</span>
-                  <span>180 min</span>
-                </div>
-              </div>
-
-            </div>
-          </div>
-          
-          {/* Action Button */}
-          {runSimulation && (
-            <button 
-              onClick={runSimulation}
-              className="w-full mt-2 h-11 min-h-[44px] px-5 rounded-xl bg-primary hover:bg-[#0B4F4A] text-on-primary text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 active:scale-[0.99]" 
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
+      {/* Rendered rules */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 lg:p-5 shadow-xs flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-bold text-on-surface" style={titleStyle}>
+            HeatGate Fair rules, as set below
+          </h3>
+          {rendered && (
+            <button
               type="button"
+              onClick={() => setShowCedar(!showCedar)}
+              aria-pressed={showCedar}
+              className="text-xs font-bold text-primary border border-outline-variant rounded-lg px-2.5 py-1 hover:bg-surface-container"
             >
-              <span className="material-symbols-outlined text-[18px]">refresh</span>
-              <span>Run Simulation</span>
+              {showCedar ? "Show plain rules" : "Show the Cedar code"}
             </button>
           )}
         </div>
+        {render.error ? (
+          <p role="alert" className="text-xs font-bold text-error border border-error/30 bg-error/10 rounded-lg p-2.5">
+            Could not render the rules: {render.error.message}
+          </p>
+        ) : !rendered ? (
+          <p className="text-xs text-on-surface-variant">{render.loading ? "Rendering the rules…" : "No rules rendered yet."}</p>
+        ) : showCedar ? (
+          <pre className="bg-[#FAF9F5] p-3 rounded-xl border border-outline-variant/70 font-mono text-[12px] leading-relaxed text-[#1B1F23] max-h-[340px] overflow-auto whitespace-pre">
+            {rendered.text}
+          </pre>
+        ) : (
+          <ol className="flex flex-col gap-2 max-h-[340px] overflow-auto">
+            {rendered.rules.map((r) => (
+              <li key={r.id} className="flex items-start gap-2 text-xs text-on-surface">
+                <span className={`shrink-0 px-1.5 py-0.5 rounded border text-[10px] font-bold ${BADGE[r.outcome]}`}>{r.outcome}</span>
+                <span>
+                  {r.summary} <span className="font-mono text-[10px] text-on-surface-variant">({r.id})</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+        {rendered && !rendered.valid && (
+          <ul role="alert" className="text-xs text-error list-disc pl-4">
+            {rendered.errors.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
+          </ul>
+        )}
+        <p className="text-[11px] text-on-surface-variant">
+          Only HeatGate Fair changes with the knobs. NDMA and union rules copy the published documents and never change.
+        </p>
+      </div>
+
+      {/* Knobs */}
+      <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 lg:p-5 shadow-xs flex flex-col justify-between gap-3">
+        <div>
+          <h3 className="font-bold text-on-surface" style={titleStyle}>
+            Change the numbers in the rules
+          </h3>
+          {!knobs ? (
+            <p role="alert" className="mt-2 text-xs text-error">
+              The API's defaults have no rule knobs (fairKnobs), so the sliders are off.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-3.5 mt-3">
+              {SLIDERS.map((s) => {
+                const value = knobs[s.key];
+                return (
+                  <label key={s.key} className="flex flex-col gap-1 bg-[#FAF9F5] p-2.5 rounded-xl border border-outline-variant/60">
+                    <span className="flex justify-between items-center text-xs font-semibold text-on-surface">
+                      <span>{s.label}</span>
+                      <span className="font-mono text-xs text-primary font-bold">
+                        {value} {s.unit}
+                      </span>
+                    </span>
+                    <input
+                      className="accent-primary w-full mt-1"
+                      type="range"
+                      min={s.min}
+                      max={s.max}
+                      step={1}
+                      value={value}
+                      onChange={(e) => setParams({ ...params, fairKnobs: withKnob(knobs, s.key, Number(e.target.value)) })}
+                    />
+                    <span className="relative h-4 text-[10px] font-mono text-on-surface-variant">
+                      <span className="absolute left-0">
+                        {s.min} {s.unit}
+                      </span>
+                      {s.mark && (
+                        <span
+                          className="absolute -translate-x-1/2 font-bold text-on-surface"
+                          style={{ left: `${((s.mark.at - s.min) / (s.max - s.min)) * 100}%` }}
+                        >
+                          ▲ {s.mark.label}
+                        </span>
+                      )}
+                      <span className="absolute right-0">
+                        {s.max} {s.unit}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        {runSimulation && (
+          <button
+            onClick={runSimulation}
+            disabled={blocked || running}
+            className="w-full mt-2 h-11 px-5 rounded-xl bg-primary hover:bg-[#0B4F4A] text-on-primary text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[18px]">refresh</span>
+            <span>{running ? "Running…" : "Run Simulation"}</span>
+          </button>
+        )}
       </div>
     </div>
   );

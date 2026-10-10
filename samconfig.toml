@@ -1,0 +1,13 @@
+# AWS SAM CLI settings. No credentials here: sam uses your local AWS profile.
+version = 0.1
+
+[default.global.parameters]
+stack_name = "heatgate"
+region = "ap-south-1"
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+resolve_s3 = true
+confirm_changeset = true
+s3_prefix = "heatgate"
+image_repositories = []

@@ -1,15 +1,25 @@
 import * as cedar from "@cedar-policy/cedar-wasm/nodejs";
-import type { DecideRequest, Decision, Outcome, PolicyVersion } from "@heatgate/contracts";
+import type { DecideRequest, Decision, FairKnobs, Outcome, PolicyVersion } from "@heatgate/contracts";
 import { heatIndexC } from "./heatIndex.ts";
 import { newDecisionId } from "./ids.ts";
-import { POLICY_SETS, SCHEMA_NAME } from "./policies.ts";
+import { ALLOW_MESSAGE, ALLOW_MESSAGE_KEY, messagesFor, nearestCoolingPoint, type NamedPoint } from "./messages.ts";
+import { POLICY_SETS, SCHEMA_NAME, fairPolicySet } from "./policies.ts";
 
 const STRENGTH: Record<Outcome, number> = { ALLOW: 0, SKIP_ORDER: 1, DENY: 2, FORCE_REST: 3 };
 const DEFAULT_REST_MINUTES = 20;
 
-export function decide(request: DecideRequest, policy: PolicyVersion, now: Date = new Date()): Decision {
+// fairKnobs: render heatgate-fair from these numbers instead of the committed file. Ignored for the
+// other three rule sets.
+// coolingPoints: the city's cooling points; a FORCE_REST then names the nearest one (Decision.coolingPoint).
+export function decide(
+  request: DecideRequest,
+  policy: PolicyVersion,
+  now: Date = new Date(),
+  fairKnobs?: FairKnobs,
+  coolingPoints?: readonly NamedPoint[],
+): Decision {
   const { tempC, humidityPct } = request.conditions;
-  return decideWithHeatIndex(request, policy, heatIndexC(tempC, humidityPct), now);
+  return decideWithHeatIndex(request, policy, heatIndexC(tempC, humidityPct), now, fairKnobs, coolingPoints);
 }
 
 // Same as decide(), but takes the heat index directly (the golden tests use this).
@@ -18,8 +28,12 @@ export function decideWithHeatIndex(
   policy: PolicyVersion,
   heatIndex: number,
   now: Date = new Date(),
+  fairKnobs?: FairKnobs,
+  coolingPoints?: readonly NamedPoint[],
 ): Decision {
-  const set = POLICY_SETS[policy];
+  const rendered = policy === "heatgate-fair" && fairKnobs ? fairPolicySet(fairKnobs) : undefined;
+  const set = rendered?.set ?? POLICY_SETS[policy];
+  const policySetId = rendered?.id ?? policy;
   // Cedar only has whole numbers (Long).
   const context = {
     heatIndexC: Math.round(heatIndex),
@@ -47,7 +61,7 @@ export function decideWithHeatIndex(
       context,
       preparsedSchemaName: SCHEMA_NAME,
       validateRequest: true,
-      preparsedPolicySetId: policy,
+      preparsedPolicySetId: policySetId,
       entities,
     });
     if (answer.type === "failure") throw new Error(`Cedar: ${answer.errors.map((e) => e.message).join("; ")}`);
@@ -60,8 +74,8 @@ export function decideWithHeatIndex(
   const assign = check("AssignOrder");
   let outcome: Outcome = "ALLOW";
   let firedRules: string[] = [];
-  let message = "Order assigned.";
-  let messages: Decision["messages"];
+  let message = ALLOW_MESSAGE;
+  let messages = messagesFor(ALLOW_MESSAGE_KEY, ALLOW_MESSAGE);
   let restMinutes = 0;
 
   if (assign.decision === "deny") {
@@ -76,13 +90,7 @@ export function decideWithHeatIndex(
     outcome = a.outcome as Outcome;
     firedRules = [winner.id, ...fired.filter((r) => r !== winner).map((r) => r.id)];
     message = a.message;
-    if (a.messageHi || a.messageTe || a.messageUr) {
-      messages = {
-        ...(a.messageHi && { hi: a.messageHi }),
-        ...(a.messageTe && { te: a.messageTe }),
-        ...(a.messageUr && { ur: a.messageUr }),
-      };
-    }
+    messages = messagesFor(winner.id, a.message, a);
     if (outcome === "FORCE_REST") {
       restMinutes = winner.id.endsWith("-rest-in-progress")
         ? context.restMinutesRemaining
@@ -91,6 +99,8 @@ export function decideWithHeatIndex(
   }
 
   const penaltyWaived = outcome !== "ALLOW" || check("DeclineWithoutPenalty").decision === "allow";
+  // Where to rest. Worked out after the outcome, from the rider's position, and never stored in the audit log.
+  const coolingPoint = outcome === "FORCE_REST" && coolingPoints ? nearestCoolingPoint(request.rider, coolingPoints) : undefined;
 
   return {
     decisionId: newDecisionId(now),
@@ -106,6 +116,7 @@ export function decideWithHeatIndex(
     firedRules,
     message,
     ...(messages && { messages }),
+    ...(coolingPoint && { coolingPoint }),
     cedarContext: { ...context, distanceKm },
   };
 }

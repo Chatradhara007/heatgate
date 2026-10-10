@@ -48,5 +48,21 @@ Rider supply is an assumption: half the riders log in 08:00–09:00 and half 15:
 the second wave cut off at the end of the day), tuned with ordersPerHour = 34 so the 34 °C no-rules
 demand mix is about 20 / 50 / 30 quiet / normal / rush. It is not measured; replace it with real login
 data when we have it. Break-even rest pay depends on it: with the earlier pattern (logins spread evenly
-over 08:00–13:00, 50 orders an hour) the break-even was ₹0.57/min for union-demand and ₹0.68/min for
-HeatGate Fair, against ₹0.86 and ₹1.00 now.
+over 08:00–13:00, 50 orders an hour) it came out lower for both rule sets (measured before the end-of-day
+fix below, without per-seed ranges, so not comparable number for number). Today, at 34 orders an hour,
+it is ₹0.64–1.17/min for union-demand and ₹0.77–1.12/min for HeatGate Fair across seeds (placeholders;
+`sim/results/break-even.json` has every level). The ranges overlap: no clear difference between the two.
+
+## The end of the day
+
+The run stops offering orders at `endHour` (20:00). A rider who is on a delivery at that moment keeps
+riding until the drop-off, is paid for that order then, and the order counts as delivered, with its
+real delivery time (so it can still be late: over 45 minutes from order to drop-off). Nobody is offered
+an order after 20:00, orders still waiting then stay undelivered, and riders who are idle, paused,
+resting or riding to a cooling point log out at 20:00, so no rest starts after it.
+
+Before this was fixed (October 2026), the run simply stopped at 20:00 and the orders on the road were
+never paid or counted: about 20 per day for no-rules and 25 for HeatGate Fair (every second-wave rider
+was on a delivery at 20:00). That made a few riders look like they had earned ₹0 and cut every rule
+set's earnings by a different amount. All numbers in this file, `docs/api-guide.md` and
+`sim/results/break-even.json` are from after the fix.

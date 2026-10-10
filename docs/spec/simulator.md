@@ -47,6 +47,8 @@ Add 1 to minutesSinceBreak and exposureMinutesToday for every idle or delivering
 
 Every 5 minutes, save a Frame.
 
+At endHour the day ends: no more orders, dispatch or logins, and every rider who is not on a delivery logs out (so no rest starts after it). Riders on a delivery keep moving, one step per minute, until they drop off; they are paid then and the order counts as delivered with its real delivery time. Frames stop at endHour.
+
 Run this loop once per rule set and seed, using the same seeds for every rule set (default 5), and compute Metrics at the end of each run. Report the mean and the min–max range. If two rule sets' ranges overlap on a metric, say there is no clear difference instead of ranking them.
 Fair features and rider earnings (sim/fair.ts, sim/earnings.ts)
 Earnings and pay protections apply to every rule set, so they can be compared fairly. Which protections each rule set has is set by DEFAULT_PAY in contracts/types.ts: NDMA has paid rest; the union and Fair have paid rest and incentive protection; today has neither. These defaults are assumptions to verify. Only two features are specific to heatgate-fair.

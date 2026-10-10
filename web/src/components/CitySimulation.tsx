@@ -1,342 +1,287 @@
-import React, { useState, useEffect, useRef } from "react";
-import type { SimResult, Frame, PolicyVersion, RiderState, Outcome } from "@heatgate/contracts";
+// The abstract 10 x 10 km simulated city, animated from result.runs[policy].frames (first seed only).
+// Two views: "City map" (default), the grid laid on a real city's OpenStreetMap tiles as an illustration, and
+// the plain grid. Positions are km on a made-up grid in both (docs/api-guide.md §5); nothing is a real location.
+// Which view: ?view=grid|map (for the demo) > the viewer's last choice (localStorage) > City map.
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import type { PolicyVersion, RiderState, SimResult } from "@heatgate/contracts";
+import { POLICY_LABELS } from "@heatgate/contracts";
+import { CITY_CENTRES, cityFor, coolingPointsFrom } from "../lib/cityMap.ts";
+
+const LeafletCityMap = lazy(() => import("./LeafletCityMap.tsx"));
+
+type MapView = "grid" | "map";
+const VIEW_KEY = "heatgate.mapView";
+const isView = (v: string | null | undefined): v is MapView => v === "grid" || v === "map";
+
+// Storage can be missing or throw (private mode, blocked site data); then the choice just isn't remembered.
+function readStoredView(): MapView | undefined {
+  try {
+    const v = window.localStorage.getItem(VIEW_KEY);
+    return isView(v) ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function storeView(v: MapView) {
+  try {
+    window.localStorage.setItem(VIEW_KEY, v);
+  } catch {
+    // ignore: see readStoredView
+  }
+}
+
+const MAP_LABEL = "Illustration: simulated riders placed on a real city map. Positions and cooling points are not real locations.";
 
 interface CitySimulationProps {
   sim: SimResult | undefined;
   policy: PolicyVersion;
+  canRun?: boolean; // false while there are no settings, so no Run button (e.g. the API is down)
 }
 
+const FRAME_MS = 200; // at 1x; one frame = 5 simulated minutes
+const W = 600;
+const H = 600;
+
 const formatTime = (startHour: number, minute: number) => {
-  const totalMinutes = startHour * 60 + minute;
-  const h = Math.floor(totalMinutes / 60) % 24;
-  const m = totalMinutes % 60;
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+  const total = startHour * 60 + minute;
+  return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 };
 
-const demandLabels = {
-  0: "Quiet",
-  1: "Normal",
-  2: "Rush"
+const DEMAND = { 0: "Quiet", 1: "Normal", 2: "Rush" } as const;
+
+const STATE_COLOR: Record<RiderState, string> = {
+  idle: "#6B7280",
+  delivering: "#2563EB",
+  resting: "#D97706",
+  paused: "#DC2626",
 };
 
-// 8 Cooling Points in Begumpet Zone (mapped to Hyderabad coords & 10x10 grid)
-const COOLING_POINTS = [
-  { id: "CP 1", x: 1.8, y: 3.4, lat: 17.4520, lng: 78.4480, name: "Begumpet Flyover Hub" },
-  { id: "CP 2", x: 2.7, y: 2.1, lat: 17.4580, lng: 78.4550, name: "Prakash Nagar Station" },
-  { id: "CP 3", x: 3.4, y: 3.9, lat: 17.4480, lng: 78.4620, name: "Begumpet Bus Shelter Hub" },
-  { id: "CP 4", x: 4.1, y: 4.8, lat: 17.4410, lng: 78.4680, name: "Rashtrapati Road Shelter" },
-  { id: "CP 5", x: 5.3, y: 1.8, lat: 17.4600, lng: 78.4780, name: "Secunderabad Clock Tower" },
-  { id: "CP 6", x: 5.0, y: 5.8, lat: 17.4330, lng: 78.4750, name: "Hussain Sagar North Gate" },
-  { id: "CP 7", x: 3.1, y: 5.5, lat: 17.4360, lng: 78.4600, name: "Somajiguda Circle Station" },
-  { id: "CP 8", x: 1.6, y: 5.2, lat: 17.4380, lng: 78.4460, name: "Punjagutta Junction Hub" },
-];
-
-export function CitySimulation({ sim, policy }: CitySimulationProps) {
+export function CitySimulation({ sim, policy, canRun = true }: CitySimulationProps) {
   const [frameIndex, setFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
-  const [mapMode, setMapMode] = useState<"real" | "grid">("real");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlView = searchParams.get("view");
+  const [view, setView] = useState<MapView>(() => (isView(urlView) ? urlView : (readStoredView() ?? "map")));
+  // A ?view= link (or the back button) forces that view.
+  useEffect(() => {
+    if (isView(urlView)) setView(urlView);
+  }, [urlView]);
+  // The viewer's own choice: remembered, and written over ?view= so a reload keeps it.
+  const chooseView = (v: MapView) => {
+    setMapProblem(undefined);
+    setView(v);
+    storeView(v);
+    if (isView(urlView) && urlView !== v) {
+      setSearchParams(
+        (p) => {
+          const next = new URLSearchParams(p);
+          next.set("view", v);
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  };
+  const [mapProblem, setMapProblem] = useState<string | undefined>(undefined);
 
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markersLayerRef = useRef<any>(null);
+  const frames = sim?.runs[policy]?.frames ?? [];
 
-  const run = sim?.runs[policy];
-  const frames = run?.frames || [];
-  const currentFrame = frames[frameIndex] || null;
-  const startHour = sim?.params.startHour || 8;
-  const endHour = sim?.params.endHour || 20;
+  // A new result starts at the first frame.
+  useEffect(() => {
+    setFrameIndex(0);
+    setIsPlaying(false);
+  }, [sim?.simulationId]);
 
   useEffect(() => {
-    let timer: number;
-    if (isPlaying && frames.length > 0) {
-      timer = window.setInterval(() => {
-        setFrameIndex((idx) => {
-          if (idx >= frames.length - 1) {
-            setIsPlaying(false);
-            return idx;
-          }
-          return idx + 1;
-        });
-      }, 1000 / speed);
-    }
-    return () => clearInterval(timer);
+    if (!isPlaying || frames.length === 0) return;
+    const t = window.setInterval(() => {
+      setFrameIndex((i) => {
+        if (i >= frames.length - 1) {
+          setIsPlaying(false);
+          return i;
+        }
+        return i + 1;
+      });
+    }, FRAME_MS / speed);
+    return () => clearInterval(t);
   }, [isPlaying, frames.length, speed]);
 
-  // Initialize Real Leaflet Map of Begumpet, Hyderabad
-  useEffect(() => {
-    const checkAndInitLeaflet = () => {
-      const L = (window as any).L;
-      if (!L || !mapContainerRef.current) return;
+  const coolingPoints = useMemo(() => (sim ? coolingPointsFrom(sim) : []), [sim]);
+  const city = sim ? cityFor(sim.params) : undefined;
+  const shown: MapView = view === "map" && city ? "map" : "grid"; // no city centre for this day: grid
 
-      if (!mapInstanceRef.current) {
-        const map = L.map(mapContainerRef.current, {
-          center: [17.4448, 78.4664], // Begumpet, Hyderabad
-          zoom: 14,
-          zoomControl: false,
-          attributionControl: false,
-        });
-
-        // Crisp OpenStreetMap standard tiles (No API key watermark required)
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          subdomains: ["a", "b", "c"],
-          attribution: "© OpenStreetMap contributors",
-        }).addTo(map);
-
-        const markersLayer = L.layerGroup().addTo(map);
-        markersLayerRef.current = markersLayer;
-        mapInstanceRef.current = map;
-      }
-
-      if (mapInstanceRef.current) {
-        setTimeout(() => {
-          mapInstanceRef.current?.invalidateSize();
-        }, 100);
-      }
-    };
-
-    const t = setTimeout(checkAndInitLeaflet, 150);
-
-    let ro: ResizeObserver | null = null;
-    if (mapContainerRef.current) {
-      ro = new ResizeObserver(() => {
-        mapInstanceRef.current?.invalidateSize();
-      });
-      ro.observe(mapContainerRef.current);
-    }
-
-    return () => {
-      clearTimeout(t);
-      if (ro) ro.disconnect();
-    };
-  }, [mapMode]);
-
-  // Update Real Map Markers (Riders & Cooling Points) on Frame Change
-  useEffect(() => {
-    const L = (window as any).L;
-    if (!L || !mapInstanceRef.current || !markersLayerRef.current || !currentFrame) return;
-
-    const layer = markersLayerRef.current;
-    layer.clearLayers();
-
-    // 1. Plot Cooling Points on Real Map
-    COOLING_POINTS.forEach((cp) => {
-      const icon = L.divIcon({
-        className: "custom-cp-pin",
-        html: `<div style="background:#0F766E; color:#FFFFFF; border:2px solid #FFFFFF; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; box-shadow:0 2px 4px rgba(0,0,0,0.3);">💧</div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-      });
-      L.marker([cp.lat, cp.lng], { icon })
-        .bindTooltip(`<b>${cp.name}</b><br/>Water refill + shade mister`, { direction: "top" })
-        .addTo(layer);
-    });
-
-    // 2. Plot Simulated Riders mapped to Hyderabad street bounding box
-    currentFrame.riders.forEach((r) => {
-      // Map 10x10 km simulation grid to Begumpet coords [17.41 to 17.48, 78.43 to 78.50]
-      const lat = 17.4448 + (r.y - 5) * 0.007;
-      const lng = 78.4664 + (r.x - 5) * 0.007;
-
-      let color = "#6B7280"; // idle
-      if (r.state === "delivering") color = "#2563EB";
-      else if (r.state === "resting") color = "#D97706";
-      else if (r.state === "paused") color = "#DC2626";
-
-      L.circleMarker([lat, lng], {
-        radius: r.state === "resting" ? 7 : 5,
-        fillColor: color,
-        color: "#FFFFFF",
-        weight: 1.5,
-        opacity: 1,
-        fillOpacity: 0.9,
-      }).addTo(layer);
-    });
-  }, [currentFrame, mapMode]);
-
-  if (!sim || !currentFrame) {
+  const frame = frames[frameIndex];
+  if (!sim || !frame) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest text-xs text-on-surface-variant">
-        Map area (run a simulation)
+      <div className="lg:col-span-8 flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-outline-variant bg-surface-container-lowest text-xs text-on-surface-variant">
+        {canRun
+          ? "No simulation yet. Press Run Simulation below to see the city."
+          : "No simulation yet. The Run Simulation button appears once the API answers."}
       </div>
     );
   }
 
-  const counts = {
-    idle: 0,
-    delivering: 0,
-    resting: 0,
-    paused: 0
-  };
-
-  currentFrame.riders.forEach(r => {
-    counts[r.state] = (counts[r.state] || 0) + 1;
-  });
-
-  const event = currentFrame.events?.[0];
+  const { startHour, endHour } = sim.params;
+  const counts: Record<RiderState, number> = { idle: 0, delivering: 0, resting: 0, paused: 0 };
+  for (const r of frame.riders) counts[r.state] += 1;
+  const nonAllow = frame.events.filter((e) => e.outcome !== "ALLOW");
 
   return (
-    <div className="lg:col-span-8 bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 lg:p-5 shadow-xs flex flex-col justify-between h-full gap-3">
-      {/* Card Title & Map View Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2.5 border-b border-outline-variant/60 gap-2 shrink-0">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h2 className="font-headline-md text-headline-md font-bold text-on-surface" style={{ fontFamily: '"Bebas Neue", sans-serif', letterSpacing: "0.04em", fontSize: "24px" }}>
-              City Simulation · Begumpet Urban Zone
-            </h2>
-            <span className="font-mono text-[11px] bg-surface-container px-2.5 py-0.5 rounded-lg border border-outline-variant font-semibold text-on-surface">
-              10 × 10 km
-            </span>
+    <div className="lg:col-span-8 bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 lg:p-5 shadow-xs flex flex-col h-full gap-3">
+      <div className="pb-2.5 border-b border-outline-variant/60">
+        <h2 className="font-bold text-on-surface" style={{ fontFamily: '"Bebas Neue", sans-serif', letterSpacing: "0.04em", fontSize: "24px" }}>
+          Simulated city · {POLICY_LABELS[policy]}
+        </h2>
+        <p className="text-xs text-on-surface-variant">
+          {shown === "map"
+            ? `The simulator's abstract 10 × 10 km grid drawn over ${city} as an illustration. `
+            : "Abstract 10 × 10 km grid, not a real map. "}
+          {sim.params.riders} simulated riders; the map shows the first seed only. Resting riders sit at a cooling point
+          {coolingPoints.length > 0 ? ` (CP 1–${coolingPoints.length}: the ones riders rested at in this run)` : ""}. Hubs are not part of the
+          result, so they are not drawn.
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 border border-outline-variant rounded-lg p-0.5 bg-surface-container-lowest" role="radiogroup" aria-label="Map view">
+            {(["grid", "map"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                role="radio"
+                aria-checked={shown === v}
+                disabled={v === "map" && !city}
+                onClick={() => chooseView(v)}
+                className={`px-3 py-1 rounded text-xs font-bold disabled:opacity-40 ${shown === v ? "bg-primary text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+              >
+                {v === "grid" ? "Grid" : "City map"}
+              </button>
+            ))}
           </div>
-          <p className="font-body-sm text-xs text-on-surface-variant">50 rider agents real-time occupational heat exposure model</p>
+          {!city && <span className="text-[11px] text-on-surface-variant">No city map for this weather day.</span>}
         </div>
-
-        {/* Real Map / Simulation Grid Toggle */}
-        <div className="inline-flex items-center border border-outline-variant rounded-lg p-0.5 bg-surface-container text-xs font-semibold gap-0.5 self-start sm:self-auto shadow-xs">
-          <button 
-            type="button"
-            onClick={() => setMapMode("real")}
-            className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 ${
-              mapMode === "real" 
-                ? "bg-surface-container-lowest text-primary font-bold shadow-xs" 
-                : "text-on-surface-variant hover:text-on-surface"
-            }`}
-          >
-            <span className="material-symbols-outlined text-[14px]">map</span>
-            <span>Real Map (Hyderabad)</span>
-          </button>
-          <button 
-            type="button"
-            onClick={() => setMapMode("grid")}
-            className={`px-2.5 py-1 rounded-md transition-all flex items-center gap-1.5 ${
-              mapMode === "grid" 
-                ? "bg-surface-container-lowest text-primary font-bold shadow-xs" 
-                : "text-on-surface-variant hover:text-on-surface"
-            }`}
-          >
-            <span className="material-symbols-outlined text-[14px]">grid_view</span>
-            <span>Sim Grid</span>
-          </button>
-        </div>
+        {mapProblem && (
+          <p role="status" className="mt-2 text-xs text-on-surface bg-surface-container-low border border-outline-variant rounded-lg px-3 py-1.5">
+            Showing the grid: {mapProblem}.
+          </p>
+        )}
       </div>
 
-      {/* Map Display Container: flex-1 to fill all vertical height evenly */}
-      <div className="relative w-full flex-1 min-h-[480px] lg:min-h-[510px] bg-[#EFEFEA] rounded-xl border border-outline-variant overflow-hidden select-none shadow-inner">
-        {/* Real Leaflet Map */}
-        <div 
-          ref={mapContainerRef} 
-          className={`w-full h-full absolute inset-0 z-0 transition-opacity duration-300 ${mapMode === "real" ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`} 
-          style={{ background: "#F5F2EB" }} 
-        />
-        
-        {/* Stylized SVG Simulation Grid */}
-        <div className={`w-full h-full absolute inset-0 z-0 transition-opacity duration-300 ${mapMode === "grid" ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
-          <svg className="w-full h-full" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <radialGradient cx="45%" cy="40%" id="heat-micro-1" r="40%">
-                <stop offset="0%" stopColor="#F97316" stopOpacity="0.22" />
-                <stop offset="70%" stopColor="#F97316" stopOpacity="0.08" />
-                <stop offset="100%" stopColor="#F97316" stopOpacity="0" />
-              </radialGradient>
-              <radialGradient cx="75%" cy="70%" id="heat-micro-2" r="35%">
-                <stop offset="0%" stopColor="#EF4444" stopOpacity="0.26" />
-                <stop offset="60%" stopColor="#EF4444" stopOpacity="0.06" />
-                <stop offset="100%" stopColor="#EF4444" stopOpacity="0" />
-              </radialGradient>
-            </defs>
-            <rect fill="#EFEFEA" height="600" width="800" x="0" y="0" />
-            <circle cx="360" cy="240" fill="url(#heat-micro-1)" r="300" />
-            <circle cx="600" cy="420" fill="url(#heat-micro-2)" r="260" />
-
-            {/* Arterial Road Grid */}
-            <g stroke="#CAC6B7" strokeLinecap="round" strokeWidth="4">
-              <path d="M 0 140 Q 280 180 500 130 T 800 160" fill="none" />
-              <path d="M 120 0 Q 180 300 240 600" fill="none" />
-              <path d="M 640 0 C 600 200 680 400 620 600" fill="none" />
-              <path d="M 0 420 H 800" fill="none" />
-            </g>
-
-            {/* Cooling Points in SVG */}
-            {COOLING_POINTS.map((cp) => (
-              <g key={cp.id} transform={`translate(${cp.x * 80}, ${cp.y * 60})`}>
-                <circle cx="0" cy="0" fill="#0F766E" r="10" stroke="#FFFFFF" strokeWidth="2" />
-                <text fill="#FFFFFF" fontSize="8" fontWeight="bold" textAnchor="middle" y="3">💧</text>
-                <text fill="#0F766E" fontSize="9" fontWeight="bold" textAnchor="middle" y="18">{cp.id}</text>
+      <div className="relative w-full aspect-square max-h-[560px] mx-auto bg-[#EFEFEA] rounded-xl border border-outline-variant overflow-hidden">
+        {shown === "map" && city ? (
+          <>
+            <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-xs text-on-surface-variant">Loading the city map…</div>}>
+              <LeafletCityMap
+                centre={CITY_CENTRES[city]}
+                frame={frame}
+                coolingPoints={coolingPoints}
+                tweenMs={FRAME_MS / speed}
+                stateColor={STATE_COLOR}
+                onTilesFailed={(reason) => {
+                  setMapProblem(reason);
+                  setView("grid");
+                }}
+              />
+            </Suspense>
+            <div className="absolute left-2 right-2 bottom-6 z-[1000] pointer-events-none flex justify-center">
+              <p className="max-w-[46ch] text-center text-[11px] leading-snug font-semibold text-on-surface bg-surface-container-lowest/95 border border-outline-variant rounded-lg px-2.5 py-1.5 shadow-md">
+                {MAP_LABEL}
+              </p>
+            </div>
+          </>
+        ) : (
+        <svg className="w-full h-full" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`City at ${formatTime(startHour, frame.minute)}: ${counts.delivering} delivering, ${counts.resting} resting, ${counts.idle} idle, ${counts.paused} paused`}>
+          <g stroke="#DDD9CC" strokeWidth="1">
+            {Array.from({ length: 11 }, (_, i) => (
+              <g key={i}>
+                <line x1={(i * W) / 10} x2={(i * W) / 10} y1={0} y2={H} />
+                <line x1={0} x2={W} y1={(i * H) / 10} y2={(i * H) / 10} />
               </g>
             ))}
+          </g>
+          <g stroke="#FFFFFF" strokeWidth="1.5">
+            {frame.riders.map((r) => (
+              <circle
+                key={r.id}
+                cx={(r.x / 10) * W}
+                cy={(r.y / 10) * H}
+                r={r.state === "resting" ? 8 : 6}
+                fill={STATE_COLOR[r.state]}
+                style={{ transition: `cx ${FRAME_MS / speed}ms linear, cy ${FRAME_MS / speed}ms linear` }}
+              >
+                <title>
+                  {r.id}: {r.state}
+                </title>
+              </circle>
+            ))}
+          </g>
+          <g>
+            {coolingPoints.map((cp) => (
+              <g key={cp.label} transform={`translate(${(cp.x / 10) * W} ${(cp.y / 10) * H})`} pointerEvents="none">
+                <rect x={-27} y={cp.labelBelow ? 10 : -32} width={54} height={22} rx={5} fill="#fff7ed" stroke="#d97706" strokeWidth={1.2} />
+                <text y={cp.labelBelow ? 26 : -16} textAnchor="middle" fontSize={15} fontWeight={600} fill="#7d4200" fontFamily="JetBrains Mono, monospace">
+                  {cp.label}
+                </text>
+              </g>
+            ))}
+          </g>
+        </svg>
+        )}
 
-            {/* Riders in SVG */}
-            <g stroke="#FFFFFF" strokeWidth="1.5">
-              {currentFrame.riders.map((r) => {
-                const cx = r.x * 80;
-                const cy = r.y * 60;
-                let fill = "#6B7280";
-                if (r.state === "delivering") fill = "#2563EB";
-                else if (r.state === "resting") fill = "#D97706";
-                else if (r.state === "paused") fill = "#DC2626";
-                return <circle key={r.id} cx={cx} cy={cy} fill={fill} r={r.state === "resting" ? 8 : 6} />;
-              })}
-            </g>
-          </svg>
+        <div className="absolute z-[1000] top-2 left-2 sm:top-3 sm:left-3 bg-surface-container-lowest/95 border border-outline-variant px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl shadow-md pointer-events-none">
+          <div className="font-bold text-on-surface leading-none text-[24px] sm:text-[32px]" style={{ letterSpacing: "0.06em", fontFamily: '"Bebas Neue", sans-serif' }}>
+            {formatTime(startHour, frame.minute)}
+          </div>
+          <div className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mt-0.5">1 frame = 5 min</div>
         </div>
-
-        {/* Map Overlay Top-Left: Digital Clock (compact) */}
-        <div className="absolute top-3.5 left-3.5 z-10 bg-surface-container-lowest/95 border border-outline-variant px-3 py-2 rounded-xl shadow-md pointer-events-none">
-          <div className="font-mono font-bold tracking-wide text-on-surface leading-none" style={{ letterSpacing: "0.06em", fontFamily: '"Bebas Neue", sans-serif', fontSize: "36px" }}>
-            {formatTime(startHour, currentFrame.minute)}
-          </div>
-          <div className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mt-0.5">1 sec = 1 min</div>
-        </div>
-
-        {/* Map Overlay Top-Right: Heat Index & Demand Badge (compact) */}
-        <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-2 pointer-events-none">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-lowest/95 border border-error/30 text-error shadow-md text-xs font-bold">
-            <span className="material-symbols-outlined text-[15px]">device_thermostat</span>
-            <span>Heat index {currentFrame.heatIndexC}°C</span>
-          </div>
-          <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-tertiary-fixed text-on-tertiary-fixed border border-tertiary/20 shadow-md text-xs font-bold">
-            <span className="material-symbols-outlined text-[15px]">local_fire_department</span>
-            <span>{demandLabels[currentFrame.demandLevel]}</span>
-          </div>
+        <div className="absolute z-[1000] top-2 right-2 sm:top-3 sm:right-3 flex flex-col items-end sm:flex-row sm:items-center gap-1.5 sm:gap-2 pointer-events-none">
+          <span className="px-2.5 py-1 rounded-lg bg-surface-container-lowest/95 border border-error/30 text-error shadow-md text-xs font-bold">
+            Heat index {frame.heatIndexC}°C
+          </span>
+          <span className="px-2.5 py-1 rounded-lg bg-surface-container-lowest/95 border border-outline-variant text-on-surface shadow-md text-xs font-bold">
+            {DEMAND[frame.demandLevel]} demand
+          </span>
         </div>
       </div>
 
-      {/* Bottom Playback Controls & Timeline Bar (compact) */}
-      <div className="flex flex-col gap-3 bg-surface-container-low p-3.5 rounded-xl border border-outline-variant shadow-xs">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          {/* Play / Pause & Timeline Scrubber */}
-          <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
-            <button 
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="w-10 h-10 rounded-lg bg-primary hover:bg-[#0B4F4A] text-on-primary flex items-center justify-center shrink-0 shadow-xs focus:outline-none transition-all" 
-              type="button"
-            >
-              <span className="material-symbols-outlined text-[20px]">{isPlaying ? "pause" : "play_arrow"}</span>
-            </button>
-            <div className="flex flex-col flex-1 px-1 gap-1">
-              <div className="flex justify-between text-[11px] font-mono text-on-surface-variant font-semibold">
-                <span>{startHour.toString().padStart(2, "0")}:00</span>
-                <span className="text-primary font-bold">Current: {formatTime(startHour, currentFrame.minute)}</span>
-                <span>{endHour.toString().padStart(2, "0")}:00</span>
-              </div>
-              <input 
-                className="w-full accent-primary h-1.5 bg-outline-variant/50 rounded-lg cursor-pointer" 
-                max={frames.length > 0 ? frames.length - 1 : 0} 
-                min={0} 
-                onChange={(e) => setFrameIndex(parseInt(e.target.value))}
-                type="range" 
-                value={frameIndex} 
-              />
-            </div>
-          </div>
-          {/* Simulation Speed Multiplier Controls */}
-          <div className="flex items-center gap-1 border border-outline-variant rounded-lg p-0.5 bg-surface-container-lowest shrink-0 shadow-xs">
-            {[1, 2, 4].map(s => (
-              <button 
+      <div className="flex flex-col gap-3 bg-surface-container-low p-3.5 rounded-xl border border-outline-variant">
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <button
+            onClick={() => {
+              if (frameIndex >= frames.length - 1) setFrameIndex(0);
+              setIsPlaying(!isPlaying);
+            }}
+            aria-label={isPlaying ? "Pause" : "Play"}
+            className="w-10 h-10 rounded-lg bg-primary hover:bg-[#0B4F4A] text-on-primary flex items-center justify-center shrink-0"
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[20px]">{isPlaying ? "pause" : "play_arrow"}</span>
+          </button>
+          <label className="flex flex-col flex-1 w-full gap-1">
+            <span className="flex justify-between text-[11px] font-mono text-on-surface-variant font-semibold">
+              <span>{String(startHour).padStart(2, "0")}:00</span>
+              <span className="text-primary font-bold">{formatTime(startHour, frame.minute)}</span>
+              <span>{String(endHour).padStart(2, "0")}:00</span>
+            </span>
+            <input
+              aria-label="Time of day"
+              className="w-full accent-primary"
+              type="range"
+              min={0}
+              max={frames.length - 1}
+              value={frameIndex}
+              onChange={(e) => setFrameIndex(Number(e.target.value))}
+            />
+          </label>
+          <div className="flex items-center gap-1 border border-outline-variant rounded-lg p-0.5 bg-surface-container-lowest shrink-0" role="radiogroup" aria-label="Speed">
+            {[1, 2, 4].map((s) => (
+              <button
                 key={s}
+                role="radio"
+                aria-checked={speed === s}
                 onClick={() => setSpeed(s)}
-                className={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-all ${speed === s ? "bg-primary text-on-primary shadow-xs" : "text-on-surface-variant hover:text-on-surface"}`} 
+                className={`px-2.5 py-1 rounded text-xs font-mono font-bold ${speed === s ? "bg-primary text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}
                 type="button"
               >
                 {s}x
@@ -344,48 +289,29 @@ export function CitySimulation({ sim, policy }: CitySimulationProps) {
             ))}
           </div>
         </div>
-
-        {/* Clean Status Indicator Legend */}
         <div className="flex flex-wrap items-center justify-center gap-6 pt-2 border-t border-outline-variant/60 text-xs font-medium text-on-surface-variant">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#6B7280] inline-block shadow-xs"></span>
-            <span>Idle ({counts.idle})</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB] inline-block shadow-xs"></span>
-            <span>Delivering ({counts.delivering})</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#D97706] inline-block shadow-xs"></span>
-            <span>Resting ({counts.resting})</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#DC2626] inline-block shadow-xs"></span>
-            <span>Paused ({counts.paused})</span>
-          </div>
+          {(Object.keys(counts) as RiderState[]).map((st) => (
+            <span key={st} className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: STATE_COLOR[st] }} />
+              {st[0].toUpperCase() + st.slice(1)} ({counts[st]})
+            </span>
+          ))}
         </div>
       </div>
 
-      {/* Monospace Event Ticker Bar (compact) */}
-      <div className="w-full bg-[#1B1F23] text-white font-mono text-xs px-4 py-2.5 rounded-lg flex items-center justify-between overflow-x-auto shadow-xs">
-        <div className="flex items-center gap-2.5 shrink-0">
-          {event ? (
-            <>
-              <span className="text-[#80D5CB] font-bold">{formatTime(startHour, currentFrame.minute)}</span>
-              <span className="bg-white/10 text-white px-1.5 py-0.5 rounded text-[11px]">{event.riderId}</span>
-              <span className="text-[#FFB77D] font-bold">{event.outcome}</span>
-              <span className="text-gray-300">{event.rule}</span>
-            </>
-          ) : (
-            <>
-              <span className="text-[#80D5CB] font-bold">13:25</span>
-              <span className="bg-white/10 text-white px-1.5 py-0.5 rounded text-[11px]">R-014</span>
-              <span className="text-[#D97706] font-bold">FORCE_REST</span>
-              <span className="text-gray-300">fair-rest-due · Cooling Point 3 assigned (420m)</span>
-            </>
-          )}
-        </div>
-        <span className="text-[10px] text-gray-400 uppercase tracking-wider shrink-0 pl-3 font-semibold">Sim Event Log</span>
+      <div className="w-full bg-[#1B1F23] text-white font-mono text-xs px-4 py-2.5 rounded-lg flex items-center gap-3 overflow-x-auto" aria-live="off">
+        <span className="text-[10px] text-gray-400 uppercase tracking-wider shrink-0 font-semibold">Decisions since last frame</span>
+        {nonAllow.length === 0 ? (
+          <span className="text-gray-300">{frame.events.length > 0 ? `${frame.events.length} × ALLOW` : "none"}</span>
+        ) : (
+          nonAllow.slice(0, 4).map((e, i) => (
+            <span key={i} className="shrink-0">
+              <span className="bg-white/10 px-1.5 py-0.5 rounded text-[11px]">{e.riderId}</span>{" "}
+              <span className="text-[#FFB77D] font-bold">{e.outcome}</span> <span className="text-gray-300">{e.rule}</span>
+            </span>
+          ))
+        )}
+        {nonAllow.length > 4 && <span className="text-gray-400 shrink-0">+{nonAllow.length - 4} more</span>}
       </div>
     </div>
   );

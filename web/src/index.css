@@ -29,3 +29,23 @@ h1, h2, h3, h4, .font-headline-md, .font-headline-lg, .font-headline-xl, .font-h
   font-family: 'Bebas Neue', sans-serif !important;
   letter-spacing: 0.05em !important;
 }
+
+/* City map (components/LeafletCityMap.tsx). Riders glide one frame at a time; tiles are muted so the dots read. */
+.hg-city-map .leaflet-tile-pane { filter: grayscale(0.6) opacity(0.75); }
+.hg-rider {
+  border-radius: 9999px;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.25);
+  will-change: transform;
+}
+.hg-rider--resting { width: 16px !important; height: 16px !important; margin-left: -8px !important; margin-top: -8px !important; }
+.hg-map-anim .hg-rider { transition: transform var(--hg-tween, 200ms) linear, background-color 150ms; }
+.hg-cp span {
+  display: block;
+  font: 600 10px/16px "JetBrains Mono", monospace;
+  text-align: center;
+  color: #7d4200;
+  background: #fff7ed;
+  border: 1px solid #d97706;
+  border-radius: 6px;
+}

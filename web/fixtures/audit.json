@@ -12,6 +12,11 @@
    "heatIndexC": 35,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 35,
     "hourOfDay": 20,
@@ -38,6 +43,11 @@
     "union-rest-due"
    ],
    "message": "Heatwave day: paid 20-minute cooling break after 2 hours of work. Nearest shade and water below. No penalty.",
+   "messages": {
+    "hi": "लू का दिन: 2 घंटे काम के बाद पैसे सहित 20 मिनट का आराम ब्रेक। पास की छाँव और पानी नीचे देखें। कोई जुर्माना नहीं।",
+    "te": "వడగాల్పుల రోజు: 2 గంటల పని తర్వాత జీతంతో 20 నిమిషాల విశ్రాంతి బ్రేక్. దగ్గరి నీడ, నీళ్లు కింద చూడండి. జరిమానా లేదు.",
+    "ur": "لُو کا دن: 2 گھنٹے کام کے بعد پیسوں کے ساتھ 20 منٹ کا آرام کا وقفہ۔ قریب ترین سایہ اور پانی نیچے دیکھیں۔ کوئی جرمانہ نہیں۔"
+   },
    "cedarContext": {
     "heatIndexC": 36,
     "hourOfDay": 20,
@@ -62,6 +72,11 @@
    "heatIndexC": 36,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 36,
     "hourOfDay": 19,
@@ -86,6 +101,11 @@
    "heatIndexC": 37,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 37,
     "hourOfDay": 19,
@@ -110,6 +130,11 @@
    "heatIndexC": 38,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 38,
     "hourOfDay": 18,
@@ -134,6 +159,11 @@
    "heatIndexC": 38,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 38,
     "hourOfDay": 18,
@@ -158,6 +188,11 @@
    "heatIndexC": 39,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 39,
     "hourOfDay": 18,
@@ -182,6 +217,11 @@
    "heatIndexC": 39,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 39,
     "hourOfDay": 18,
@@ -206,6 +246,11 @@
    "heatIndexC": 39,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 39,
     "hourOfDay": 17,
@@ -232,6 +277,11 @@
     "ndma-reduced-radius"
    ],
    "message": "Heat alert: orders are limited to 3 km.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: ऑर्डर सिर्फ़ 3 किमी तक।",
+    "te": "వేడి హెచ్చరిక: ఆర్డర్లు 3 కి.మీ. వరకు మాత్రమే.",
+    "ur": "گرمی کی وارننگ: آرڈر صرف 3 کلومیٹر تک۔"
+   },
    "cedarContext": {
     "heatIndexC": 39,
     "hourOfDay": 17,
@@ -259,6 +309,11 @@
     "fair-rest-hard-limit"
    ],
    "message": "Paid 20-minute cooling break. Nearest shade and water below.",
+   "messages": {
+    "hi": "पैसे सहित 20 मिनट का आराम ब्रेक। पास की छाँव और पानी नीचे देखें।",
+    "te": "జీతంతో 20 నిమిషాల విశ్రాంతి బ్రేక్. దగ్గరి నీడ, నీళ్లు కింద చూడండి.",
+    "ur": "پیسوں کے ساتھ 20 منٹ کا آرام کا وقفہ۔ قریب ترین سایہ اور پانی نیچے دیکھیں۔"
+   },
    "cedarContext": {
     "heatIndexC": 39,
     "hourOfDay": 17,
@@ -283,6 +338,11 @@
    "heatIndexC": 40,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 40,
     "hourOfDay": 17,
@@ -307,6 +367,11 @@
    "heatIndexC": 40,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 40,
     "hourOfDay": 16,
@@ -331,6 +396,11 @@
    "heatIndexC": 40,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 40,
     "hourOfDay": 16,
@@ -355,6 +425,11 @@
    "heatIndexC": 41,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 16,
@@ -379,6 +454,11 @@
    "heatIndexC": 41,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 15,
@@ -405,6 +485,11 @@
     "ndma-peak-hours-pause"
    ],
    "message": "Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: सुबह 11 से शाम 4 बजे तक कोई ज़रूरी ऑर्डर नहीं। कोई जुर्माना नहीं।",
+    "te": "వేడి హెచ్చరిక: ఉదయం 11 నుండి సాయంత్రం 4 వరకు తప్పనిసరి ఆర్డర్లు లేవు. జరిమానా లేదు.",
+    "ur": "گرمی کی وارننگ: صبح 11 سے شام 4 بجے تک کوئی لازمی آرڈر نہیں۔ کوئی جرمانہ نہیں۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 15,
@@ -432,6 +517,11 @@
     "ndma-reduced-radius"
    ],
    "message": "Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: सुबह 11 से शाम 4 बजे तक कोई ज़रूरी ऑर्डर नहीं। कोई जुर्माना नहीं।",
+    "te": "వేడి హెచ్చరిక: ఉదయం 11 నుండి సాయంత్రం 4 వరకు తప్పనిసరి ఆర్డర్లు లేవు. జరిమానా లేదు.",
+    "ur": "گرمی کی وارننگ: صبح 11 سے شام 4 بجے تک کوئی لازمی آرڈر نہیں۔ کوئی جرمانہ نہیں۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 15,
@@ -456,6 +546,11 @@
    "heatIndexC": 41,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 15,
@@ -484,6 +579,11 @@
     "fair-rest-hard-limit"
    ],
    "message": "Orders are slow right now. Take a paid 20-minute break in the shade.",
+   "messages": {
+    "hi": "अभी ऑर्डर कम हैं। छाँव में पैसे सहित 20 मिनट का ब्रेक लें।",
+    "te": "ఇప్పుడు ఆర్డర్లు తక్కువగా ఉన్నాయి. నీడలో జీతంతో 20 నిమిషాల బ్రేక్ తీసుకోండి.",
+    "ur": "ابھی آرڈر کم ہیں۔ سائے میں پیسوں کے ساتھ 20 منٹ کا وقفہ لیں۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 15,
@@ -512,6 +612,11 @@
     "fair-rest-hard-limit"
    ],
    "message": "Orders are slow right now. Take a paid 20-minute break in the shade.",
+   "messages": {
+    "hi": "अभी ऑर्डर कम हैं। छाँव में पैसे सहित 20 मिनट का ब्रेक लें।",
+    "te": "ఇప్పుడు ఆర్డర్లు తక్కువగా ఉన్నాయి. నీడలో జీతంతో 20 నిమిషాల బ్రేక్ తీసుకోండి.",
+    "ur": "ابھی آرڈر کم ہیں۔ سائے میں پیسوں کے ساتھ 20 منٹ کا وقفہ لیں۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 14,
@@ -539,6 +644,11 @@
     "ndma-reduced-radius"
    ],
    "message": "Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: सुबह 11 से शाम 4 बजे तक कोई ज़रूरी ऑर्डर नहीं। कोई जुर्माना नहीं।",
+    "te": "వేడి హెచ్చరిక: ఉదయం 11 నుండి సాయంత్రం 4 వరకు తప్పనిసరి ఆర్డర్లు లేవు. జరిమానా లేదు.",
+    "ur": "گرمی کی وارننگ: صبح 11 سے شام 4 بجے تک کوئی لازمی آرڈر نہیں۔ کوئی جرمانہ نہیں۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 14,
@@ -565,6 +675,11 @@
     "ndma-peak-hours-pause"
    ],
    "message": "Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: सुबह 11 से शाम 4 बजे तक कोई ज़रूरी ऑर्डर नहीं। कोई जुर्माना नहीं।",
+    "te": "వేడి హెచ్చరిక: ఉదయం 11 నుండి సాయంత్రం 4 వరకు తప్పనిసరి ఆర్డర్లు లేవు. జరిమానా లేదు.",
+    "ur": "گرمی کی وارننگ: صبح 11 سے شام 4 بجے تک کوئی لازمی آرڈر نہیں۔ کوئی جرمانہ نہیں۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 14,
@@ -589,6 +704,11 @@
    "heatIndexC": 41,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 13,
@@ -613,6 +733,11 @@
    "heatIndexC": 41,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 13,
@@ -637,6 +762,11 @@
    "heatIndexC": 41,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 13,
@@ -663,6 +793,11 @@
     "union-rest-due"
    ],
    "message": "Heatwave day: paid 20-minute cooling break after 2 hours of work. Nearest shade and water below. No penalty.",
+   "messages": {
+    "hi": "लू का दिन: 2 घंटे काम के बाद पैसे सहित 20 मिनट का आराम ब्रेक। पास की छाँव और पानी नीचे देखें। कोई जुर्माना नहीं।",
+    "te": "వడగాల్పుల రోజు: 2 గంటల పని తర్వాత జీతంతో 20 నిమిషాల విశ్రాంతి బ్రేక్. దగ్గరి నీడ, నీళ్లు కింద చూడండి. జరిమానా లేదు.",
+    "ur": "لُو کا دن: 2 گھنٹے کام کے بعد پیسوں کے ساتھ 20 منٹ کا آرام کا وقفہ۔ قریب ترین سایہ اور پانی نیچے دیکھیں۔ کوئی جرمانہ نہیں۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 13,
@@ -689,6 +824,11 @@
     "fair-rest-early-in-lull"
    ],
    "message": "Orders are slow right now. Take a paid 20-minute break in the shade.",
+   "messages": {
+    "hi": "अभी ऑर्डर कम हैं। छाँव में पैसे सहित 20 मिनट का ब्रेक लें।",
+    "te": "ఇప్పుడు ఆర్డర్లు తక్కువగా ఉన్నాయి. నీడలో జీతంతో 20 నిమిషాల బ్రేక్ తీసుకోండి.",
+    "ur": "ابھی آرڈر کم ہیں۔ سائے میں پیسوں کے ساتھ 20 منٹ کا وقفہ لیں۔"
+   },
    "cedarContext": {
     "heatIndexC": 41,
     "hourOfDay": 13,
@@ -713,6 +853,11 @@
    "heatIndexC": 40,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 40,
     "hourOfDay": 13,
@@ -737,6 +882,11 @@
    "heatIndexC": 40,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 40,
     "hourOfDay": 13,
@@ -761,6 +911,11 @@
    "heatIndexC": 39,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 39,
     "hourOfDay": 12,
@@ -788,6 +943,11 @@
     "ndma-reduced-radius"
    ],
    "message": "Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: सुबह 11 से शाम 4 बजे तक कोई ज़रूरी ऑर्डर नहीं। कोई जुर्माना नहीं।",
+    "te": "వేడి హెచ్చరిక: ఉదయం 11 నుండి సాయంత్రం 4 వరకు తప్పనిసరి ఆర్డర్లు లేవు. జరిమానా లేదు.",
+    "ur": "گرمی کی وارننگ: صبح 11 سے شام 4 بجے تک کوئی لازمی آرڈر نہیں۔ کوئی جرمانہ نہیں۔"
+   },
    "cedarContext": {
     "heatIndexC": 38,
     "hourOfDay": 11,
@@ -812,6 +972,11 @@
    "heatIndexC": 37,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 37,
     "hourOfDay": 10,
@@ -836,6 +1001,11 @@
    "heatIndexC": 36,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 36,
     "hourOfDay": 10,
@@ -860,6 +1030,11 @@
    "heatIndexC": 36,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 36,
     "hourOfDay": 10,
@@ -884,6 +1059,11 @@
    "heatIndexC": 35,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 35,
     "hourOfDay": 9,
@@ -910,6 +1090,11 @@
     "ndma-break-due"
    ],
    "message": "Heat alert: 15-minute cooling break after 90 minutes of work. No penalty and no pay cut.",
+   "messages": {
+    "hi": "गर्मी की चेतावनी: 90 मिनट काम के बाद 15 मिनट का आराम ब्रेक। कोई जुर्माना नहीं, पैसे नहीं कटेंगे।",
+    "te": "వేడి హెచ్చరిక: 90 నిమిషాల పని తర్వాత 15 నిమిషాల విశ్రాంతి బ్రేక్. జరిమానా లేదు, డబ్బు కోత లేదు.",
+    "ur": "گرمی کی وارننگ: 90 منٹ کام کے بعد 15 منٹ کا آرام کا وقفہ۔ کوئی جرمانہ نہیں، پیسے نہیں کٹیں گے۔"
+   },
    "cedarContext": {
     "heatIndexC": 35,
     "hourOfDay": 9,
@@ -934,6 +1119,11 @@
    "heatIndexC": 35,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 35,
     "hourOfDay": 9,
@@ -960,6 +1150,11 @@
     "union-rest-due"
    ],
    "message": "Heatwave day: paid 20-minute cooling break after 2 hours of work. Nearest shade and water below. No penalty.",
+   "messages": {
+    "hi": "लू का दिन: 2 घंटे काम के बाद पैसे सहित 20 मिनट का आराम ब्रेक। पास की छाँव और पानी नीचे देखें। कोई जुर्माना नहीं।",
+    "te": "వడగాల్పుల రోజు: 2 గంటల పని తర్వాత జీతంతో 20 నిమిషాల విశ్రాంతి బ్రేక్. దగ్గరి నీడ, నీళ్లు కింద చూడండి. జరిమానా లేదు.",
+    "ur": "لُو کا دن: 2 گھنٹے کام کے بعد پیسوں کے ساتھ 20 منٹ کا آرام کا وقفہ۔ قریب ترین سایہ اور پانی نیچے دیکھیں۔ کوئی جرمانہ نہیں۔"
+   },
    "cedarContext": {
     "heatIndexC": 34,
     "hourOfDay": 8,
@@ -984,6 +1179,11 @@
    "heatIndexC": 33,
    "firedRules": [],
    "message": "Order assigned.",
+   "messages": {
+    "hi": "ऑर्डर मिल गया।",
+    "te": "ఆర్డర్ మీకు ఇవ్వబడింది.",
+    "ur": "آرڈر مل گیا۔"
+   },
    "cedarContext": {
     "heatIndexC": 33,
     "hourOfDay": 8,

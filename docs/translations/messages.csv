@@ -1,13 +1,14 @@
-ruleId,policy,outcome,english,hindi,telugu,urdu
-ndma-rest-in-progress,ndma-2025,FORCE_REST,Your cooling break is still running. No penalty and no pay cut.,,,
-ndma-peak-hours-pause,ndma-2025,DENY,Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.,,,
-ndma-break-due,ndma-2025,FORCE_REST,Heat alert: 15-minute cooling break after 90 minutes of work. No penalty and no pay cut.,,,
-ndma-reduced-radius,ndma-2025,SKIP_ORDER,Heat alert: orders are limited to 3 km.,,,
-union-rest-in-progress,union-demand,FORCE_REST,Your cooling break is still running. No penalty.,,,
-union-rest-due,union-demand,FORCE_REST,Heatwave day: paid 20-minute cooling break after 2 hours of work. Nearest shade and water below. No penalty.,,,
-fair-rest-in-progress,heatgate-fair,FORCE_REST,Your paid cooling break is still running.,,,
-fair-rest-early-in-lull,heatgate-fair,FORCE_REST,Orders are slow right now. Take a paid 20-minute break in the shade.,,,
-fair-rest-due,heatgate-fair,FORCE_REST,Paid 20-minute cooling break. Nearest shade and water below.,,,
-fair-rest-hard-limit,heatgate-fair,FORCE_REST,Paid 20-minute cooling break. Nearest shade and water below.,,,
-fair-short-trips-only,heatgate-fair,SKIP_ORDER,This order is too far for this heat. You stay online for nearer orders.,,,
-fair-extreme-heat-stop,heatgate-fair,DENY,Extreme heat. Deliveries paused. Your incentive target is reduced for this time.,,,
+ruleId,policy,outcome,english,hindi,telugu,urdu,reviewed
+allow,all,ALLOW,Order assigned.,ऑर्डर मिल गया।,ఆర్డర్ మీకు ఇవ్వబడింది.,آرڈر مل گیا۔,false
+ndma-rest-in-progress,ndma-2025,FORCE_REST,Your cooling break is still running. No penalty and no pay cut.,"आपका आराम ब्रेक अभी चल रहा है। कोई जुर्माना नहीं, पैसे नहीं कटेंगे।","మీ విశ్రాంతి బ్రేక్ ఇంకా కొనసాగుతోంది. జరిమానా లేదు, డబ్బు కోత లేదు.",آپ کا آرام کا وقفہ ابھی جاری ہے۔ کوئی جرمانہ نہیں، پیسے نہیں کٹیں گے۔,false
+ndma-peak-hours-pause,ndma-2025,DENY,Heat alert: no mandatory orders from 11 AM to 4 PM. No penalty.,गर्मी की चेतावनी: सुबह 11 से शाम 4 बजे तक कोई ज़रूरी ऑर्डर नहीं। कोई जुर्माना नहीं।,వేడి హెచ్చరిక: ఉదయం 11 నుండి సాయంత్రం 4 వరకు తప్పనిసరి ఆర్డర్లు లేవు. జరిమానా లేదు.,گرمی کی وارننگ: صبح 11 سے شام 4 بجے تک کوئی لازمی آرڈر نہیں۔ کوئی جرمانہ نہیں۔,false
+ndma-break-due,ndma-2025,FORCE_REST,Heat alert: 15-minute cooling break after 90 minutes of work. No penalty and no pay cut.,"गर्मी की चेतावनी: 90 मिनट काम के बाद 15 मिनट का आराम ब्रेक। कोई जुर्माना नहीं, पैसे नहीं कटेंगे।","వేడి హెచ్చరిక: 90 నిమిషాల పని తర్వాత 15 నిమిషాల విశ్రాంతి బ్రేక్. జరిమానా లేదు, డబ్బు కోత లేదు.",گرمی کی وارننگ: 90 منٹ کام کے بعد 15 منٹ کا آرام کا وقفہ۔ کوئی جرمانہ نہیں، پیسے نہیں کٹیں گے۔,false
+ndma-reduced-radius,ndma-2025,SKIP_ORDER,Heat alert: orders are limited to 3 km.,गर्मी की चेतावनी: ऑर्डर सिर्फ़ 3 किमी तक।,వేడి హెచ్చరిక: ఆర్డర్లు 3 కి.మీ. వరకు మాత్రమే.,گرمی کی وارننگ: آرڈر صرف 3 کلومیٹر تک۔,false
+union-rest-in-progress,union-demand,FORCE_REST,Your cooling break is still running. No penalty.,आपका आराम ब्रेक अभी चल रहा है। कोई जुर्माना नहीं।,మీ విశ్రాంతి బ్రేక్ ఇంకా కొనసాగుతోంది. జరిమానా లేదు.,آپ کا آرام کا وقفہ ابھی جاری ہے۔ کوئی جرمانہ نہیں۔,false
+union-rest-due,union-demand,FORCE_REST,Heatwave day: paid 20-minute cooling break after 2 hours of work. Nearest shade and water below. No penalty.,लू का दिन: 2 घंटे काम के बाद पैसे सहित 20 मिनट का आराम ब्रेक। पास की छाँव और पानी नीचे देखें। कोई जुर्माना नहीं।,"వడగాల్పుల రోజు: 2 గంటల పని తర్వాత జీతంతో 20 నిమిషాల విశ్రాంతి బ్రేక్. దగ్గరి నీడ, నీళ్లు కింద చూడండి. జరిమానా లేదు.",لُو کا دن: 2 گھنٹے کام کے بعد پیسوں کے ساتھ 20 منٹ کا آرام کا وقفہ۔ قریب ترین سایہ اور پانی نیچے دیکھیں۔ کوئی جرمانہ نہیں۔,false
+fair-rest-in-progress,heatgate-fair,FORCE_REST,Your paid cooling break is still running.,आपका पैसे सहित आराम ब्रेक अभी चल रहा है।,మీ జీతంతో విశ్రాంతి బ్రేక్ ఇంకా కొనసాగుతోంది.,آپ کا پیسوں کے ساتھ آرام کا وقفہ ابھی جاری ہے۔,false
+fair-rest-early-in-lull,heatgate-fair,FORCE_REST,Orders are slow right now. Take a paid 20-minute break in the shade.,अभी ऑर्डर कम हैं। छाँव में पैसे सहित 20 मिनट का ब्रेक लें।,ఇప్పుడు ఆర్డర్లు తక్కువగా ఉన్నాయి. నీడలో జీతంతో 20 నిమిషాల బ్రేక్ తీసుకోండి.,ابھی آرڈر کم ہیں۔ سائے میں پیسوں کے ساتھ 20 منٹ کا وقفہ لیں۔,false
+fair-rest-due,heatgate-fair,FORCE_REST,Paid 20-minute cooling break. Nearest shade and water below.,पैसे सहित 20 मिनट का आराम ब्रेक। पास की छाँव और पानी नीचे देखें।,"జీతంతో 20 నిమిషాల విశ్రాంతి బ్రేక్. దగ్గరి నీడ, నీళ్లు కింద చూడండి.",پیسوں کے ساتھ 20 منٹ کا آرام کا وقفہ۔ قریب ترین سایہ اور پانی نیچے دیکھیں۔,false
+fair-rest-hard-limit,heatgate-fair,FORCE_REST,Paid 20-minute cooling break. Nearest shade and water below.,पैसे सहित 20 मिनट का आराम ब्रेक। पास की छाँव और पानी नीचे देखें।,"జీతంతో 20 నిమిషాల విశ్రాంతి బ్రేక్. దగ్గరి నీడ, నీళ్లు కింద చూడండి.",پیسوں کے ساتھ 20 منٹ کا آرام کا وقفہ۔ قریب ترین سایہ اور پانی نیچے دیکھیں۔,false
+fair-short-trips-only,heatgate-fair,SKIP_ORDER,This order is too far for this heat. You stay online for nearer orders.,इस गर्मी में यह ऑर्डर बहुत दूर है। पास के ऑर्डर के लिए आप ऑनलाइन रहेंगे।,ఈ వేడిలో ఈ ఆర్డర్ చాలా దూరం. దగ్గరి ఆర్డర్ల కోసం మీరు ఆన్‌లైన్‌లోనే ఉంటారు.,اس گرمی میں یہ آرڈر بہت دور ہے۔ قریب کے آرڈر کے لیے آپ آن لائن رہیں گے۔,false
+fair-extreme-heat-stop,heatgate-fair,DENY,Extreme heat. Deliveries paused. Your incentive target is reduced for this time.,बहुत ज़्यादा गर्मी। डिलीवरी रुकी है। इस समय के लिए आपका इंसेंटिव टारगेट कम किया गया है।,తీవ్రమైన వేడి. డెలివరీలు ఆపబడ్డాయి. ఈ సమయానికి మీ ఇన్సెంటివ్ టార్గెట్ తగ్గించబడింది.,شدید گرمی۔ ڈیلیوری رکی ہوئی ہے۔ اس وقت کے لیے آپ کا انسینٹو ٹارگٹ کم کر دیا گیا ہے۔,false

@@ -1,0 +1,286 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  HeatGate (ap-south-1): the Express API on Lambda behind an HTTP API, a second Lambda that runs
+  simulations, DynamoDB tables for the audit log and simulation jobs, a private S3 bucket for big
+  simulation results and audit trails, and an S3 static website for the web app.
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    MemorySize: 1024
+    Timeout: 29 # just under the HTTP API 30 s integration limit
+    CodeUri: .
+    Environment:
+      Variables:
+        NODE_OPTIONS: --enable-source-maps
+        STORE: dynamo # api/store/index.ts; local runs default to memory
+        AUDIT_TABLE: !Ref AuditTable
+        SIMULATIONS_TABLE: !Ref SimulationsTable
+        RESULTS_BUCKET: !Ref ResultsBucket
+
+Resources:
+  # The Express app (api/src/app.ts) through the adapter in api/src/lambda.ts.
+  # POST /simulations stores a queued job and invokes SimFunction asynchronously.
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda.handler
+      Environment:
+        Variables:
+          SIM_FUNCTION: !Ref SimFunction
+      # Live decisions in, audit log and jobs out, results and trails read from S3, start SimFunction.
+      Policies:
+        - DynamoDBReadPolicy: { TableName: !Ref AuditTable }
+        - DynamoDBWritePolicy: { TableName: !Ref AuditTable }
+        - DynamoDBReadPolicy: { TableName: !Ref SimulationsTable }
+        - DynamoDBWritePolicy: { TableName: !Ref SimulationsTable }
+        - S3ReadPolicy: { BucketName: !Ref ResultsBucket }
+        - LambdaInvokePolicy: { FunctionName: !Ref SimFunction }
+      Events:
+        Health:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: GET, Path: /health }
+        Policies:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: GET, Path: /policies }
+        Defaults:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: GET, Path: /defaults }
+        BreakEven:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: GET, Path: /break-even }
+        Decide:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: POST, Path: /decide }
+        StartSimulation:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: POST, Path: /simulations }
+        GetSimulation:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: GET, Path: "/simulations/{id}" }
+        Audit:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: GET, Path: /audit }
+        # Everything else reaches Express too, so unknown routes get its 404 error body, as locally.
+        Other:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Method: ANY, Path: "/{proxy+}" }
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - api/src/lambda.ts
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        Target: node20
+        Minify: true
+        Sourcemap: true
+        # lambda.ts embeds the Cedar policies and the cedar-wasm binary (see its header comment).
+        Loader:
+          - .cedar=text
+          - .cedarschema=text
+          - .wasm=binary
+
+  # Runs one simulation job (simHandler in api/src/lambda.ts, same bundle): status running, then the
+  # result and audit trail to S3 and status done or failed. Invoked only by ApiFunction, asynchronously.
+  SimFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda.simHandler
+      Timeout: 600
+      MemorySize: 2048
+      # No automatic retries: a failed run is recorded as failed, and a second run would just repeat it.
+      EventInvokeConfig:
+        MaximumRetryAttempts: 0
+      # Job status and the kept-trails list in DynamoDB; results and trails written to (and old trails
+      # deleted from) S3. No access to the audit table: simulation trails live in S3.
+      Policies:
+        - DynamoDBReadPolicy: { TableName: !Ref SimulationsTable }
+        - DynamoDBWritePolicy: { TableName: !Ref SimulationsTable }
+        - S3CrudPolicy: { BucketName: !Ref ResultsBucket }
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - api/src/lambda.ts
+        Format: esm
+        OutExtension:
+          - .js=.mjs
+        Target: node20
+        Minify: true
+        Sourcemap: true
+        # Same bundle as ApiFunction. lambda.ts embeds the Cedar policies and the cedar-wasm binary (see its header comment).
+        Loader:
+          - .cedar=text
+          - .cedarschema=text
+          - .wasm=binary
+
+  # API Gateway v2. CORS is answered here, so browsers can call it from the S3 website.
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - content-type
+        MaxAge: 600
+      # A cheap cost guard for a public API: past this API Gateway answers 429 {"message":"Too Many Requests"}
+      # without calling Lambda. Applies to every route.
+      DefaultRouteSettings:
+        ThrottlingRateLimit: 10 # requests per second, steady
+        ThrottlingBurstLimit: 20
+
+  # Static website for web/dist. Only the objects are publicly readable (bucket policy below);
+  # ACLs stay blocked and nobody can list the bucket.
+  WebBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+
+  WebBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublicReadObjects
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${WebBucket.Arn}/*"
+
+  # Private: SimResult and simulation audit trails (too big for a DynamoDB item). Only the two
+  # functions can reach it. Objects expire after 30 days, like the table items (privacy).
+  ResultsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-after-30-days
+            Status: Enabled
+            ExpirationInDays: 30
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+
+  ResultsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ResultsBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: HttpsOnly
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt ResultsBucket.Arn
+              - !Sub "${ResultsBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+  # Live /decide decisions (api/store/dynamo.ts): simulationId = "live" + decisionId, because decision ids
+  # repeat across simulations. Rider IDs are pseudonymous; never store names or phone numbers.
+  # expiresAt: DynamoDB deletes each item 30 days after it was written (privacy).
+  AuditTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: simulationId
+          AttributeType: S
+        - AttributeName: decisionId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: simulationId
+          KeyType: HASH
+        - AttributeName: decisionId
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  # Simulation jobs: status and a pointer to the result in ResultsBucket, plus one item listing the
+  # simulations whose audit trails are kept. Same 30-day expiresAt.
+  # active-jobs: a sparse index of the queued and running jobs (only they have `active`), so the
+  # POST /simulations guard (at most 3 at once) counts them without reading the whole table.
+  SimulationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: simulationId
+          AttributeType: S
+        - AttributeName: active
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: simulationId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: active-jobs
+          KeySchema:
+            - AttributeName: active
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: KEYS_ONLY
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+Outputs:
+  ApiUrl:
+    Description: HeatGate API URL (use as VITE_API_URL)
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}"
+  WebsiteUrl:
+    Description: Web app URL (S3 static website, http only)
+    Value: !GetAtt WebBucket.WebsiteURL
+  WebBucketName:
+    Description: Bucket to upload web/dist to (npm run deploy:web)
+    Value: !Ref WebBucket
+  ResultsBucketName:
+    Description: Private bucket for simulation results and audit trails (empty it before sam delete)
+    Value: !Ref ResultsBucket
+  AuditTableName:
+    Description: DynamoDB audit log of live decisions
+    Value: !Ref AuditTable
+  SimulationsTableName:
+    Description: DynamoDB simulation jobs
+    Value: !Ref SimulationsTable
+  SimFunctionName:
+    Description: Lambda that runs simulations (logs in CloudWatch under /aws/lambda/<name>)
+    Value: !Ref SimFunction

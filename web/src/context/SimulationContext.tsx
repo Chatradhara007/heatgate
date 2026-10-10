@@ -1,216 +1,181 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { NumericMetric, SimParams, SimResult } from "@heatgate/contracts";
-import { useDefaults, useSimulation } from "../hooks/index.ts";
-import defaultParamsJson from "../../fixtures/defaults.json";
-import fixtureSimResultJson from "../../fixtures/simResult.json";
+// The run the pages show. A finished run's id goes into the URL (?run=<id>) and localStorage, so a reload or a
+// deep link (/compare?run=<id>) fetches it again with GET /simulations/:id. The URL wins over localStorage.
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
+import type { SimParams } from "@heatgate/contracts";
+import { useDefaults, useSimulation, type WebSimResult } from "../hooks/index.ts";
+import { ApiRequestError, USE_FIXTURES } from "../api.ts";
 
-export interface ComputedPlatformMetrics {
-  isCustom: boolean;
-  scenarioTitle: string;
-  peakTempC: number;
-  seedsCount: number;
-  // Card 1
-  restPayInr: number;
-  heatFeeInr: number;
-  netReserveSurplusInr: number;
-  // Card 2
-  costPerOrderInr: number;
-  ordersDelivered: number;
-  // Card 3
-  avgDeliveryMinsBaseline: number;
-  avgDeliveryMinsHeatGate: number;
-  deliveryMinsDeltaPct: number;
-  deliveryMinsDeltaMins: number;
-  // Card 4
-  lateOrdersBaseline: number;
-  lateOrdersHeatGate: number;
-  lateOrdersDelta: number;
-  // Card 5
-  unsafeExposureHours120Delta: number;
-  unsafeExposureHours90Delta: number;
-  // Chart metrics with 5-seed range whiskers
-  unsafe90: {
-    baselineMean: number;
-    baselineMin: number;
-    baselineMax: number;
-    heatgateMean: number;
-    heatgateMin: number;
-    heatgateMax: number;
-  };
-  deliveryTime: {
-    baselineMean: number;
-    baselineMin: number;
-    baselineMax: number;
-    heatgateMean: number;
-    heatgateMin: number;
-    heatgateMax: number;
-  };
-  riderEarnings: {
-    baselineMean: number;
-    baselineMin: number;
-    baselineMax: number;
-    heatgateMean: number;
-    heatgateMin: number;
-    heatgateMax: number;
-  };
+const STORAGE_KEY = "heatgate.run";
+
+// Storage can be missing or throw (private mode, blocked site data); the run then just isn't remembered.
+function readStoredRun(): string | undefined {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function storeRun(id: string | undefined) {
+  try {
+    if (id) window.localStorage.setItem(STORAGE_KEY, id);
+    else window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // ignore: see readStoredRun
+  }
 }
 
 interface SimulationContextValue {
-  activeSim: SimResult;
-  params: SimParams;
+  activeSim: WebSimResult | undefined; // undefined until a run finishes or a saved run is fetched again
+  params: SimParams | undefined; // undefined until GET /defaults answers
   setParams: (p: SimParams) => void;
-  runSimulation: (customParams?: SimParams) => Promise<SimResult | undefined>;
+  defaultsLoading: boolean;
+  defaultsError?: Error;
+  runSimulation: (customParams?: SimParams) => Promise<WebSimResult | undefined>;
+  cancel: () => void; // stops polling and clears the run state (the last finished result stays)
   loading: boolean;
+  restoring: string | undefined; // id of a saved run being fetched again
+  restoreError: string | undefined; // the saved run could not be loaded (gone or failed)
   status: string;
   error?: Error;
   elapsedMs: number;
-  isCustomRun: boolean;
-  computedMetrics: ComputedPlatformMetrics;
 }
 
 const SimulationContext = createContext<SimulationContextValue | null>(null);
 
-function calculatePlatformMetrics(sim: SimResult, isCustom: boolean): ComputedPlatformMetrics {
-  const noRules = sim.runs["no-rules"];
-  const fair = sim.runs["heatgate-fair"];
-
-  const bMetrics = noRules?.metrics;
-  const fMetrics = fair?.metrics;
-  const bRange = noRules?.range;
-  const fRange = fair?.range;
-
-  // Economic figures (placeholder)
-  const restPay = Math.round(fMetrics?.restPayTotalInr ?? 5640);
-  const heatFee = Math.round(fMetrics?.heatFeeCollectedInr ?? 6100);
-  const netReserve = heatFee - restPay;
-  const delivered = fMetrics?.ordersDelivered ?? 1150;
-  const costPerOrder = delivered > 0 ? Number(((restPay - heatFee) / delivered).toFixed(1)) : 0.4;
-
-  // Delivery speed
-  const bDelivMins = Number((bMetrics?.avgDeliveryMinutes ?? 27.4).toFixed(1));
-  const fDelivMins = Number((fMetrics?.avgDeliveryMinutes ?? 28.6).toFixed(1));
-  const delivDeltaMins = Number((fDelivMins - bDelivMins).toFixed(1));
-  const delivDeltaPct = Number((((fDelivMins - bDelivMins) / (bDelivMins || 1)) * 100).toFixed(1));
-
-  // Late orders
-  const bLate = Math.round(bMetrics?.ordersLate ?? 310);
-  const fLate = Math.round(fMetrics?.ordersLate ?? 355);
-  const lateDelta = fLate - bLate;
-
-  // Unsafe exposure (convert simulation minutes to rider-hours)
-  const bExp120Hours = (bMetrics?.unsafeExposureMin120 ?? 120) / 60;
-  const fExp120Hours = (fMetrics?.unsafeExposureMin120 ?? 6) / 60;
-  const exp120DeltaHours = Number((fExp120Hours - bExp120Hours).toFixed(1));
-
-  const bExp90Hours = (bMetrics?.unsafeExposureMin90 ?? 4092) / 60;
-  const fExp90Hours = (fMetrics?.unsafeExposureMin90 ?? 852) / 60;
-  const exp90DeltaHours = Math.round(fExp90Hours - bExp90Hours);
-
-  // Helper for range values with defaults
-  const getRange = (
-    rangeObj: Record<NumericMetric, { min: number; max: number }> | undefined,
-    metric: NumericMetric,
-    defMean: number,
-    scale = 1
-  ) => {
-    if (!rangeObj?.[metric]) {
-      return {
-        min: Number((defMean * 0.9).toFixed(1)),
-        max: Number((defMean * 1.1).toFixed(1)),
-      };
-    }
+// A run is gone when the API says so (404) or the job failed; then forget it. A network error keeps the id, so
+// a reload once the API is back shows the run.
+function restoreFailure(id: string, err: unknown): { message: string; gone: boolean } {
+  if (err instanceof ApiRequestError && err.status === 404) {
     return {
-      min: Number((rangeObj[metric].min * scale).toFixed(1)),
-      max: Number((rangeObj[metric].max * scale).toFixed(1)),
+      message: `Run ${id} is no longer on the API (a local API forgets runs when it restarts; the live API keeps them 30 days). Start a new run with Run Simulation on the Policy Sandbox.`,
+      gone: true,
     };
-  };
-
-  const bU90Range = getRange(bRange, "unsafeExposureMin90", 68.2, 1 / 60);
-  const fU90Range = getRange(fRange, "unsafeExposureMin90", 14.2, 1 / 60);
-
-  const bDelivRange = getRange(bRange, "avgDeliveryMinutes", 27.4);
-  const fDelivRange = getRange(fRange, "avgDeliveryMinutes", 28.6);
-
-  const bEarnRange = getRange(bRange, "avgEarningsPerRiderInr", 820);
-  const fEarnRange = getRange(fRange, "avgEarningsPerRiderInr", 845);
-
-  return {
-    isCustom,
-    scenarioTitle: isCustom ? "Custom Policy Sandbox Run" : "Benchmark Heatwave Day (Hyderabad)",
-    peakTempC: sim.params.peakTempC ?? 44,
-    seedsCount: sim.params.seeds?.length ?? 5,
-    restPayInr: restPay,
-    heatFeeInr: heatFee,
-    netReserveSurplusInr: netReserve,
-    costPerOrderInr: Math.abs(costPerOrder),
-    ordersDelivered: delivered,
-    avgDeliveryMinsBaseline: bDelivMins,
-    avgDeliveryMinsHeatGate: fDelivMins,
-    deliveryMinsDeltaPct: delivDeltaPct,
-    deliveryMinsDeltaMins: delivDeltaMins,
-    lateOrdersBaseline: bLate,
-    lateOrdersHeatGate: fLate,
-    lateOrdersDelta: lateDelta,
-    unsafeExposureHours120Delta: exp120DeltaHours,
-    unsafeExposureHours90Delta: exp90DeltaHours,
-    unsafe90: {
-      baselineMean: Number(bExp90Hours.toFixed(1)) || 68.2,
-      baselineMin: bU90Range.min || 62.0,
-      baselineMax: bU90Range.max || 74.5,
-      heatgateMean: Number(fExp90Hours.toFixed(1)) || 14.2,
-      heatgateMin: fU90Range.min || 11.5,
-      heatgateMax: fU90Range.max || 17.0,
-    },
-    deliveryTime: {
-      baselineMean: bDelivMins,
-      baselineMin: bDelivRange.min || 26.2,
-      baselineMax: bDelivRange.max || 28.5,
-      heatgateMean: fDelivMins,
-      heatgateMin: fDelivRange.min || 27.8,
-      heatgateMax: fDelivRange.max || 29.8,
-    },
-    riderEarnings: {
-      baselineMean: Math.round(bMetrics?.avgEarningsPerRiderInr ?? 820),
-      baselineMin: Math.round(bEarnRange.min) || 780,
-      baselineMax: Math.round(bEarnRange.max) || 860,
-      heatgateMean: Math.round(fMetrics?.avgEarningsPerRiderInr ?? 845),
-      heatgateMin: Math.round(fEarnRange.min) || 815,
-      heatgateMax: Math.round(fEarnRange.max) || 880,
-    },
-  };
+  }
+  const text = err instanceof Error ? err.message : String(err);
+  if (err instanceof ApiRequestError && err.status === undefined && err.code === undefined) {
+    return { message: `Run ${id} could not be loaded: ${text} Reload the page once the API is running.`, gone: false };
+  }
+  return { message: `Run ${id} could not be loaded: ${text} Start a new run with Run Simulation on the Policy Sandbox.`, gone: true };
 }
 
 export function SimulationProvider({ children }: { children: ReactNode }) {
   const defaults = useDefaults();
   const sim = useSimulation();
-  const [params, setParams] = useState<SimParams>(defaultParamsJson as unknown as SimParams);
-  const [activeSim, setActiveSim] = useState<SimResult>(fixtureSimResultJson as unknown as SimResult);
-  const [isCustomRun, setIsCustomRun] = useState(false);
+  const [params, setParams] = useState<SimParams | undefined>(undefined);
+  const [activeSim, setActiveSim] = useState<WebSimResult | undefined>(undefined);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlRun = searchParams.get("run") ?? undefined;
+  const [runId, setRunId] = useState<string | undefined>(() => urlRun ?? readStoredRun());
+  const [restoring, setRestoring] = useState<string | undefined>(undefined);
+  const [restoreError, setRestoreError] = useState<string | undefined>(undefined);
+  // Ids we gave up on (gone, failed or cancelled). The URL drops ?run one render after state does, so without
+  // this the stale URL would put the id straight back and the page would fetch it again in a loop.
+  const droppedRef = useRef(new Set<string>());
+  const { run, resume, cancel: cancelSim } = sim;
+
+  const setUrlRun = useCallback(
+    (id: string | undefined) =>
+      setSearchParams(
+        (p) => {
+          const next = new URLSearchParams(p);
+          if (id) next.set("run", id);
+          else next.delete("run");
+          return next;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
+
+  // URL -> state: a link or the back button brought a different run.
+  useEffect(() => {
+    if (urlRun && urlRun !== runId && !droppedRef.current.has(urlRun)) setRunId(urlRun);
+  }, [urlRun, runId]);
+
+  // State -> URL: keep ?run=<id> on every page, so a reload or a shared link shows the same run.
+  useEffect(() => {
+    if (runId && !urlRun) setUrlRun(runId);
+  }, [runId, urlRun, setUrlRun]);
+
+  // Fetch the saved run again (it may still be running: then keep polling).
+  useEffect(() => {
+    if (!runId || activeSim?.simulationId === runId || droppedRef.current.has(runId)) return;
+    let pending = true;
+    let superseded = false; // a later run of this effect owns the restore now: ignore this attempt's outcome
+    setRestoring(runId);
+    setRestoreError(undefined);
+    resume(runId).then(
+      (res) => {
+        pending = false;
+        if (superseded) return;
+        setRestoring(undefined);
+        if (!res) return;
+        setActiveSim(res);
+        storeRun(runId);
+      },
+      (err) => {
+        pending = false;
+        if (superseded) return;
+        setRestoring(undefined);
+        const { message, gone } = restoreFailure(runId, err);
+        setRestoreError(message);
+        cancelSim(); // the failure is shown as restoreError, not as a failed new run
+        if (gone) {
+          droppedRef.current.add(runId);
+          storeRun(undefined);
+          setRunId(undefined);
+          setUrlRun(undefined);
+        }
+      },
+    );
+    return () => {
+      superseded = true;
+      if (pending) cancelSim();
+    };
+  }, [runId, activeSim?.simulationId, resume, cancelSim, setUrlRun]);
+
+  const finish = useCallback(
+    (res: WebSimResult) => {
+      setActiveSim(res);
+      setRunId(res.simulationId);
+      setUrlRun(res.simulationId);
+      storeRun(res.simulationId);
+      setRestoreError(undefined);
+    },
+    [setUrlRun],
+  );
 
   useEffect(() => {
-    if (defaults.data) {
-      setParams(defaults.data);
-    }
+    if (!defaults.data) return;
+    setParams(defaults.data);
+    // Fixture mode with no saved run: show the fixture run from the start, through the same api/hooks path.
+    if (USE_FIXTURES && !runId) run(defaults.data).then((res) => res && finish(res));
+    // Only when the defaults arrive.
   }, [defaults.data]);
 
-  useEffect(() => {
-    if (sim.data) {
-      setActiveSim(sim.data);
-      setIsCustomRun(true);
-    }
-  }, [sim.data]);
-
-  const runSimulation = async (customParams?: SimParams): Promise<SimResult | undefined> => {
+  const runSimulation = async (customParams?: SimParams): Promise<WebSimResult | undefined> => {
     const toRun = customParams ?? params;
-    const res = await sim.run(toRun);
-    if (res) {
-      setActiveSim(res);
-      setIsCustomRun(true);
-    }
+    if (!toRun) return undefined;
+    setRestoreError(undefined);
+    const res = await run(toRun);
+    if (res) finish(res);
     return res;
   };
 
-  const computedMetrics = calculatePlatformMetrics(activeSim, isCustomRun);
+  const cancel = () => {
+    cancelSim();
+    setRestoring(undefined);
+    // Cancelling a reload's fetch drops that run; otherwise keep the last finished one.
+    if (runId !== activeSim?.simulationId) {
+      if (runId) droppedRef.current.add(runId);
+      const keep = activeSim?.simulationId;
+      setRunId(keep);
+      setUrlRun(keep);
+      storeRun(keep);
+    }
+  };
 
   return (
     <SimulationContext.Provider
@@ -218,13 +183,16 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         activeSim,
         params,
         setParams,
+        defaultsLoading: defaults.loading,
+        defaultsError: defaults.error,
         runSimulation,
+        cancel,
         loading: sim.loading,
+        restoring,
+        restoreError,
         status: sim.status,
         error: sim.error,
         elapsedMs: sim.elapsedMs,
-        isCustomRun,
-        computedMetrics,
       }}
     >
       {children}

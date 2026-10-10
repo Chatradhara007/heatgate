@@ -15,10 +15,14 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p engine && tsc -p sim && tsc -p api",
     "check-policies": "tsx scripts/check-policies.ts",
     "export-messages": "tsx scripts/export-messages.ts",
+    "fetch-weather": "tsx scripts/fetch-weather.ts",
     "sim:full": "tsx sim/scripts/full.ts",
     "sim:sensitivity": "tsx sim/scripts/sensitivity.ts",
     "sim:breakeven": "tsx sim/scripts/breakeven.ts",
-    "smoke": "tsx api/scripts/smoke.ts"
+    "sim:weather": "tsx sim/scripts/weather-days.ts",
+    "pitch-numbers": "tsx scripts/pitch-numbers.ts",
+    "smoke": "tsx api/scripts/smoke.ts",
+    "deploy:web": "tsx scripts/deploy-web.ts"
   },
   "keywords": [
     "cedar",
