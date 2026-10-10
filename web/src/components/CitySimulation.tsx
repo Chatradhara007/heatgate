@@ -1,8 +1,38 @@
 // The abstract 10 x 10 km simulated city, animated from result.runs[policy].frames (first seed only).
-// Not a real map: positions are km on a made-up grid (docs/api-guide.md §5).
-import { useEffect, useState } from "react";
+// Two views: "City map" (default), the grid laid on a real city's OpenStreetMap tiles as an illustration, and
+// the plain grid. Positions are km on a made-up grid in both (docs/api-guide.md §5); nothing is a real location.
+// Which view: ?view=grid|map (for the demo) > the viewer's last choice (localStorage) > City map.
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import type { PolicyVersion, RiderState, SimResult } from "@heatgate/contracts";
 import { POLICY_LABELS } from "@heatgate/contracts";
+import { CITY_CENTRES, cityFor, coolingPointsFrom } from "../lib/cityMap.ts";
+
+const LeafletCityMap = lazy(() => import("./LeafletCityMap.tsx"));
+
+type MapView = "grid" | "map";
+const VIEW_KEY = "heatgate.mapView";
+const isView = (v: string | null | undefined): v is MapView => v === "grid" || v === "map";
+
+// Storage can be missing or throw (private mode, blocked site data); then the choice just isn't remembered.
+function readStoredView(): MapView | undefined {
+  try {
+    const v = window.localStorage.getItem(VIEW_KEY);
+    return isView(v) ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function storeView(v: MapView) {
+  try {
+    window.localStorage.setItem(VIEW_KEY, v);
+  } catch {
+    // ignore: see readStoredView
+  }
+}
+
+const MAP_LABEL = "Illustration: simulated riders placed on a real city map. Positions and cooling points are not real locations.";
 
 interface CitySimulationProps {
   sim: SimResult | undefined;
@@ -32,6 +62,30 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
   const [frameIndex, setFrameIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlView = searchParams.get("view");
+  const [view, setView] = useState<MapView>(() => (isView(urlView) ? urlView : (readStoredView() ?? "map")));
+  // A ?view= link (or the back button) forces that view.
+  useEffect(() => {
+    if (isView(urlView)) setView(urlView);
+  }, [urlView]);
+  // The viewer's own choice: remembered, and written over ?view= so a reload keeps it.
+  const chooseView = (v: MapView) => {
+    setMapProblem(undefined);
+    setView(v);
+    storeView(v);
+    if (isView(urlView) && urlView !== v) {
+      setSearchParams(
+        (p) => {
+          const next = new URLSearchParams(p);
+          next.set("view", v);
+          return next;
+        },
+        { replace: true },
+      );
+    }
+  };
+  const [mapProblem, setMapProblem] = useState<string | undefined>(undefined);
 
   const frames = sim?.runs[policy]?.frames ?? [];
 
@@ -54,6 +108,10 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
     }, FRAME_MS / speed);
     return () => clearInterval(t);
   }, [isPlaying, frames.length, speed]);
+
+  const coolingPoints = useMemo(() => (sim ? coolingPointsFrom(sim) : []), [sim]);
+  const city = sim ? cityFor(sim.params) : undefined;
+  const shown: MapView = view === "map" && city ? "map" : "grid"; // no city centre for this day: grid
 
   const frame = frames[frameIndex];
   if (!sim || !frame) {
@@ -78,12 +136,61 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
           Simulated city · {POLICY_LABELS[policy]}
         </h2>
         <p className="text-xs text-on-surface-variant">
-          Abstract 10 × 10 km grid, not a real map. {sim.params.riders} simulated riders; the map shows the first seed only. Resting
-          riders sit at a cooling point.
+          {shown === "map"
+            ? `The simulator's abstract 10 × 10 km grid drawn over ${city} as an illustration. `
+            : "Abstract 10 × 10 km grid, not a real map. "}
+          {sim.params.riders} simulated riders; the map shows the first seed only. Resting riders sit at a cooling point
+          {coolingPoints.length > 0 ? ` (CP 1–${coolingPoints.length}: the ones riders rested at in this run)` : ""}. Hubs are not part of the
+          result, so they are not drawn.
         </p>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 border border-outline-variant rounded-lg p-0.5 bg-surface-container-lowest" role="radiogroup" aria-label="Map view">
+            {(["grid", "map"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                role="radio"
+                aria-checked={shown === v}
+                disabled={v === "map" && !city}
+                onClick={() => chooseView(v)}
+                className={`px-3 py-1 rounded text-xs font-bold disabled:opacity-40 ${shown === v ? "bg-primary text-on-primary" : "text-on-surface-variant hover:text-on-surface"}`}
+              >
+                {v === "grid" ? "Grid" : "City map"}
+              </button>
+            ))}
+          </div>
+          {!city && <span className="text-[11px] text-on-surface-variant">No city map for this weather day.</span>}
+        </div>
+        {mapProblem && (
+          <p role="status" className="mt-2 text-xs text-on-surface bg-surface-container-low border border-outline-variant rounded-lg px-3 py-1.5">
+            Showing the grid: {mapProblem}.
+          </p>
+        )}
       </div>
 
       <div className="relative w-full aspect-square max-h-[560px] mx-auto bg-[#EFEFEA] rounded-xl border border-outline-variant overflow-hidden">
+        {shown === "map" && city ? (
+          <>
+            <Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-xs text-on-surface-variant">Loading the city map…</div>}>
+              <LeafletCityMap
+                centre={CITY_CENTRES[city]}
+                frame={frame}
+                coolingPoints={coolingPoints}
+                tweenMs={FRAME_MS / speed}
+                stateColor={STATE_COLOR}
+                onTilesFailed={(reason) => {
+                  setMapProblem(reason);
+                  setView("grid");
+                }}
+              />
+            </Suspense>
+            <div className="absolute left-2 right-2 bottom-6 z-[1000] pointer-events-none flex justify-center">
+              <p className="max-w-[46ch] text-center text-[11px] leading-snug font-semibold text-on-surface bg-surface-container-lowest/95 border border-outline-variant rounded-lg px-2.5 py-1.5 shadow-md">
+                {MAP_LABEL}
+              </p>
+            </div>
+          </>
+        ) : (
         <svg className="w-full h-full" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`City at ${formatTime(startHour, frame.minute)}: ${counts.delivering} delivering, ${counts.resting} resting, ${counts.idle} idle, ${counts.paused} paused`}>
           <g stroke="#DDD9CC" strokeWidth="1">
             {Array.from({ length: 11 }, (_, i) => (
@@ -109,15 +216,26 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
               </circle>
             ))}
           </g>
+          <g>
+            {coolingPoints.map((cp) => (
+              <g key={cp.label} transform={`translate(${(cp.x / 10) * W} ${(cp.y / 10) * H})`} pointerEvents="none">
+                <rect x={-27} y={cp.labelBelow ? 10 : -32} width={54} height={22} rx={5} fill="#fff7ed" stroke="#d97706" strokeWidth={1.2} />
+                <text y={cp.labelBelow ? 26 : -16} textAnchor="middle" fontSize={15} fontWeight={600} fill="#7d4200" fontFamily="JetBrains Mono, monospace">
+                  {cp.label}
+                </text>
+              </g>
+            ))}
+          </g>
         </svg>
+        )}
 
-        <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-surface-container-lowest/95 border border-outline-variant px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl shadow-md pointer-events-none">
+        <div className="absolute z-[1000] top-2 left-2 sm:top-3 sm:left-3 bg-surface-container-lowest/95 border border-outline-variant px-2 py-1.5 sm:px-3 sm:py-2 rounded-xl shadow-md pointer-events-none">
           <div className="font-bold text-on-surface leading-none text-[24px] sm:text-[32px]" style={{ letterSpacing: "0.06em", fontFamily: '"Bebas Neue", sans-serif' }}>
             {formatTime(startHour, frame.minute)}
           </div>
           <div className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mt-0.5">1 frame = 5 min</div>
         </div>
-        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex flex-col items-end sm:flex-row sm:items-center gap-1.5 sm:gap-2 pointer-events-none">
+        <div className="absolute z-[1000] top-2 right-2 sm:top-3 sm:right-3 flex flex-col items-end sm:flex-row sm:items-center gap-1.5 sm:gap-2 pointer-events-none">
           <span className="px-2.5 py-1 rounded-lg bg-surface-container-lowest/95 border border-error/30 text-error shadow-md text-xs font-bold">
             Heat index {frame.heatIndexC}°C
           </span>
