@@ -1,4 +1,4 @@
-// Tailwind uses the tokens in src/theme.ts. Change tokens there, not here.
+// Tailwind uses the tokens in src/theme.ts.
 import type { Config } from "tailwindcss";
 import { colors, fontSizes, fonts, outcomeColors, radii, spacing } from "./src/theme.ts";
 
@@ -7,15 +7,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        surface: colors.surface,
-        panel: colors.panel,
-        border: colors.border,
+        ...colors,
         ink: { DEFAULT: colors.ink, muted: colors.inkMuted },
         brand: { DEFAULT: colors.brand, dark: colors.brandDark },
-        cool: colors.cool,
-        danger: colors.danger,
-        warning: colors.warning,
-        success: colors.success,
         outcome: {
           allow: outcomeColors.ALLOW,
           "skip-order": outcomeColors.SKIP_ORDER,
@@ -29,8 +23,19 @@ export default {
         sans: [...fonts.sans],
         display: [...fonts.display],
         mono: [...fonts.mono],
+        "headline-xl": ["Inter", "sans-serif"],
+        "headline-lg": ["Inter", "sans-serif"],
+        "headline-md": ["Inter", "sans-serif"],
+        "body-lg": ["Inter", "sans-serif"],
+        "body-md": ["Inter", "sans-serif"],
+        "body-sm": ["Inter", "sans-serif"],
+        "metric-xl": ["JetBrains Mono", "monospace"],
+        "metric-lg": ["JetBrains Mono", "monospace"],
+        "metric-md": ["JetBrains Mono", "monospace"],
+        "code-sm": ["JetBrains Mono", "monospace"],
       },
-      fontSize: fontSizes,
+      // Tailwind wants mutable tuples; the tokens are `as const`.
+      fontSize: fontSizes as unknown as Record<string, string | [string, Record<string, string>]>,
     },
   },
   plugins: [],

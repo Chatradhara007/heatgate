@@ -1,0 +1,902 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"><style id="bebas-neue-typography">body, p, span, td, th, input, select, button, div, a { font-family: 'Inter', sans-serif; } .font-code-sm, [class*='font-code'] { font-family: 'JetBrains Mono', monospace; } .font-metric-md, .font-metric-lg, .font-metric-xl, [class*='font-metric'], .metric-bebas { font-family: 'Bebas Neue', sans-serif !important; letter-spacing: 0.05em !important; font-variant-numeric: tabular-nums; } h1, h2, h3, h4, .font-headline-md, .font-headline-lg, .font-headline-xl, .font-heading { font-family: 'Bebas Neue', sans-serif !important; letter-spacing: 0.04em !important; } .display-bebas { font-family: 'Bebas Neue', sans-serif !important; letter-spacing: 0.05em !important; }</style><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><style id="bebas-neue-typography">body, p, span, td, th, input, select, button, div, a { font-family: 'Inter', sans-serif; } .font-code-sm, [class*='font-code'] { font-family: 'JetBrains Mono', monospace; } .font-metric-md, .font-metric-lg, .font-metric-xl, [class*='font-metric'], .metric-bebas { font-family: 'Bebas Neue', sans-serif !important; letter-spacing: 0.05em !important; font-variant-numeric: tabular-nums; } h1, h2, h3, h4, .font-headline-md, .font-headline-lg, .font-headline-xl, .font-heading { font-family: 'Bebas Neue', sans-serif !important; letter-spacing: 0.04em !important; } .display-bebas { font-family: 'Bebas Neue', sans-serif !important; letter-spacing: 0.05em !important; }</style><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"on-secondary-fixed-variant":"#003ea8","on-secondary-fixed":"#00174b","on-primary":"#ffffff","on-primary-container":"#a3faef","on-background":"#181c20","tertiary-fixed":"#ffdcc3","background":"#f7f9ff","on-tertiary-container":"#ffe6d5","secondary-fixed":"#dbe1ff","secondary-fixed-dim":"#b4c5ff","primary":"#005c55","tertiary":"#7d4200","on-error-container":"#93000a","on-surface-variant":"#3e4947","error":"#ba1a1a","primary-fixed-dim":"#80d5cb","outline-variant":"#bdc9c6","surface":"#f7f9ff","outline":"#6e7977","on-secondary-container":"#fefcff","on-primary-fixed":"#00201d","surface-container-low":"#f1f4f9","tertiary-container":"#a15600","secondary-container":"#316bf3","inverse-on-surface":"#eef1f6","surface-dim":"#d7dae0","on-error":"#ffffff","surface-tint":"#006a63","primary-fixed":"#9cf2e8","on-tertiary-fixed":"#2f1500","inverse-primary":"#80d5cb","on-tertiary":"#ffffff","surface-container-high":"#e5e8ee","surface-variant":"#e0e3e8","on-surface":"#181c20","tertiary-fixed-dim":"#ffb77d","on-primary-fixed-variant":"#00504a","surface-container-highest":"#e0e3e8","on-secondary":"#ffffff","secondary":"#0051d5","primary-container":"#0f766e","inverse-surface":"#2d3135","error-container":"#ffdad6","on-tertiary-fixed-variant":"#6e3900","surface-container":"#ebeef3","surface-bright":"#f7f9ff","surface-container-lowest":"#ffffff"},borderRadius:{DEFAULT:"0.25rem",lg:"0.5rem",xl:"0.75rem",full:"9999px"},spacing:{"margin":"2rem","space-xl":"2rem","space-md":"1rem","space-xs":"0.5rem","gutter-mobile":"1rem","space-sm":"0.75rem","space-2xl":"3rem","margin-mobile":"1rem","gutter":"1.5rem","space-lg":"1.5rem"},fontFamily:{"headline-xl":["Inter"],"metric-lg":["JetBrains Mono"],"metric-md":["JetBrains Mono"],"body-sm":["Inter"],"body-md":["Inter"],"headline-md":["Inter"],"code-sm":["JetBrains Mono"],"body-lg":["Inter"],"metric-xl":["JetBrains Mono"],"headline-lg":["Inter"]},fontSize:{"headline-xl":["48px",{lineHeight:"56px",letterSpacing:"-0.02em",fontWeight:"700"}],"metric-lg":["32px",{lineHeight:"38px",letterSpacing:"-0.02em",fontWeight:"700"}],"metric-md":["20px",{lineHeight:"26px",fontWeight:"600"}],"body-sm":["16px",{lineHeight:"24px",fontWeight:"500"}],"body-md":["18px",{lineHeight:"28px",fontWeight:"400"}],"headline-md":["24px",{lineHeight:"32px",letterSpacing:"-0.01em",fontWeight:"600"}],"code-sm":["16px",{lineHeight:"22px",fontWeight:"500"}],"body-lg":["20px",{lineHeight:"30px",fontWeight:"400"}],"metric-xl":["48px",{lineHeight:"52px",letterSpacing:"-0.03em",fontWeight:"700"}],"headline-lg":["32px",{lineHeight:"40px",letterSpacing:"-0.01em",fontWeight:"700"}]}}}}</script></head><body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest border-b border-outline-variant"><div class="bg-surface-container-high border-b border-outline-variant px-margin-mobile lg:px-margin text-on-surface-variant text-xs py-1 flex items-center justify-between"><div class="max-w-[1440px] mx-auto w-full flex items-center justify-between"><span class="font-code-sm text-code-sm flex items-center gap-2"><span class="material-symbols-outlined text-sm text-primary">info</span>Demo data · All rupee amounts are placeholders pending field calibration</span><button class="hover:text-on-surface text-on-surface-variant flex items-center" type="button"><span class="material-symbols-outlined text-sm">close</span></button></div></div><div class="h-20 max-w-[1440px] mx-auto px-margin-mobile lg:px-margin flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-3"><img alt="HeatGate Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1V8rUeBB6JDIKPEWH3mwVr8i9WeGQuOGTSuRovixsN-vm64jYsPh8iX8fUkclb9zRnUaLhqQCJIpBt1ZPuSCJ74pnJtDOqovdmlqRkg8QM2Bg-R2mcJVDz1K3zQZ9U9qfKE2k3eOClAE--SeUYv6M0qm4gm3hbz4oYMdP1RCByYw4-Wh05XYPkCcDP7h3T7hZF9ZNhn20E2Mkb2p_S2OIVujfLwjOJ7K8Mgli_u3YcMSjjIvomLTFARh8E"><span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface" style="font-family: &quot;Bebas Neue&quot;, sans-serif; letter-spacing: 0.05em; font-size: 28px;">HeatGate</span></div><nav class="hidden md:flex items-center gap-1 pl-space-md border-l border-outline-variant" data-active-classes="bg-primary text-on-primary font-bold"><a aria-current="page" class="min-h-[48px] px-space-md flex items-center rounded-lg transition-colors bg-primary text-on-primary font-bold" data-path="policy-sandbox" href="#">Policy Sandbox</a><a class="min-h-[48px] px-space-md flex items-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="rider-view" href="#">Rider View</a><a class="min-h-[48px] px-space-md flex items-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="audit-log" href="#">Audit Log</a><a class="min-h-[48px] px-space-md flex items-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface font-body-sm text-body-sm transition-colors" data-path="platform-view" href="#">Platform View</a></nav></div><div class="flex items-center gap-space-md"><span class="hidden xl:inline-block font-code-sm text-code-sm text-on-surface-variant bg-surface-container px-2 py-1 rounded border border-outline-variant">P presenter · 1-6 scenes</span><div class="inline-flex items-center border border-outline-variant rounded-lg bg-surface-container-lowest p-0.5 text-xs font-semibold"><button class="px-2 py-1 rounded bg-primary text-on-primary">EN</button><button class="px-2 py-1 rounded hover:bg-surface-container hover:text-on-surface text-on-surface-variant">हिं</button><button class="px-2 py-1 rounded hover:bg-surface-container hover:text-on-surface text-on-surface-variant">తె</button></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-28 pb-16 flex-1 bg-surface"><div class="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin"><div class="flex flex-col w-full gap-space-xl">
+<!-- ROW 1: SCENARIO BAR -->
+<div class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm">
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-space-md">
+<!-- Scenario Pill Selector -->
+<div aria-label="Simulation Scenario Selector" class="flex flex-wrap items-center gap-space-sm" role="radiogroup">
+<!-- Pill 1: Normal Day -->
+<button class="h-14 min-h-[48px] px-space-lg rounded-full border border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface font-body-lg text-body-lg flex items-center gap-space-xs transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2" type="button">
+<span class="font-semibold text-on-surface">Normal day</span>
+<span class="font-metric-md text-metric-md text-on-surface-variant font-normal">34°C · alert 0</span>
+</button>
+<!-- Pill 2: Heatwave Day (Selected) -->
+<button class="h-14 min-h-[48px] px-space-lg rounded-full border-2 border-primary bg-[#E6F4F1] text-primary font-body-lg text-body-lg flex items-center gap-space-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2" type="button">
+<span class="material-symbols-outlined text-[22px] text-primary" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+<span class="font-bold">Heatwave day</span>
+<span class="font-metric-md text-metric-md font-bold tracking-tight">44°C · alert auto</span>
+</button>
+<!-- Pill 3: Real Day Hyderabad -->
+<button class="h-14 min-h-[48px] px-space-lg rounded-full border border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface font-body-lg text-body-lg flex items-center gap-space-xs transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2" type="button">
+<span class="font-semibold text-on-surface">Real day: Hyderabad</span>
+<span class="text-xs px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-medium uppercase tracking-wider">Real replayed weather</span>
+</button>
+</div>
+<!-- Advanced Drawer Toggle -->
+<div class="flex items-center gap-space-sm self-end xl:self-center">
+<button class="h-12 min-h-[48px] px-space-lg rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container font-body-sm text-body-sm font-semibold text-on-surface flex items-center gap-2 transition-colors" id="advanced-toggle" type="button">
+<span class="">Advanced</span>
+<span class="material-symbols-outlined text-sm transition-transform duration-200" id="advanced-arrow">keyboard_arrow_down</span>
+</button>
+</div>
+</div>
+<!-- Collapsed Drawer (Live Preview) -->
+<div class="mt-space-md pt-space-md border-t border-outline-variant grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-lg" id="advanced-drawer">
+<!-- Peak Temp Slider -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+<span class="">Peak Temperature</span>
+<span class="font-code-sm text-code-sm text-on-surface font-bold" id="temp-val" style="letter-spacing: 0.05em; font-size: 20px; font-family: &quot;Bebas Neue&quot;, sans-serif !important;">44°C</span>
+</div>
+<input class="accent-primary w-full h-2 bg-surface-container rounded-lg cursor-pointer" max="46" min="34" oninput="document.getElementById('temp-val').innerText = this.value + '°C'" type="range" value="44">
+<div class="flex justify-between text-xs font-code-sm text-on-surface-variant">
+<span class="">34°C</span>
+<span class="">40°C</span>
+<span class="">46°C</span>
+</div>
+</div>
+<!-- Humidity Slider -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+<span class="">Humidity</span>
+<span class="font-code-sm text-code-sm text-on-surface font-bold" id="hum-val" style="letter-spacing: 0.05em; font-size: 20px; font-family: &quot;Bebas Neue&quot;, sans-serif !important;">45%</span>
+</div>
+<input class="accent-primary w-full h-2 bg-surface-container rounded-lg cursor-pointer" max="90" min="10" oninput="document.getElementById('hum-val').innerText = this.value + '%'" type="range" value="45">
+<div class="flex justify-between text-xs font-code-sm text-on-surface-variant">
+<span class="">10%</span>
+<span class="">50%</span>
+<span class="">90%</span>
+</div>
+</div>
+<!-- Alert Level Segmented -->
+<div class="flex flex-col gap-1">
+<span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">alert level (assumed)</span>
+<div class="grid grid-cols-4 bg-surface-container p-0.5 rounded-lg border border-outline-variant h-10 items-center">
+<button class="h-full rounded bg-surface-container-lowest font-body-sm text-body-sm font-bold text-primary shadow-xs" type="button">Auto</button>
+<button class="h-full rounded hover:bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant" type="button">0</button>
+<button class="h-full rounded hover:bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant" type="button">1</button>
+<button class="h-full rounded hover:bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant" type="button">2</button>
+</div>
+</div>
+<!-- Policy Selector -->
+<div class="flex flex-col gap-1">
+<span class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider">Policy Engine</span>
+<select class="h-10 px-3 bg-surface-container-lowest border border-outline-variant rounded-lg text-body-sm font-semibold text-on-surface focus:outline-none focus:border-primary">
+<option selected="">Active: HeatGate Fair v2.1</option>
+<option>NDMA Standard Rules</option>
+<option>Union IFAT Protection Model</option>
+<option>Baseline / Voluntary Unregulated</option>
+</select>
+</div>
+</div>
+</div>
+<!-- ROW 2: TWO COLUMNS (8/12 Map, 4/12 Selected Rider) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- LEFT (8/12): City Map Card -->
+<div class="lg:col-span-8 bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm flex flex-col gap-space-md">
+<!-- Card Title & Metadata -->
+<div class="flex items-center justify-between">
+<div>
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface" style="font-family: &quot;Bebas Neue&quot;, sans-serif; letter-spacing: 0.04em; font-size: 28px;">City Simulation · 10 × 10 km Urban Zone</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">50 rider agents real-time occupational heat exposure model</p>
+</div>
+<span class="font-code-sm text-code-sm bg-surface-container px-3 py-1.5 rounded-lg border border-outline-variant font-semibold text-on-surface">Zone: Begumpet Core</span>
+</div>
+<!-- Map Display Container with Visual Overlays -->
+<div class="relative w-full aspect-[4/3] max-h-[580px] bg-[#F1F0E9] rounded-lg border border-outline-variant overflow-hidden select-none">
+<!-- SVG Canvas: Urban Grid, Thermal Shading, 50 Agents, 6 Hubs, 8 Cooling Points -->
+<svg class="w-full h-full" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<!-- Microclimate zone heat gradients -->
+<radialGradient cx="45%" cy="40%" id="heat-micro-1" r="40%">
+<stop offset="0%" stop-color="#F97316" stop-opacity="0.22"></stop>
+<stop offset="70%" stop-color="#F97316" stop-opacity="0.08"></stop>
+<stop offset="100%" stop-color="#F97316" stop-opacity="0"></stop>
+</radialGradient>
+<radialGradient cx="75%" cy="70%" id="heat-micro-2" r="35%">
+<stop offset="0%" stop-color="#EF4444" stop-opacity="0.26"></stop>
+<stop offset="60%" stop-color="#EF4444" stop-opacity="0.06"></stop>
+<stop offset="100%" stop-color="#EF4444" stop-opacity="0"></stop>
+</radialGradient>
+<!-- Pulse animation for rest state -->
+<style>
+              @keyframes restPulse {
+                0% { r: 7px; opacity: 0.9; }
+                50% { r: 16px; opacity: 0.2; }
+                100% { r: 7px; opacity: 0.9; }
+              }
+              .pulse-ring {
+                animation: restPulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+              }
+            </style>
+</defs>
+<!-- Microclimate thermal layers -->
+<rect fill="#EFEFEA" height="600" width="800" x="0" y="0"></rect>
+<circle cx="360" cy="240" fill="url(#heat-micro-1)" r="300"></circle>
+<circle cx="600" cy="420" fill="url(#heat-micro-2)" r="260"></circle>
+<!-- Urban Arterial Road Network Grid -->
+<g stroke="#D6D4C8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+<!-- Main express corridors -->
+<path d="M 0 140 Q 280 180 500 130 T 800 160" fill="none" stroke="#CAC6B7" stroke-width="5"></path>
+<path d="M 120 0 Q 180 300 240 600" fill="none" stroke="#CAC6B7" stroke-width="5"></path>
+<path d="M 640 0 C 600 200 680 400 620 600" fill="none" stroke="#CAC6B7" stroke-width="4"></path>
+<path d="M 0 420 H 800" fill="none" stroke="#CAC6B7" stroke-width="4"></path>
+<!-- Grid Secondary Roads -->
+<line stroke-dasharray="4 4" stroke-width="1.2" x1="80" x2="80" y1="0" y2="600"></line>
+<line stroke-width="1.2" x1="200" x2="200" y1="0" y2="600"></line>
+<line stroke-width="1.2" x1="320" x2="320" y1="0" y2="600"></line>
+<line stroke-width="1.2" x1="440" x2="440" y1="0" y2="600"></line>
+<line stroke-width="1.2" x1="560" x2="560" y1="0" y2="600"></line>
+<line stroke-dasharray="4 4" stroke-width="1.2" x1="720" x2="720" y1="0" y2="600"></line>
+<line stroke-width="1.2" x1="0" x2="800" y1="80" y2="80"></line>
+<line stroke-width="1.2" x1="0" x2="800" y1="220" y2="220"></line>
+<line stroke-width="1.2" x1="0" x2="800" y1="300" y2="300"></line>
+<line stroke-dasharray="4 4" stroke-width="1.2" x1="0" x2="800" y1="360" y2="360"></line>
+<line stroke-width="1.2" x1="0" x2="800" y1="500" y2="500"></line>
+<!-- Diagonal avenue -->
+<line stroke="#D1CEC0" stroke-width="2.5" x1="0" x2="700" y1="60" y2="580"></line>
+</g>
+<!-- 6 Restaurant Hubs (Dark Grey Square Pins with fork icon) -->
+<g id="restaurant-hubs">
+<!-- Hub 1 -->
+<rect fill="#2D3135" height="22" rx="4" stroke="#FFFFFF" stroke-width="1.5" width="22" x="188" y="128"></rect>
+<text fill="#FFFFFF" font-family="sans-serif" font-size="12" text-anchor="middle" x="199" y="144">🍴</text>
+<!-- Hub 2 -->
+<rect fill="#2D3135" height="22" rx="4" stroke="#FFFFFF" stroke-width="1.5" width="22" x="308" y="288"></rect>
+<text fill="#FFFFFF" font-family="sans-serif" font-size="12" text-anchor="middle" x="319" y="304">🍴</text>
+<!-- Hub 3 -->
+<rect fill="#2D3135" height="22" rx="4" stroke="#FFFFFF" stroke-width="1.5" width="22" x="428" y="118"></rect>
+<text fill="#FFFFFF" font-family="sans-serif" font-size="12" text-anchor="middle" x="439" y="134">🍴</text>
+<!-- Hub 4 -->
+<rect fill="#2D3135" height="22" rx="4" stroke="#FFFFFF" stroke-width="1.5" width="22" x="628" y="208"></rect>
+<text fill="#FFFFFF" font-family="sans-serif" font-size="12" text-anchor="middle" x="639" y="224">🍴</text>
+<!-- Hub 5 -->
+<rect fill="#2D3135" height="22" rx="4" stroke="#FFFFFF" stroke-width="1.5" width="22" x="228" y="488"></rect>
+<text fill="#FFFFFF" font-family="sans-serif" font-size="12" text-anchor="middle" x="239" y="504">🍴</text>
+<!-- Hub 6 -->
+<rect fill="#2D3135" height="22" rx="4" stroke="#FFFFFF" stroke-width="1.5" width="22" x="548" y="408"></rect>
+<text fill="#FFFFFF" font-family="sans-serif" font-size="12" text-anchor="middle" x="559" y="424">🍴</text>
+</g>
+<!-- 8 Cooling Points (Teal droplet / umbrella pins labeled "Shade + water") -->
+<g id="cooling-points">
+<!-- CP 1 -->
+<circle cx="150" cy="220" fill="#005C55" r="13" stroke="#FFFFFF" stroke-width="2"></circle>
+<text fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle" x="150" y="224">💧</text>
+<text fill="#005C55" font-size="9" font-weight="bold" text-anchor="middle" x="150" y="243">CP 1</text>
+<!-- CP 2 -->
+<circle cx="280" cy="170" fill="#005C55" r="13" stroke="#FFFFFF" stroke-width="2"></circle>
+<text fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle" x="280" y="174">💧</text>
+<text fill="#005C55" font-size="9" font-weight="bold" text-anchor="middle" x="280" y="193">CP 2</text>
+<!-- CP 3 (Target of R-014) -->
+<circle cx="390" cy="270" fill="#005C55" r="14" stroke="#FFFFFF" stroke-width="2.5"></circle>
+<text fill="#FFFFFF" font-size="12" font-weight="bold" text-anchor="middle" x="390" y="274">💧</text>
+<rect fill="#005C55" height="18" rx="4" width="120" x="330" y="290"></rect>
+<text fill="#FFFFFF" font-size="9" font-weight="bold" text-anchor="middle" x="390" y="302">Cooling Point 3 (Shade + water)</text>
+<!-- CP 4 -->
+<circle cx="490" cy="350" fill="#005C55" r="13" stroke="#FFFFFF" stroke-width="2"></circle>
+<text fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle" x="490" y="354">💧</text>
+<text fill="#005C55" font-size="9" font-weight="bold" text-anchor="middle" x="490" y="373">CP 4</text>
+<!-- CP 5 -->
+<circle cx="680" cy="140" fill="#005C55" r="13" stroke="#FFFFFF" stroke-width="2"></circle>
+<text fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle" x="680" y="144">💧</text>
+<text fill="#005C55" font-size="9" font-weight="bold" text-anchor="middle" x="680" y="163">CP 5</text>
+<!-- CP 6 -->
+<circle cx="630" cy="480" fill="#005C55" r="13" stroke="#FFFFFF" stroke-width="2"></circle>
+<text fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle" x="630" y="484">💧</text>
+<text fill="#005C55" font-size="9" font-weight="bold" text-anchor="middle" x="630" y="503">CP 6</text>
+<!-- CP 7 -->
+<circle cx="350" cy="440" fill="#005C55" r="13" stroke="#FFFFFF" stroke-width="2"></circle>
+<text fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle" x="350" y="444">💧</text>
+<text fill="#005C55" font-size="9" font-weight="bold" text-anchor="middle" x="350" y="463">CP 7</text>
+<!-- CP 8 -->
+<circle cx="110" cy="370" fill="#005C55" r="13" stroke="#FFFFFF" stroke-width="2"></circle>
+<text fill="#FFFFFF" font-size="11" font-weight="bold" text-anchor="middle" x="110" y="374">💧</text>
+<text fill="#005C55" font-size="9" font-weight="bold" text-anchor="middle" x="110" y="393">CP 8</text>
+</g>
+<!-- 50 Rider Agent Dots (14px diameter) -->
+<!-- 12 Idle (Grey #6B7280) -->
+<g fill="#6B7280" id="riders-idle" stroke="#FFFFFF" stroke-width="1.5">
+<circle cx="60" cy="90" r="7"></circle>
+<circle cx="110" cy="130" r="7"></circle>
+<circle cx="210" cy="70" r="7"></circle>
+<circle cx="270" cy="60" r="7"></circle>
+<circle cx="330" cy="110" r="7"></circle>
+<circle cx="510" cy="90" r="7"></circle>
+<circle cx="580" cy="120" r="7"></circle>
+<circle cx="710" cy="95" r="7"></circle>
+<circle cx="70" cy="470" r="7"></circle>
+<circle cx="180" cy="540" r="7"></circle>
+<circle cx="490" cy="530" r="7"></circle>
+<circle cx="730" cy="510" r="7"></circle>
+</g>
+<!-- 28 Delivering (Blue #2563EB) -->
+<g fill="#2563EB" id="riders-delivering" stroke="#FFFFFF" stroke-width="1.5">
+<circle cx="95" cy="210" r="7"></circle>
+<circle cx="130" cy="290" r="7"></circle>
+<circle cx="170" cy="170" r="7"></circle>
+<circle cx="190" cy="260" r="7"></circle>
+<circle cx="220" cy="320" r="7"></circle>
+<circle cx="240" cy="220" r="7"></circle>
+<circle cx="260" cy="380" r="7"></circle>
+<circle cx="290" cy="420" r="7"></circle>
+<circle cx="310" cy="210" r="7"></circle>
+<circle cx="340" cy="340" r="7"></circle>
+<circle cx="410" cy="170" r="7"></circle>
+<circle cx="440" cy="240" r="7"></circle>
+<circle cx="460" cy="190" r="7"></circle>
+<circle cx="480" cy="280" r="7"></circle>
+<circle cx="520" cy="230" r="7"></circle>
+<circle cx="550" cy="170" r="7"></circle>
+<circle cx="570" cy="300" r="7"></circle>
+<circle cx="610" cy="270" r="7"></circle>
+<circle cx="660" cy="240" r="7"></circle>
+<circle cx="690" cy="310" r="7"></circle>
+<circle cx="740" cy="270" r="7"></circle>
+<circle cx="370" cy="370" r="7"></circle>
+<circle cx="430" cy="430" r="7"></circle>
+<circle cx="510" cy="450" r="7"></circle>
+<circle cx="580" cy="470" r="7"></circle>
+<circle cx="650" cy="410" r="7"></circle>
+<circle cx="210" cy="440" r="7"></circle>
+<circle cx="160" cy="390" r="7"></circle>
+</g>
+<!-- 8 Resting (Amber #D97706 with animated pulse rings) -->
+<g id="riders-resting">
+<!-- Resting 1 -->
+<circle class="pulse-ring" cx="140" cy="210" fill="none" r="7" stroke="#D97706" stroke-width="2"></circle>
+<circle cx="140" cy="210" fill="#D97706" r="7" stroke="#FFFFFF" stroke-width="1.5"></circle>
+<!-- Resting 2 -->
+<circle class="pulse-ring" cx="270" cy="180" fill="none" r="7" stroke="#D97706" stroke-width="2"></circle>
+<circle cx="270" cy="180" fill="#D97706" r="7" stroke="#FFFFFF" stroke-width="1.5"></circle>
+<!-- Resting 3 -->
+<circle class="pulse-ring" cx="480" cy="360" fill="none" r="7" stroke="#D97706" stroke-width="2"></circle>
+<circle cx="480" cy="360" fill="#D97706" r="7" stroke="#FFFFFF" stroke-width="1.5"></circle>
+<!-- Resting 4 -->
+<circle class="pulse-ring" cx="670" cy="150" fill="none" r="7" stroke="#D97706" stroke-width="2"></circle>
+<circle cx="670" cy="150" fill="#D97706" r="7" stroke="#FFFFFF" stroke-width="1.5"></circle>
+<!-- Resting 5 -->
+<circle class="pulse-ring" cx="620" cy="490" fill="none" r="7" stroke="#D97706" stroke-width="2"></circle>
+<circle cx="620" cy="490" fill="#D97706" r="7" stroke="#FFFFFF" stroke-width="1.5"></circle>
+<!-- Resting 6 -->
+<circle class="pulse-ring" cx="340" cy="450" fill="none" r="7" stroke="#D97706" stroke-width="2"></circle>
+<circle cx="340" cy="450" fill="#D97706" r="7" stroke="#FFFFFF" stroke-width="1.5"></circle>
+<!-- Resting 7 -->
+<circle class="pulse-ring" cx="120" cy="380" fill="none" r="7" stroke="#D97706" stroke-width="2"></circle>
+<circle cx="120" cy="380" fill="#D97706" r="7" stroke="#FFFFFF" stroke-width="1.5"></circle>
+<!-- Resting 8: Selected Rider R-014 near CP 3 -->
+<g id="selected-rider-node">
+<circle class="pulse-ring" cx="370" cy="255" fill="none" r="7" stroke="#D97706" stroke-width="2"></circle>
+<!-- Outer prominent teal highlight ring -->
+<circle cx="370" cy="255" fill="none" r="13" stroke="#005C55" stroke-dasharray="3 2" stroke-width="3"></circle>
+<circle cx="370" cy="255" fill="#D97706" r="7" stroke="#FFFFFF" stroke-width="2"></circle>
+<!-- Floating label for R-014 -->
+<rect fill="#005C55" height="22" rx="4" stroke="#FFFFFF" stroke-width="1.5" width="56" x="342" y="222"></rect>
+<text fill="#FFFFFF" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700" text-anchor="middle" x="370" y="237">R-014</text>
+<!-- Dotted route vector to CP 3 -->
+<line stroke="#005C55" stroke-dasharray="3 3" stroke-width="2" x1="370" x2="390" y1="255" y2="270"></line>
+</g>
+</g>
+<!-- 2 Paused (Red #DC2626) -->
+<g fill="#DC2626" id="riders-paused" stroke="#FFFFFF" stroke-width="1.5">
+<circle cx="450" cy="490" r="7"></circle>
+<circle cx="590" cy="360" r="7"></circle>
+</g>
+</svg>
+<!-- Map Overlay Top-Left: Digital Clock & Sim Speed -->
+<div class="absolute top-4 left-4 bg-surface-container-lowest/95 border border-outline-variant p-3 rounded-xl shadow-md pointer-events-none">
+<div class="font-metric-xl text-[54px] font-bold tracking-wide text-on-surface leading-none" style="letter-spacing: 0.06em; font-family: &quot;Bebas Neue&quot;, sans-serif !important;">13:25</div>
+<div class="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mt-1">Simulated day · 1 sec = 1 min</div>
+</div>
+<!-- Map Overlay Top-Right: Heat Index & Demand Badge -->
+<div class="absolute top-4 right-4 flex items-center gap-2 pointer-events-none">
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-lowest/95 border border-error/30 text-error shadow-md font-body-sm font-bold">
+<span class="material-symbols-outlined text-[18px]">device_thermostat</span>
+<span class="">Heat index 44°C</span>
+</div>
+<div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-tertiary-fixed text-on-tertiary-fixed border border-tertiary/20 shadow-md font-body-sm font-bold">
+<span class="material-symbols-outlined text-[18px]">local_fire_department</span>
+<span class="">Rush</span>
+</div>
+</div>
+</div>
+<!-- Bottom Playback Controls & Timeline Bar -->
+<div class="flex flex-col gap-3 bg-surface-container-low p-space-sm rounded-lg border border-outline-variant">
+<div class="flex flex-col sm:flex-row items-center justify-between gap-space-sm">
+<!-- Play / Pause & Timeline Scrubber -->
+<div class="flex items-center gap-space-sm w-full sm:w-auto flex-1">
+<button class="w-12 h-12 min-h-[48px] rounded-lg bg-primary hover:bg-[#0B4F4A] text-on-primary flex items-center justify-center shrink-0 shadow-sm focus:outline-none" type="button">
+<span class="material-symbols-outlined text-[24px]">pause</span>
+</button>
+<div class="flex flex-col flex-1 px-2">
+<div class="flex justify-between text-xs font-code-sm text-on-surface-variant font-semibold">
+<span class="">08:00</span>
+<span class="text-primary font-bold">Current: 13:25</span>
+<span class="">20:00</span>
+</div>
+<input class="w-full accent-primary h-2 bg-outline-variant/50 rounded-lg cursor-pointer" max="1200" min="480" type="range" value="805">
+</div>
+</div>
+<!-- Simulation Speed Multiplier Controls -->
+<div class="flex items-center gap-1 border border-outline-variant rounded-lg p-0.5 bg-surface-container-lowest shrink-0">
+<button class="px-3 py-1.5 rounded text-xs font-bold text-on-surface-variant hover:text-on-surface" type="button">1x</button>
+<button class="px-3 py-1.5 rounded bg-primary text-on-primary text-xs font-bold shadow-xs" type="button">2x</button>
+<button class="px-3 py-1.5 rounded text-xs font-bold text-on-surface-variant hover:text-on-surface" type="button">4x</button>
+</div>
+</div>
+<!-- Clean Status Indicator Legend -->
+<div class="flex flex-wrap items-center justify-center gap-space-lg pt-1 border-t border-outline-variant/60 text-xs font-body-sm font-medium text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="w-3.5 h-3.5 rounded-full bg-[#6B7280] inline-block"></span>
+<span class="">Idle (12)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3.5 h-3.5 rounded-full bg-[#2563EB] inline-block"></span>
+<span class="">Delivering (28)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3.5 h-3.5 rounded-full bg-[#D97706] inline-block"></span>
+<span class="">Resting (8)</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3.5 h-3.5 rounded-full bg-[#DC2626] inline-block"></span>
+<span class="">Paused (2)</span>
+</div>
+</div>
+</div>
+<!-- Monospace Event Ticker Bar -->
+<div class="w-full bg-[#1B1F23] text-surface-bright font-code-sm text-code-sm px-4 py-2.5 rounded-lg flex items-center justify-between overflow-x-auto">
+<div class="flex items-center gap-3 shrink-0">
+<span class="text-[#80D5CB] font-bold">13:25</span>
+<span class="bg-surface-container-variant/30 text-surface-bright px-1.5 py-0.5 rounded text-xs">R-014</span>
+<span class="text-[#FFB77D] font-bold">FORCE_REST</span>
+<span class="text-surface-dim">fair-rest-due</span>
+<span class="text-outline">·</span>
+<span class="">Cooling Point 3 assigned (420m)</span>
+</div>
+<span class="text-xs text-outline-variant uppercase tracking-wider shrink-0 pl-4">Sim Event Log</span>
+</div>
+</div>
+<!-- RIGHT (4/12): Selected Rider Card Stack -->
+<div class="lg:col-span-4 flex flex-col gap-space-md">
+<!-- Phone-Style Card: R-014 in FORCE_REST -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm flex flex-col gap-space-md">
+<!-- Phone Card Header -->
+<div class="flex items-center justify-between pb-space-xs border-b border-outline-variant">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center font-bold text-on-surface font-code-sm">
+              RK
+            </div>
+<div>
+<div class="font-headline-md text-body-lg font-bold text-on-surface" style="font-family: &quot;Bebas Neue&quot;, sans-serif; letter-spacing: 0.05em; font-size: 24px;">R-014 · Rahul K.</div>
+<div class="font-code-sm text-xs text-on-surface-variant">Active Stint: 105 min</div>
+</div>
+</div>
+<!-- FORCE_REST Policy Badge -->
+<div class="h-9 px-3 rounded-lg bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] font-body-sm font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px]">pause_circle</span>
+<span class="">FORCE_REST</span>
+</div>
+</div>
+<!-- Rest Countdown Box -->
+<div class="bg-[#FFFBEB] border border-[#FDE68A] rounded-xl p-space-md flex flex-col items-center text-center">
+<span class="text-xs font-semibold text-[#92400E] uppercase tracking-wider">Mandatory Rest Remaining</span>
+<div class="font-metric-xl text-[44px] text-[#92400E] font-bold tracking-tight my-1" style="font-family: &quot;Bebas Neue&quot;, sans-serif; letter-spacing: 0.06em; font-size: 52px; line-height: 1;">18:42</div>
+<div class="font-headline-md text-headline-md font-bold text-on-surface" style="font-family: &quot;Bebas Neue&quot;, sans-serif; letter-spacing: 0.04em; font-size: 28px;">Rest 20 minutes</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-2">
+            Dispatches temporarily suspended to allow physiological cool-down.
+          </p>
+</div>
+<!-- Route Guidance to Shade & Water -->
+<div class="bg-surface-container-low border border-outline-variant rounded-lg p-space-sm flex items-start gap-3">
+<span class="material-symbols-outlined text-primary text-[22px] mt-0.5">near_me</span>
+<div class="flex flex-col">
+<span class="font-body-sm font-semibold text-on-surface">Nearest shade and water:</span>
+<span class="font-body-md text-body-md text-primary font-bold">Cooling Point 3, 420 m away</span>
+<span class="text-xs text-on-surface-variant mt-0.5">Begumpet Bus Shelter Hub · Water refill + mister</span>
+</div>
+</div>
+<!-- Reassurance Pill -->
+<div class="flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] font-body-sm text-body-sm font-bold">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span class="">Paid rest · No platform penalty</span>
+</div>
+</div>
+<!-- "Why this decision" Audit Panel -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<span class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Policy Audit Inspector</span>
+<div class="h-8 px-2.5 rounded bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-xs font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">pause_circle</span>
+<span class="">FORCE_REST</span>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-code-sm text-xs text-primary font-bold">Winning rule: fair-rest-due</span>
+<p class="font-body-sm text-body-sm text-on-surface bg-surface-container-low p-2.5 rounded border border-outline-variant">
+            Heat index ≥ 42°C and continuous active stint exceeds 90 minutes. Mandatory paid rest cycle triggered.
+          </p>
+</div>
+<!-- Telemetry Key-Value Pair List -->
+<div class="flex flex-col border border-outline-variant rounded-lg divide-y divide-outline-variant font-code-sm text-body-sm mt-1"><div class="flex justify-between items-center px-3 py-2 bg-surface-container-lowest"><span class="text-on-surface-variant">Heat index</span><span class="font-bold text-error" style="font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; font-size: 22px;">44°C</span></div><div class="flex justify-between items-center px-3 py-2 bg-surface-container-lowest"><span class="text-on-surface-variant">Minutes since break</span><span class="font-bold text-on-surface" style="font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; font-size: 22px;">105 min</span></div><div class="flex justify-between items-center px-3 py-2 bg-surface-container-lowest"><span class="text-on-surface-variant">Trip minutes</span><span class="font-bold text-on-surface" style="font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; font-size: 22px;">20 min</span></div><div class="flex justify-between items-center px-3 py-2 bg-surface-container-lowest"><span class="text-on-surface-variant">Demand level</span><span class="font-bold text-on-surface" style="font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; font-size: 22px;">1 (normal)</span></div><div class="flex justify-between items-center px-3 py-2 bg-surface-container-lowest"><span class="text-on-surface-variant">Alert level</span><span class="font-bold text-on-surface" style="font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; font-size: 22px;">1</span></div></div>
+<a class="mt-2 text-primary hover:text-[#0B4F4A] font-body-sm text-body-sm font-bold flex items-center gap-1 justify-end transition-colors" href="#">
+<span class="">Open in Audit Log</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+<!-- ROW 3: POLICY COMPARISON MATRIX TABLE (Projector Ready) -->
+<div class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Header & Scenario Context -->
+<div class="p-space-lg border-b border-outline-variant bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-2">
+<div>
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface" style="font-family: &quot;Bebas Neue&quot;, sans-serif; letter-spacing: 0.04em; font-size: 28px;">Policy Comparison Matrix (50 Riders · Heatwave Scenario)</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Mean and range across 5 seeds. Same simulated day for every rule set.</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded bg-surface-container border border-outline-variant font-code-sm text-xs font-semibold text-on-surface">Sample: n=5 seeds</span>
+<span class="px-2.5 py-1 rounded bg-surface-container border border-outline-variant font-code-sm text-xs font-semibold text-on-surface">Weather: 44°C Peak</span>
+</div>
+</div>
+<!-- Responsive Comparison Table -->
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse min-w-[1020px]">
+<thead>
+<tr class="border-b border-outline-variant text-on-surface-variant text-xs uppercase tracking-wider font-semibold bg-surface-container-low">
+<th class="py-4 px-6 w-1/4">Metric</th>
+<th class="py-4 px-5 w-[18%]">Today: Voluntary Measures<br><span class="text-[11px] font-normal lowercase">(nothing enforced)</span></th>
+<th class="py-4 px-5 w-[18%]">NDMA Advisory Rules<br><span class="text-[11px] font-normal lowercase">(government advisory)</span></th>
+<th class="py-4 px-5 w-[18%]">Union Demand (IFAT)<br><span class="text-[11px] font-normal lowercase">(labor federation)</span></th>
+<th class="py-4 px-6 w-[21%] bg-[#E6F4F1] border-t-4 border-primary text-primary">
+<div class="flex items-center justify-between">
+<span class="">HeatGate Fair</span>
+<span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-primary text-on-primary">Our proposal</span>
+</div>
+</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant font-body-md text-body-md">
+<!-- SECTION 1: SAFETY -->
+<tr class="bg-surface-container-high/60 font-semibold text-on-surface">
+<td class="py-2.5 px-6 font-code-sm text-xs uppercase tracking-wider text-on-surface-variant flex items-center gap-2" colspan="5">
+<span class="material-symbols-outlined text-[16px] text-primary">shield</span>
+<span class="">Section 1: Occupational Safety</span>
+</td>
+</tr>
+<!-- Unsafe outdoor minutes beyond 90 min -->
+<tr class="hover:bg-[#F7F7F4] transition-colors">
+<td class="py-4 px-6 font-medium text-on-surface">
+              Unsafe outdoor minutes beyond 90 min since rest
+            </td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">4,820</div>
+<div class="font-code-sm text-xs text-on-surface-variant">4,510–5,140</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">1,960</div>
+<div class="font-code-sm text-xs text-on-surface-variant">1,840–2,100</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">2,610</div>
+<div class="font-code-sm text-xs text-on-surface-variant">2,450–2,800</div>
+</td>
+<td class="py-4 px-6 bg-[#E6F4F1]/60">
+<div class="font-metric-md text-metric-md font-bold text-primary">1,540</div>
+<div class="font-code-sm text-xs text-primary/80">1,410–1,680</div>
+</td>
+</tr>
+<!-- Unsafe outdoor minutes beyond 120 min -->
+<tr class="hover:bg-[#F7F7F4] transition-colors">
+<td class="py-4 px-6 font-medium text-on-surface">
+              Unsafe outdoor minutes beyond 120 min since rest
+            </td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">3,210</div>
+<div class="font-code-sm text-xs text-on-surface-variant">2,980–3,450</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">1,120</div>
+<div class="font-code-sm text-xs text-on-surface-variant">1,040–1,210</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">1,480</div>
+<div class="font-code-sm text-xs text-on-surface-variant">1,380–1,590</div>
+</td>
+<td class="py-4 px-6 bg-[#E6F4F1]/60">
+<div class="flex items-center gap-2">
+<span class="font-metric-md text-metric-md font-bold text-primary">1,310</span>
+<span class="text-[11px] font-semibold bg-surface-container px-2 py-0.5 rounded text-on-surface-variant border border-outline-variant">No clear difference</span>
+</div>
+<div class="font-code-sm text-xs text-primary/80">1,220–1,410</div>
+</td>
+</tr>
+<!-- Breaks forced -->
+<tr class="hover:bg-[#F7F7F4] transition-colors">
+<td class="py-4 px-6 font-medium text-on-surface">Breaks forced</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">0</div>
+<div class="font-code-sm text-xs text-on-surface-variant">0–0</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">214</div>
+<div class="font-code-sm text-xs text-on-surface-variant">202–226</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">156</div>
+<div class="font-code-sm text-xs text-on-surface-variant">148–165</div>
+</td>
+<td class="py-4 px-6 bg-[#E6F4F1]/60">
+<div class="font-metric-md text-metric-md font-bold text-primary">188</div>
+<div class="font-code-sm text-xs text-primary/80">176–198</div>
+</td>
+</tr>
+<!-- Paused rider-minutes -->
+<tr class="hover:bg-[#F7F7F4] transition-colors">
+<td class="py-4 px-6 font-medium text-on-surface">Paused rider-minutes</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">0</div>
+<div class="font-code-sm text-xs text-on-surface-variant">0–0</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-error">3,940</div>
+<div class="font-code-sm text-xs text-on-surface-variant">3,650–4,200</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">0</div>
+<div class="font-code-sm text-xs text-on-surface-variant">0–0</div>
+</td>
+<td class="py-4 px-6 bg-[#E6F4F1]/60">
+<div class="font-metric-md text-metric-md font-bold text-primary">410</div>
+<div class="font-code-sm text-xs text-primary/80">380–450</div>
+</td>
+</tr>
+<!-- SECTION 2: SPEED -->
+<tr class="bg-surface-container-high/60 font-semibold text-on-surface">
+<td class="py-2.5 px-6 font-code-sm text-xs uppercase tracking-wider text-on-surface-variant flex items-center gap-2" colspan="5">
+<span class="material-symbols-outlined text-[16px] text-primary">speed</span>
+<span class="">Section 2: Fulfillment Velocity &amp; Reliability</span>
+</td>
+</tr>
+<!-- Average delivery time -->
+<tr class="hover:bg-[#F7F7F4] transition-colors">
+<td class="py-4 px-6 font-medium text-on-surface">Average delivery time (min)</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">27.4</div>
+<div class="font-code-sm text-xs text-on-surface-variant">26.1–28.8</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-error">41.8</div>
+<div class="font-code-sm text-xs text-on-surface-variant">39.5–44.2</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">29.1</div>
+<div class="font-code-sm text-xs text-on-surface-variant">27.8–30.5</div>
+</td>
+<td class="py-4 px-6 bg-[#E6F4F1]/60">
+<div class="flex items-center gap-2">
+<span class="font-metric-md text-metric-md font-bold text-primary">28.6</span>
+<span class="text-[11px] font-semibold bg-surface-container px-2 py-0.5 rounded text-on-surface-variant border border-outline-variant">No clear difference</span>
+</div>
+<div class="font-code-sm text-xs text-primary/80">27.2–29.9</div>
+</td>
+</tr>
+<!-- Slowest 10% of deliveries -->
+<tr class="hover:bg-[#F7F7F4] transition-colors">
+<td class="py-4 px-6 font-medium text-on-surface">Slowest 10% of deliveries (min)</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">39</div>
+<div class="font-code-sm text-xs text-on-surface-variant">37–41</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-error">72</div>
+<div class="font-code-sm text-xs text-on-surface-variant">68–77</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">43</div>
+<div class="font-code-sm text-xs text-on-surface-variant">41–46</div>
+</td>
+<td class="py-4 px-6 bg-[#E6F4F1]/60">
+<div class="font-metric-md text-metric-md font-bold text-primary">41</div>
+<div class="font-code-sm text-xs text-primary/80">39–44</div>
+</td>
+</tr>
+<!-- Late orders -->
+<tr class="hover:bg-[#F7F7F4] transition-colors">
+<td class="py-4 px-6 font-medium text-on-surface">Late orders (over 45 min)</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">310</div>
+<div class="font-code-sm text-xs text-on-surface-variant">290–330</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-error">1,480</div>
+<div class="font-code-sm text-xs text-on-surface-variant">1,390–1,570</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">390</div>
+<div class="font-code-sm text-xs text-on-surface-variant">365–415</div>
+</td>
+<td class="py-4 px-6 bg-[#E6F4F1]/60">
+<div class="font-metric-md text-metric-md font-bold text-primary">355</div>
+<div class="font-code-sm text-xs text-primary/80">335–380</div>
+</td>
+</tr>
+<!-- SECTION 3: MONEY -->
+<tr class="bg-surface-container-high/60 font-semibold text-on-surface">
+<td class="py-2.5 px-6 font-code-sm text-xs uppercase tracking-wider text-on-surface-variant flex items-center gap-2" colspan="5">
+<span class="material-symbols-outlined text-[16px] text-primary">currency_rupee</span>
+<span class="">Section 3: Economics &amp; Rider Earnings</span>
+</td>
+</tr>
+<!-- Average rider earnings -->
+<tr class="hover:bg-[#F7F7F4] transition-colors">
+<td class="py-4 px-6 font-medium text-on-surface">Average rider earnings</td>
+<td class="py-4 px-5">
+<div class="flex items-center gap-1.5 font-metric-md text-metric-md font-bold text-on-surface">
+<span class="">₹1,180</span>
+<span class="text-[11px] font-normal text-on-surface-variant">[placeholder]</span>
+</div>
+</td>
+<td class="py-4 px-5">
+<div class="flex items-center gap-1.5 font-metric-md text-metric-md font-bold text-on-surface">
+<span class="">₹960</span>
+<span class="text-[11px] font-normal text-on-surface-variant">[placeholder]</span>
+</div>
+</td>
+<td class="py-4 px-5">
+<div class="flex items-center gap-1.5 font-metric-md text-metric-md font-bold text-on-surface">
+<span class="">₹1,215</span>
+<span class="text-[11px] font-normal text-on-surface-variant">[placeholder]</span>
+</div>
+</td>
+<td class="py-4 px-6 bg-[#E6F4F1]/60">
+<div class="flex items-center gap-1.5 font-metric-md text-metric-md font-bold text-primary">
+<span class="">₹1,240</span>
+<span class="text-[11px] font-normal text-primary/70">[placeholder]</span>
+</div>
+</td>
+</tr>
+<!-- Lowest-earning rider -->
+<tr class="hover:bg-[#F7F7F4] transition-colors">
+<td class="py-4 px-6 font-medium text-on-surface">Lowest-earning rider</td>
+<td class="py-4 px-5">
+<div class="flex items-center gap-1.5 font-metric-md text-metric-md font-bold text-on-surface">
+<span class="">₹610</span>
+<span class="text-[11px] font-normal text-on-surface-variant">[placeholder]</span>
+</div>
+</td>
+<td class="py-4 px-5">
+<div class="flex items-center gap-1.5 font-metric-md text-metric-md font-bold text-on-surface">
+<span class="">₹420</span>
+<span class="text-[11px] font-normal text-on-surface-variant">[placeholder]</span>
+</div>
+</td>
+<td class="py-4 px-5">
+<div class="flex items-center gap-1.5 font-metric-md text-metric-md font-bold text-on-surface">
+<span class="">₹690</span>
+<span class="text-[11px] font-normal text-on-surface-variant">[placeholder]</span>
+</div>
+</td>
+<td class="py-4 px-6 bg-[#E6F4F1]/60">
+<div class="flex items-center gap-1.5 font-metric-md text-metric-md font-bold text-primary">
+<span class="">₹735</span>
+<span class="text-[11px] font-normal text-primary/70">[placeholder]</span>
+</div>
+</td>
+</tr>
+<!-- Riders who reached incentive target -->
+<tr class="hover:bg-[#F7F7F4] transition-colors">
+<td class="py-4 px-6 font-medium text-on-surface">Riders who reached incentive target</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">58%</div>
+<div class="font-code-sm text-xs text-on-surface-variant">54–62%</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-error">41%</div>
+<div class="font-code-sm text-xs text-on-surface-variant">37–45%</div>
+</td>
+<td class="py-4 px-5">
+<div class="font-metric-md text-metric-md font-bold text-on-surface">71%</div>
+<div class="font-code-sm text-xs text-on-surface-variant">68–75%</div>
+</td>
+<td class="py-4 px-6 bg-[#E6F4F1]/60">
+<div class="font-metric-md text-metric-md font-bold text-primary">76%</div>
+<div class="font-code-sm text-xs text-primary/80">72–80%</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- ROW 4: THREE CARDS SIDE BY SIDE (Equal 3-Column Split) -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-space-lg items-stretch">
+<!-- CARD A: Heat Sweep Line Chart -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between gap-2 mb-2">
+<h3 class="font-headline-md text-body-lg font-bold text-on-surface" style="font-family: &quot;Bebas Neue&quot;, sans-serif; letter-spacing: 0.04em; font-size: 24px;">Heat Sweep: Exposure vs Ambient Peak</h3>
+</div>
+<!-- Toggle Buttons -->
+<div class="flex items-center border border-outline-variant rounded-lg p-0.5 bg-surface-container mb-space-md text-xs font-semibold">
+<button class="flex-1 py-1.5 rounded bg-surface-container-lowest text-primary font-bold shadow-xs" type="button">Unsafe exposure</button>
+<button class="flex-1 py-1.5 rounded text-on-surface-variant hover:text-on-surface" type="button">Earnings vs exposure</button>
+</div>
+<!-- SVG Line Chart: 34°C to 46°C vs 0-120 rider-hours -->
+<div class="w-full aspect-[4/3] bg-surface-container-lowest rounded-lg border border-outline-variant/60 p-2">
+<svg class="w-full h-full text-on-surface-variant" viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">
+<!-- Grid lines & Y-ticks -->
+<g stroke="#E3E1DA" stroke-width="1">
+<line x1="45" x2="330" y1="20" y2="20"></line>
+<line x1="45" x2="330" y1="65" y2="65"></line>
+<line x1="45" x2="330" y1="110" y2="110"></line>
+<line x1="45" x2="330" y1="155" y2="155"></line>
+<line stroke="#1B1F23" x1="45" x2="330" y1="190" y2="190"></line>
+</g>
+<!-- Y-Axis Labels -->
+<g fill="#6E7977" font-family="'JetBrains Mono', monospace" font-size="10" text-anchor="end">
+<text x="38" y="24">120h</text>
+<text x="38" y="69">80h</text>
+<text x="38" y="114">40h</text>
+<text x="38" y="159">10h</text>
+<text x="38" y="193">0h</text>
+</g>
+<!-- X-Axis Labels -->
+<g fill="#6E7977" font-family="'JetBrains Mono', monospace" font-size="10" text-anchor="middle">
+<text x="50" y="206">34°C</text>
+<text x="120" y="206">38°C</text>
+<text x="190" y="206">41°C</text>
+<text x="260" y="206">44°C</text>
+<text x="325" y="206">46°C</text>
+</g>
+<!-- 1. Voluntary Baseline (Solid Dark Grey #4B5563) -->
+<path d="M 50 180 Q 150 150 220 90 T 325 24" fill="none" stroke="#4B5563" stroke-width="2"></path>
+<!-- 2. NDMA Advisory (Dashed Dark Grey #374151) -->
+<path d="M 50 185 Q 160 170 240 120 T 325 80" fill="none" stroke="#374151" stroke-dasharray="5 3" stroke-width="2"></path>
+<!-- 3. Union IFAT (Dotted Dark Grey #1F2937) -->
+<path d="M 50 186 Q 160 175 240 135 T 325 70" fill="none" stroke="#1F2937" stroke-dasharray="2 3" stroke-width="2"></path>
+<!-- 4. HeatGate Fair: Thick Solid Deep Teal #0F766E -->
+<path d="M 50 188 Q 160 180 240 155 T 325 125" fill="none" stroke="#0F766E" stroke-width="3.5"></path>
+<!-- Line Endpoint Annotations -->
+<g font-family="Inter, sans-serif" font-size="9" font-weight="700">
+<text fill="#4B5563" text-anchor="end" x="330" y="22">Voluntary (118h)</text>
+<text fill="#1F2937" text-anchor="end" x="330" y="76">Union (72h)</text>
+<text fill="#374151" text-anchor="end" x="330" y="94">NDMA (64h)</text>
+<text fill="#0F766E" text-anchor="end" x="330" y="139">HeatGate Fair (32h)</text>
+</g>
+</svg>
+</div>
+</div>
+<p class="font-body-sm text-xs text-on-surface-variant mt-2">
+        HeatGate Fair holds cumulative unsafe rider hours under 35h across severe heat spikes above 44°C.
+      </p>
+</div>
+<!-- CARD B: Rule Source (Cedar Policy) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+<div>
+<h3 class="font-headline-md text-body-lg font-bold text-on-surface mb-2" style="font-family: &quot;Bebas Neue&quot;, sans-serif; letter-spacing: 0.04em; font-size: 24px;">Rule Source (Cedar Policy)</h3>
+<!-- Segmented Rule Selector -->
+<div class="flex items-center border border-outline-variant rounded-lg p-0.5 bg-surface-container mb-space-sm text-xs font-semibold">
+<button class="flex-1 py-1.5 rounded bg-surface-container-lowest text-primary font-bold shadow-xs" type="button">HeatGate Fair</button>
+<button class="flex-1 py-1.5 rounded text-on-surface-variant hover:text-on-surface" type="button">NDMA Advisory</button>
+<button class="flex-1 py-1.5 rounded text-on-surface-variant hover:text-on-surface" type="button">Union IFAT</button>
+</div>
+<!-- JetBrains Mono Cedar Code Container -->
+<div class="bg-[#F4F4F0] border border-outline-variant rounded-lg p-3 font-code-sm text-xs leading-relaxed overflow-x-auto text-[#1B1F23]">
+<div class="text-[#6E7977]">// HeatGate Core Safety Ruleset v2.1</div>
+<div class="mt-1 text-[#6E7977]">@id("baseline-permit")</div>
+<div class="">permit(principal, action == Action::"Dispatch", resource);</div>
+<!-- Distinct Soft Teal Highlighted Block for fair-rest-due -->
+<div class="my-2 p-2 rounded bg-[#E6F4F1] border-l-4 border-primary">
+<div class="text-primary font-bold">@id("fair-rest-due")</div>
+<div class="text-[#92400E] font-semibold">@outcome("FORCE_REST")</div>
+<div class="text-on-surface-variant">@message("Mandatory heat rest cycle triggered")</div>
+<div class="mt-1 font-bold text-[#005C55]">forbid(principal, action == Action::"Dispatch", resource)</div>
+<div class="text-[#1B1F23] font-medium">when {</div>
+<div class="pl-3 text-on-surface">
+              context.heat_index &gt;= 42 &amp;&amp;<br>
+              context.active_stint_min &gt;= 90
+            </div>
+<div class="text-[#1B1F23] font-medium">};</div>
+</div>
+<div class="text-[#6E7977]">@id("peak-halt-override")</div>
+<div class="">forbid(principal, action, resource) when { context.heat_index &gt;= 48 };</div>
+</div>
+</div>
+<div class="flex items-center justify-between text-xs text-on-surface-variant pt-2">
+<span class="font-code-sm">Status: Validated AST</span>
+<span class="font-code-sm text-primary font-semibold">Verified Deterministic</span>
+</div>
+</div>
+<!-- CARD C: Rules Sliders Interactive Sandbox -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+<div>
+<div class="mb-space-md">
+<h3 class="font-headline-md text-body-lg font-bold text-on-surface" style="font-family: &quot;Bebas Neue&quot;, sans-serif; letter-spacing: 0.04em; font-size: 24px;">Parameter Tuning</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Judges can change the rules and re-run.</p>
+</div>
+<div class="flex flex-col gap-space-md">
+<!-- Slider 1: Rest heat index -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center text-xs font-semibold text-on-surface">
+<span class="">Rest heat index threshold</span>
+<span class="font-code-sm text-body-sm text-primary font-bold" id="val-s1" style="letter-spacing: 0.05em; font-size: 22px; font-family: &quot;Bebas Neue&quot;, sans-serif !important;">38°C</span>
+</div>
+<input class="accent-primary w-full h-2 bg-surface-container rounded-lg cursor-pointer" max="44" min="32" oninput="document.getElementById('val-s1').innerText = this.value + '°C'" type="range" value="38">
+<div class="flex justify-between text-[11px] font-code-sm text-on-surface-variant">
+<span class="">32°C</span>
+<span class="">38°C</span>
+<span class="">44°C</span>
+</div>
+</div>
+<!-- Slider 2: Work limit before rest -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center text-xs font-semibold text-on-surface">
+<span class="">Work limit before rest</span>
+<span class="font-code-sm text-body-sm text-primary font-bold" id="val-s2" style="letter-spacing: 0.05em; font-size: 22px; font-family: &quot;Bebas Neue&quot;, sans-serif !important;">100 min</span>
+</div>
+<input class="accent-primary w-full h-2 bg-surface-container rounded-lg cursor-pointer" max="150" min="60" oninput="document.getElementById('val-s2').innerText = this.value + ' min'" type="range" value="100">
+<div class="flex justify-between text-[11px] font-code-sm text-on-surface-variant">
+<span class="">60 min</span>
+<span class="text-primary font-bold">▲ 90 min (NDMA)</span>
+<span class="">150 min</span>
+</div>
+</div>
+<!-- Slider 3: Rush hard limit -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-center text-xs font-semibold text-on-surface">
+<span class="">Rush hard limit</span>
+<span class="font-code-sm text-body-sm text-primary font-bold" id="val-s3" style="letter-spacing: 0.05em; font-size: 22px; font-family: &quot;Bebas Neue&quot;, sans-serif !important;">120 min</span>
+</div>
+<input class="accent-primary w-full h-2 bg-surface-container rounded-lg cursor-pointer" max="180" min="80" oninput="document.getElementById('val-s3').innerText = this.value + ' min'" type="range" value="120">
+<div class="flex justify-between text-[11px] font-code-sm text-on-surface-variant">
+<span class="">80 min</span>
+<span class="text-on-surface font-bold">▲ 120 min (Union)</span>
+<span class="">180 min</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Button: Primary 48px Deep Teal -->
+<button class="w-full mt-space-lg h-12 min-h-[48px] px-space-lg rounded-lg bg-primary hover:bg-[#0B4F4A] text-on-primary font-body-sm text-body-sm font-bold flex items-center justify-center gap-2 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 active:scale-[0.99]" type="button">
+<span class="material-symbols-outlined text-[20px]">refresh</span>
+<span class="">Run Simulation</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Client-side Interactive Behaviors -->
+<script>
+  (function initSandboxInteractions() {
+    const toggleBtn = document.getElementById('advanced-toggle');
+    const drawer = document.getElementById('advanced-drawer');
+    const arrow = document.getElementById('advanced-arrow');
+    
+    if (toggleBtn && drawer) {
+      let isOpen = true;
+      toggleBtn.addEventListener('click', () => {
+        isOpen = !isOpen;
+        if (isOpen) {
+          drawer.classList.remove('hidden');
+          arrow.style.transform = 'rotate(0deg)';
+        } else {
+          drawer.classList.add('hidden');
+          arrow.style.transform = 'rotate(180deg)';
+        }
+      });
+    }
+  })();
+</script></div></main><footer class="w-full bg-surface-container-lowest border-t border-outline-variant py-4"><div class="max-w-[1440px] mx-auto px-margin-mobile lg:px-margin flex flex-col md:flex-row items-center justify-between text-xs text-on-surface-variant gap-2"><p class="text-center md:text-left">Heat thresholds are placeholders pending expert review. Heat index is a proxy for heat stress, not a medical measure. · All rupee amounts are placeholders.</p><p class="font-code-sm text-code-sm shrink-0">Institutional Research Sandbox · v0.9.4</p></div></footer>
+
+
+
+</body></html>

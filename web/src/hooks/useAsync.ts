@@ -10,14 +10,22 @@ export interface AsyncState<T> {
 const toError = (err: unknown) => (err instanceof Error ? err : new Error(String(err)));
 
 // Runs `load` when the component mounts and again whenever `key` changes. Cancels stale calls.
-// `reload` runs it again on demand.
-export function useQuery<T>(load: (signal: AbortSignal) => Promise<T>, key: string): AsyncState<T> & { reload: () => void } {
-  const [state, setState] = useState<AsyncState<T>>({ data: undefined, loading: true, error: undefined });
+// `reload` runs it again on demand. With enabled = false nothing runs and the state stays empty.
+export function useQuery<T>(
+  load: (signal: AbortSignal) => Promise<T>,
+  key: string,
+  enabled = true,
+): AsyncState<T> & { reload: () => void } {
+  const [state, setState] = useState<AsyncState<T>>({ data: undefined, loading: enabled, error: undefined });
   const [tick, setTick] = useState(0);
   const loadRef = useRef(load);
   loadRef.current = load;
 
   useEffect(() => {
+    if (!enabled) {
+      setState({ data: undefined, loading: false, error: undefined });
+      return;
+    }
     const controller = new AbortController();
     setState((s) => ({ data: s.data, loading: true, error: undefined }));
     loadRef.current(controller.signal).then(
@@ -25,7 +33,7 @@ export function useQuery<T>(load: (signal: AbortSignal) => Promise<T>, key: stri
       (err) => !controller.signal.aborted && setState({ data: undefined, loading: false, error: toError(err) }),
     );
     return () => controller.abort();
-  }, [key, tick]);
+  }, [key, tick, enabled]);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
   return { ...state, reload };

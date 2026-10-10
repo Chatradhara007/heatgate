@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-surface font-sans text-base text-ink;
+@layer base {
+  body {
+    background-color: #f7f9ff;
+    color: #181c20;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+.font-code-sm, [class*='font-code'] {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.font-metric-md, .font-metric-lg, .font-metric-xl, [class*='font-metric'], .metric-bebas {
+  font-family: 'Bebas Neue', sans-serif !important;
+  letter-spacing: 0.05em !important;
+  font-variant-numeric: tabular-nums;
+}
+
+h1, h2, h3, h4, .font-headline-md, .font-headline-lg, .font-headline-xl, .font-heading {
+  font-family: 'Bebas Neue', sans-serif !important;
+  letter-spacing: 0.04em !important;
+}
+
+.display-bebas {
+  font-family: 'Bebas Neue', sans-serif !important;
+  letter-spacing: 0.05em !important;
 }

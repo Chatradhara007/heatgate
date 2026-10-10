@@ -3,6 +3,7 @@ export { useAudit } from "./useAudit.ts";
 export { useBreakEven } from "./useBreakEven.ts";
 export { useCreateSimulation } from "./useCreateSimulation.ts";
 export { useDecide } from "./useDecide.ts";
+export { useDataSource, type DataSource } from "./useDataSource.ts";
 export { useDefaults } from "./useDefaults.ts";
 export { useGetSimulation } from "./useGetSimulation.ts";
 export { usePolicies } from "./usePolicies.ts";
