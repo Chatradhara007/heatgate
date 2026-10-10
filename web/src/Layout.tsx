@@ -27,7 +27,7 @@ export function Layout({ routes }: { routes: readonly { path: string; label: str
           <div className="max-w-[1440px] mx-auto w-full flex items-center justify-between">
             <span className="font-mono flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[14px] text-primary">info</span>
-              Demo data · All rupee amounts are placeholders pending field calibration
+              Simulated riders · All rupee amounts are placeholders until rider interviews
             </span>
             <span
               className={`font-mono shrink-0 text-[11px] flex items-center gap-1.5 ${source === "unreachable" ? "text-error font-bold" : "text-on-surface-variant/80"}`}
@@ -78,21 +78,6 @@ export function Layout({ routes }: { routes: readonly { path: string; label: str
             </nav>
           </div>
 
-          {/* Right Header Controls */}
-          <div className="flex items-center gap-3">
-            <span className="hidden xl:inline-block font-mono text-[11px] text-on-surface-variant bg-surface-container px-2.5 py-1 rounded border border-outline-variant">
-              P presenter · 1-6 scenes
-            </span>
-            <div className="inline-flex items-center border border-outline-variant rounded-lg bg-surface-container-lowest p-0.5 text-xs font-semibold gap-0.5">
-              <button className="px-2.5 py-1 rounded bg-primary text-on-primary text-xs font-bold shadow-xs">EN</button>
-              <button className="px-2.5 py-1 rounded hover:bg-surface-container hover:text-on-surface text-on-surface-variant text-xs font-semibold">
-                हिं
-              </button>
-              <button className="px-2.5 py-1 rounded hover:bg-surface-container hover:text-on-surface text-on-surface-variant text-xs font-semibold">
-                తె
-              </button>
-            </div>
-          </div>
         </div>
       </header>
 
@@ -105,11 +90,9 @@ export function Layout({ routes }: { routes: readonly { path: string; label: str
       <footer className="w-full bg-surface-container-lowest border-t border-outline-variant py-4 mt-auto">
         <div className="max-w-[1440px] mx-auto px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between text-xs text-on-surface-variant gap-2">
           <p className="text-center md:text-left">
-            Heat thresholds are placeholders pending expert review. Heat index is a proxy for heat stress, not a medical measure.
+            HeatGate Fair thresholds need expert review. NDMA and union rules copy the published documents. Heat index is a proxy for outdoor heat stress, not a medical measure.
           </p>
-          <p className="font-mono text-[11px] shrink-0 text-on-surface-variant/80">
-            Institutional Research Sandbox · v0.9.4
-          </p>
+
         </div>
       </footer>
     </div>

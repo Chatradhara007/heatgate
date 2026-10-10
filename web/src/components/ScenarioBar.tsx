@@ -1,247 +1,178 @@
 import { useState } from "react";
-import { SimParams } from "@heatgate/contracts";
+import type { AlertSetting, SimParams } from "@heatgate/contracts";
+import { useWeatherDays } from "../hooks/index.ts";
 
 interface ScenarioBarProps {
   params: SimParams;
   setParams: (params: SimParams) => void;
 }
 
+// Two slider presets. These are inputs for a run, not results.
+const PRESETS = [
+  { key: "normal", label: "Normal Day", icon: "wb_sunny", peakTempC: 34, humidityPct: 40, alertLevel: 0 as AlertSetting },
+  { key: "heatwave", label: "Heatwave Day", icon: "local_fire_department", peakTempC: 44, humidityPct: 45, alertLevel: "auto" as AlertSetting },
+] as const;
+
+const alertText = (a: AlertSetting) => (a === "auto" ? "Alert auto" : `Alert ${a}`);
+
 export function ScenarioBar({ params, setParams }: ScenarioBarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const weatherDays = useWeatherDays();
 
-  const isNormal = params.peakTempC === 34 && params.alertLevel === 0;
-  const isHeatwave = (params.peakTempC === 44 || params.peakTempC === 40) && (params.alertLevel === "auto" || params.alertLevel === undefined);
-  const isRealDay = params.peakTempC === 43 && params.alertLevel === 1;
-  const isCustom = !isNormal && !isHeatwave && !isRealDay;
+  const replayId = params.weather?.kind === "replay" ? params.weather.weatherDayId : "";
+  const replayDay = weatherDays.data?.find((d) => d.id === replayId);
+  const activePreset = replayId
+    ? undefined
+    : PRESETS.find((p) => p.peakTempC === params.peakTempC && p.humidityPct === params.humidityPct && p.alertLevel === params.alertLevel);
+
+  const setSlider = (patch: Partial<SimParams>) => setParams({ ...params, ...patch, weather: { kind: "slider" } });
 
   return (
     <div className="w-full bg-surface-container-lowest border border-outline-variant rounded-2xl p-3.5 lg:p-4 shadow-xs">
-      {/* Top Deck: 3 Equal-Width Scenario Cards (9 cols) + Live Telemetry & Advanced Toggle (3 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
-        
-        {/* LEFT / CENTER (8-9 Cols): 3 Identically Sized Scenario Presets */}
-        <div className="lg:col-span-8 xl:col-span-9 grid grid-cols-1 sm:grid-cols-3 gap-2.5" role="radiogroup" aria-label="Simulation Scenario Selector">
-          
-          {/* Card 1: Normal Day */}
-          <button 
-            type="button"
-            onClick={() => setParams({ ...params, peakTempC: 34, humidityPct: 40, alertLevel: 0 })}
-            className={`w-full h-[58px] px-3.5 rounded-xl border flex items-center justify-between transition-all text-left group focus:outline-none focus:ring-2 focus:ring-primary ${
-              isNormal 
-                ? "border-2 border-primary bg-[#E6F4F1] shadow-xs" 
-                : "border-outline-variant bg-surface-container-lowest hover:bg-surface-container hover:border-outline"
+        <div className="lg:col-span-8 xl:col-span-9 grid grid-cols-1 sm:grid-cols-3 gap-2.5" role="radiogroup" aria-label="Scenario">
+          {PRESETS.map((p) => {
+            const selected = activePreset?.key === p.key;
+            return (
+              <button
+                key={p.key}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setSlider({ peakTempC: p.peakTempC, humidityPct: p.humidityPct, alertLevel: p.alertLevel })}
+                className={`w-full h-[58px] px-3.5 rounded-xl border flex items-center gap-2.5 text-left focus:outline-none focus:ring-2 focus:ring-primary ${
+                  selected ? "border-2 border-primary bg-[#E6F4F1]" : "border-outline-variant bg-surface-container-lowest hover:bg-surface-container"
+                }`}
+              >
+                <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${selected ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface-variant"}`}>
+                  <span className="material-symbols-outlined text-[18px]">{p.icon}</span>
+                </span>
+                <span className="min-w-0">
+                  <span className={`block text-xs font-bold truncate ${selected ? "text-primary" : "text-on-surface"}`}>{p.label}</span>
+                  <span className="block text-[11px] font-mono text-on-surface-variant truncate mt-0.5">
+                    {p.peakTempC}°C · {p.humidityPct}% · {alertText(p.alertLevel)}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+
+          {/* Real weather day replay (GET /weather-days) */}
+          <label
+            className={`w-full h-[58px] px-3.5 rounded-xl border flex flex-col justify-center ${
+              replayId ? "border-2 border-primary bg-[#E6F4F1]" : "border-outline-variant bg-surface-container-lowest"
             }`}
           >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                isNormal ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface-variant group-hover:bg-surface-container-high"
-              }`}>
-                <span className="material-symbols-outlined text-[18px]">wb_sunny</span>
-              </div>
-              <div className="min-w-0">
-                <div className={`text-xs font-bold truncate leading-tight ${isNormal ? "text-primary font-bold" : "text-on-surface font-semibold"}`}>
-                  Normal Day
-                </div>
-                <div className="text-[11px] font-mono text-on-surface-variant truncate mt-0.5">
-                  34°C · Alert 0
-                </div>
-              </div>
-            </div>
-            <div className={`w-2.5 h-2.5 rounded-full border shrink-0 ml-1.5 transition-all ${
-              isNormal ? "border-primary bg-primary ring-2 ring-primary/20" : "border-outline-variant bg-transparent"
-            }`} />
-          </button>
-
-          {/* Card 2: Heatwave Day */}
-          <button 
-            type="button"
-            onClick={() => setParams({ ...params, peakTempC: 44, humidityPct: 45, alertLevel: "auto" })}
-            className={`w-full h-[58px] px-3.5 rounded-xl border flex items-center justify-between transition-all text-left group focus:outline-none focus:ring-2 focus:ring-primary ${
-              isHeatwave 
-                ? "border-2 border-primary bg-[#E6F4F1] shadow-xs" 
-                : "border-outline-variant bg-surface-container-lowest hover:bg-surface-container hover:border-outline"
-            }`}
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                isHeatwave ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface-variant group-hover:bg-surface-container-high"
-              }`}>
-                <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
-              </div>
-              <div className="min-w-0">
-                <div className={`text-xs font-bold truncate leading-tight ${isHeatwave ? "text-primary font-bold" : "text-on-surface font-semibold"}`}>
-                  Heatwave Day
-                </div>
-                <div className="text-[11px] font-mono text-on-surface-variant truncate mt-0.5">
-                  44°C · Alert Auto
-                </div>
-              </div>
-            </div>
-            <div className={`w-2.5 h-2.5 rounded-full border shrink-0 ml-1.5 transition-all ${
-              isHeatwave ? "border-primary bg-primary ring-2 ring-primary/20" : "border-outline-variant bg-transparent"
-            }`} />
-          </button>
-
-          {/* Card 3: Real Day Hyderabad */}
-          <button 
-            type="button"
-            onClick={() => setParams({ ...params, peakTempC: 43, humidityPct: 28, alertLevel: 1 })}
-            className={`w-full h-[58px] px-3.5 rounded-xl border flex items-center justify-between transition-all text-left group focus:outline-none focus:ring-2 focus:ring-primary ${
-              isRealDay 
-                ? "border-2 border-primary bg-[#E6F4F1] shadow-xs" 
-                : "border-outline-variant bg-surface-container-lowest hover:bg-surface-container hover:border-outline"
-            }`}
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                isRealDay ? "bg-primary text-on-primary" : "bg-surface-container text-on-surface-variant group-hover:bg-surface-container-high"
-              }`}>
-                <span className="material-symbols-outlined text-[18px]">location_city</span>
-              </div>
-              <div className="min-w-0">
-                <div className={`text-xs font-bold truncate leading-tight ${isRealDay ? "text-primary font-bold" : "text-on-surface font-semibold"}`}>
-                  Hyderabad Replay
-                </div>
-                <div className="text-[11px] font-mono text-on-surface-variant truncate mt-0.5">
-                  42.6°C · May 19 Actual
-                </div>
-              </div>
-            </div>
-            <div className={`w-2.5 h-2.5 rounded-full border shrink-0 ml-1.5 transition-all ${
-              isRealDay ? "border-primary bg-primary ring-2 ring-primary/20" : "border-outline-variant bg-transparent"
-            }`} />
-          </button>
-
+            <span className={`text-xs font-bold ${replayId ? "text-primary" : "text-on-surface"}`}>Replay a real day</span>
+            {weatherDays.error ? (
+              <span role="alert" className="text-[11px] text-error truncate" title={weatherDays.error.message}>
+                Could not load weather days: {weatherDays.error.message}
+              </span>
+            ) : (
+              <select
+                aria-label="Weather day to replay"
+                value={replayId}
+                disabled={!weatherDays.data}
+                onChange={(e) =>
+                  e.target.value
+                    ? setParams({ ...params, alertLevel: "auto", weather: { kind: "replay", weatherDayId: e.target.value } })
+                    : setParams({ ...params, weather: { kind: "slider" } })
+                }
+                className="bg-transparent text-[11px] font-mono text-on-surface-variant focus:outline-none cursor-pointer"
+              >
+                <option value="">{weatherDays.loading ? "Loading days…" : "Choose a day…"}</option>
+                {weatherDays.data?.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.city} {d.date} · peak {d.peakTempC}°C, heat index {d.peakHeatIndexC}°C
+                  </option>
+                ))}
+              </select>
+            )}
+          </label>
         </div>
 
-        {/* RIGHT (3-4 Cols): Live Conditions Summary & Advanced Controls Drawer Toggle */}
-        <div className="lg:col-span-4 xl:col-span-3 bg-surface-container/60 border border-outline-variant/80 rounded-xl p-2 flex items-center justify-between gap-2.5 shadow-2xs">
-          
-          {/* Quick Conditions Readout */}
+        <div className="lg:col-span-4 xl:col-span-3 bg-surface-container/60 border border-outline-variant/80 rounded-xl p-2 flex items-center justify-between gap-2.5">
           <div className="flex flex-col min-w-0 pl-1.5">
-            <div className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider leading-none">
-              Live Profile
-            </div>
-            <div className="flex items-center gap-1.5 mt-1">
-              <span className="font-mono text-xs font-bold text-on-surface bg-surface-container-lowest px-1.5 py-0.5 rounded border border-outline-variant/60 shadow-2xs">
-                {params.peakTempC}°C
-              </span>
-              <span className="font-mono text-[11px] text-on-surface-variant bg-surface-container-lowest px-1.5 py-0.5 rounded border border-outline-variant/60 shadow-2xs">
-                {params.humidityPct}%
-              </span>
-              {isCustom && (
-                <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
-                  Custom
-                </span>
-              )}
-            </div>
+            <span className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider leading-none">Next run</span>
+            <span className="font-mono text-xs font-bold text-on-surface mt-1 truncate">
+              {replayId
+                ? replayDay
+                  ? `${replayDay.city} ${replayDay.date}`
+                  : replayId
+                : `${params.peakTempC}°C · ${params.humidityPct}% · ${alertText(params.alertLevel)}`}
+            </span>
           </div>
-
-          {/* Advanced Knobs Toggle Button */}
-          <button 
+          <button
             type="button"
             onClick={() => setIsOpen(!isOpen)}
-            id="advanced-toggle" 
-            className={`h-10 px-3 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs shrink-0 ${
-              isOpen 
-                ? "bg-primary text-on-primary border-primary shadow-sm" 
-                : "border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface"
+            aria-expanded={isOpen}
+            className={`h-10 px-3 rounded-lg border text-xs font-bold flex items-center gap-1.5 shrink-0 ${
+              isOpen ? "bg-primary text-on-primary border-primary" : "border-outline-variant bg-surface-container-lowest hover:bg-surface-container text-on-surface"
             }`}
           >
             <span className="material-symbols-outlined text-[16px]">tune</span>
             <span>Advanced</span>
-            <span id="advanced-arrow" className={`material-symbols-outlined text-sm transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}>
-              keyboard_arrow_down
-            </span>
           </button>
-
         </div>
-
       </div>
 
-      {/* Advanced Controls Drawer: Equal 4-Column Grid that lines up seamlessly */}
+      <p className="mt-2 text-[11px] text-on-surface-variant">
+        {replayId
+          ? "Replay uses the day's hourly weather (Open-Meteo reanalysis, ~25 km grid). The alert level is assumed from the peak temperature, not the real IMD alert."
+          : "Slider weather. The alert level is an assumption for the simulation, not a real IMD alert."}
+      </p>
+
       {isOpen && (
-        <div className="mt-3.5 pt-3.5 border-t border-outline-variant grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fadeIn" id="advanced-drawer">
-          {/* Knob 1: Peak Temp Slider */}
-          <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/70 flex flex-col gap-1.5 shadow-2xs">
-            <div className="flex justify-between items-center text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
-              <span>Peak Temperature</span>
-              <span className="font-mono text-xs text-primary font-bold bg-[#E6F4F1] border border-primary/20 px-2 py-0.5 rounded">
-                {params.peakTempC}°C
-              </span>
-            </div>
-            <input 
-              className="accent-primary w-full h-2 bg-surface-container rounded-lg cursor-pointer mt-1" 
-              max={46} 
-              min={34} 
-              type="range" 
+        <div className="mt-3.5 pt-3.5 border-t border-outline-variant grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <label className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/70 flex flex-col gap-1.5">
+            <span className="flex justify-between items-center text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
+              <span>Peak temperature</span>
+              <span className="font-mono text-xs text-primary font-bold">{params.peakTempC}°C</span>
+            </span>
+            <input
+              className="accent-primary w-full"
+              type="range"
+              min={34}
+              max={46}
+              step={1}
+              disabled={!!replayId}
               value={params.peakTempC}
-              onChange={(e) => setParams({ ...params, peakTempC: Number(e.target.value) })}
+              onChange={(e) => setSlider({ peakTempC: Number(e.target.value) })}
             />
-            <div className="flex justify-between text-[10px] font-mono text-on-surface-variant">
-              <span>34°C (Normal)</span>
-              <span>40°C</span>
-              <span>46°C (Extreme)</span>
-            </div>
-          </div>
-
-          {/* Knob 2: Humidity Slider */}
-          <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/70 flex flex-col gap-1.5 shadow-2xs">
-            <div className="flex justify-between items-center text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
+          </label>
+          <label className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/70 flex flex-col gap-1.5">
+            <span className="flex justify-between items-center text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
               <span>Humidity</span>
-              <span className="font-mono text-xs text-primary font-bold bg-[#E6F4F1] border border-primary/20 px-2 py-0.5 rounded">
-                {params.humidityPct}%
-              </span>
-            </div>
-            <input 
-              className="accent-primary w-full h-2 bg-surface-container rounded-lg cursor-pointer mt-1" 
-              max={90} 
-              min={10} 
-              type="range" 
+              <span className="font-mono text-xs text-primary font-bold">{params.humidityPct}%</span>
+            </span>
+            <input
+              className="accent-primary w-full"
+              type="range"
+              min={10}
+              max={90}
+              step={1}
+              disabled={!!replayId}
               value={params.humidityPct}
-              onChange={(e) => setParams({ ...params, humidityPct: Number(e.target.value) })}
+              onChange={(e) => setSlider({ humidityPct: Number(e.target.value) })}
             />
-            <div className="flex justify-between text-[10px] font-mono text-on-surface-variant">
-              <span>10% (Dry)</span>
-              <span>50%</span>
-              <span>90% (Monsoon)</span>
-            </div>
-          </div>
-
-          {/* Knob 3: Alert Level Segmented */}
-          <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/70 flex flex-col gap-1.5 shadow-2xs">
-            <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
-              Alert Level (NDMA)
-            </span>
-            <div className="grid grid-cols-4 bg-surface-container p-0.5 rounded-lg border border-outline-variant h-9 items-center gap-0.5 mt-0.5">
-              {(["auto", 0, 1, 2] as const).map((lvl) => {
-                const isSelected = params.alertLevel === lvl;
-                return (
-                  <button
-                    key={String(lvl)}
-                    type="button"
-                    onClick={() => setParams({ ...params, alertLevel: lvl })}
-                    className={`h-full rounded-md text-xs transition-all font-semibold ${
-                      isSelected 
-                        ? "bg-surface-container-lowest font-bold text-primary shadow-xs" 
-                        : "hover:bg-surface-container-low text-on-surface-variant text-[11px]"
-                    }`}
-                  >
-                    {lvl === "auto" ? "Auto" : lvl}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Knob 4: Policy Engine Selector */}
-          <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/70 flex flex-col gap-1.5 shadow-2xs">
-            <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
-              Active Policy Engine
-            </span>
-            <div className="h-9 px-3 bg-surface-container/60 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface flex items-center justify-between shadow-2xs mt-0.5">
-              <span className="truncate">HeatGate Fair v2.1</span>
-              <span className="w-2 h-2 rounded-full bg-primary inline-block shrink-0 ml-1"></span>
+          </label>
+          <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/70 flex flex-col gap-1.5">
+            <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Alert level (assumed, not IMD)</span>
+            <div className="grid grid-cols-4 bg-surface-container p-0.5 rounded-lg border border-outline-variant h-9 items-center gap-0.5" role="radiogroup" aria-label="Alert level">
+              {(["auto", 0, 1, 2] as const).map((lvl) => (
+                <button
+                  key={String(lvl)}
+                  type="button"
+                  role="radio"
+                  aria-checked={params.alertLevel === lvl}
+                  onClick={() => setParams({ ...params, alertLevel: lvl })}
+                  className={`h-full rounded-md text-xs font-semibold ${
+                    params.alertLevel === lvl ? "bg-surface-container-lowest font-bold text-primary" : "text-on-surface-variant hover:bg-surface-container-low"
+                  }`}
+                >
+                  {lvl === "auto" ? "Auto" : lvl}
+                </button>
+              ))}
             </div>
           </div>
         </div>

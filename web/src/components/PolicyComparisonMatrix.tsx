@@ -54,7 +54,7 @@ export function PolicyComparisonMatrix({ sim }: MatrixProps) {
       range = rangeVal ? `${formatFloat(rangeVal.min)}–${formatFloat(rangeVal.max)}` : "-";
     } else if (type === "currency") {
       mean = formatNum(meanVal, true);
-      range = "[placeholder]";
+      range = rangeVal ? `${formatNum(rangeVal.min, true)}–${formatNum(rangeVal.max, true)} placeholder` : "placeholder";
     } else if (type === "pct") {
       mean = formatNum(meanVal, false, true);
       range = rangeVal ? `${formatNum(rangeVal.min)}–${formatNum(rangeVal.max)}%` : "-";
@@ -63,7 +63,10 @@ export function PolicyComparisonMatrix({ sim }: MatrixProps) {
     return { mean, range };
   };
 
-  const peak = sim.params.peakTempC;
+  const { params } = sim;
+  const seeds = params.seeds.length;
+  const weather =
+    params.weather?.kind === "replay" ? `Replay: ${params.weather.weatherDayId}` : `Slider: ${params.peakTempC}°C peak, ${params.humidityPct}% humidity`;
 
   return (
     <div className="w-full bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xs overflow-hidden flex flex-col">
@@ -71,18 +74,21 @@ export function PolicyComparisonMatrix({ sim }: MatrixProps) {
       <div className="p-4 lg:p-5 border-b border-outline-variant bg-surface-container-low flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h2 className="font-headline-md text-headline-md font-bold text-on-surface" style={{ fontFamily: '"Bebas Neue", sans-serif', letterSpacing: "0.04em", fontSize: "24px" }}>
-            Policy Comparison Matrix (50 Riders · Heatwave Scenario)
+            Policy Comparison Matrix ({params.riders} riders)
           </h2>
           <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
-            Mean and range across 5 seeds. Same simulated day for every rule set.
+            {seeds === 1
+              ? "1 seed: one simulated day, so there is no range. Use 5 seeds for any number you present."
+              : `Mean and (lowest–highest) across ${seeds} seeds. Every rule set sees the same simulated days.`}{" "}
+            Assumes {params.multiAppPct}% of riders keep working on another app during breaks (to confirm with riders).
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="px-2.5 py-1 rounded-lg bg-surface-container border border-outline-variant font-mono text-xs font-semibold text-on-surface shadow-xs">
-            Sample: n=5 seeds
+            {seeds} {seeds === 1 ? "seed" : "seeds"}
           </span>
           <span className="px-2.5 py-1 rounded-lg bg-surface-container border border-outline-variant font-mono text-xs font-semibold text-on-surface shadow-xs">
-            Weather: {peak}°C Peak
+            {weather}
           </span>
         </div>
       </div>

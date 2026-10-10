@@ -59,7 +59,8 @@ export function SimulatorPage() {
         <BottomCards 
           params={params} 
           setParams={setParams} 
-          runSimulation={handleRun} 
+          runSimulation={handleRun}
+          running={loading}
         />
       )}
     </div>
