@@ -1,8 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { NumericMetric, SimParams, SimResult } from "@heatgate/contracts";
 import { useDefaults, useSimulation } from "../hooks/index.ts";
-import defaultParamsJson from "../../fixtures/defaults.json";
-import fixtureSimResultJson from "../../fixtures/simResult.json";
+import { USE_FIXTURES } from "../api.ts";
 
 export interface ComputedPlatformMetrics {
   isCustom: boolean;
@@ -56,16 +55,18 @@ export interface ComputedPlatformMetrics {
 }
 
 interface SimulationContextValue {
-  activeSim: SimResult;
-  params: SimParams;
+  activeSim: SimResult | undefined; // undefined until a run finishes (fixture mode loads the fixture run at start)
+  params: SimParams | undefined; // undefined until GET /defaults answers
   setParams: (p: SimParams) => void;
+  defaultsLoading: boolean;
+  defaultsError?: Error;
   runSimulation: (customParams?: SimParams) => Promise<SimResult | undefined>;
   loading: boolean;
   status: string;
   error?: Error;
   elapsedMs: number;
   isCustomRun: boolean;
-  computedMetrics: ComputedPlatformMetrics;
+  computedMetrics: ComputedPlatformMetrics | undefined; // undefined while there is no result
 }
 
 const SimulationContext = createContext<SimulationContextValue | null>(null);
@@ -183,25 +184,21 @@ function calculatePlatformMetrics(sim: SimResult, isCustom: boolean): ComputedPl
 export function SimulationProvider({ children }: { children: ReactNode }) {
   const defaults = useDefaults();
   const sim = useSimulation();
-  const [params, setParams] = useState<SimParams>(defaultParamsJson as unknown as SimParams);
-  const [activeSim, setActiveSim] = useState<SimResult>(fixtureSimResultJson as unknown as SimResult);
+  const [params, setParams] = useState<SimParams | undefined>(undefined);
+  const [activeSim, setActiveSim] = useState<SimResult | undefined>(undefined);
   const [isCustomRun, setIsCustomRun] = useState(false);
+  const { run } = sim;
 
   useEffect(() => {
-    if (defaults.data) {
-      setParams(defaults.data);
-    }
-  }, [defaults.data]);
-
-  useEffect(() => {
-    if (sim.data) {
-      setActiveSim(sim.data);
-      setIsCustomRun(true);
-    }
-  }, [sim.data]);
+    if (!defaults.data) return;
+    setParams(defaults.data);
+    // Fixture mode: show the fixture run from the start, through the same api/hooks path as a real run.
+    if (USE_FIXTURES) run(defaults.data).then((res) => res && setActiveSim(res));
+  }, [defaults.data, run]);
 
   const runSimulation = async (customParams?: SimParams): Promise<SimResult | undefined> => {
     const toRun = customParams ?? params;
+    if (!toRun) return undefined;
     const res = await sim.run(toRun);
     if (res) {
       setActiveSim(res);
@@ -210,7 +207,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     return res;
   };
 
-  const computedMetrics = calculatePlatformMetrics(activeSim, isCustomRun);
+  const computedMetrics = activeSim ? calculatePlatformMetrics(activeSim, isCustomRun) : undefined;
 
   return (
     <SimulationContext.Provider
@@ -218,6 +215,8 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         activeSim,
         params,
         setParams,
+        defaultsLoading: defaults.loading,
+        defaultsError: defaults.error,
         runSimulation,
         loading: sim.loading,
         status: sim.status,

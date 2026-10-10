@@ -3,6 +3,13 @@
 Vite + React + TypeScript + Tailwind. It shows the HeatGate API: the Simulator (sandbox),
 Compare, Audit and Rider phone pages.
 
+**Start with the [API guide](../docs/api-guide.md)**: every endpoint with real example requests and
+responses, the simulation flow, the knobs, how to read a `SimResult`, the audit log, the honesty rules
+for the UI and which page needs which endpoint.
+
+**Before putting a number on screen or in the pitch, check the [pitch numbers sheet](../docs/pitch-numbers.md)**:
+the results with their seed ranges, the claims we can and cannot make, and the caveats.
+
 ## Run it
 
 From the repo root:
@@ -38,10 +45,19 @@ must stay in step with `contracts/types.ts` and the API; ask before changing it.
   page or component. `src/api.ts` is the only file that talks to the network.
   - `usePolicies()`, `useDefaults()`, `useAudit(query)`, `useGetSimulation(id)`: load on mount and
     return `{ data, loading, error, reload }`.
-  - `useDecide()`, `useCreateSimulation()`: run on demand. They return `{ data, loading, error, run }`.
+  - `useDefaults()` returns the default `SimParams` plus `fairKnobs`, the starting values for the knob sliders.
+  - `useWeatherDays()` loads the real hot days a simulation can replay (`GET /weather-days`), for the
+    Simulator's weather-day picker. Each has `id`, `city`, `date`, `peakTempC`, `peakHeatIndexC`, `source`.
+  - `useDecide()`, `useCreateSimulation()`, `useRenderPolicy()`: run on demand. They return
+    `{ data, loading, error, run }`. `useRenderPolicy().run(knobs)` renders the heatgate-fair rules for
+    those knobs (debounce slider moves). In fixture mode only the default knobs render; any other knobs
+    give the error "Rule editing needs the live API".
   - `useSimulation()`: `run(params)` starts a simulation and polls it every second (120 s timeout).
     It returns `{ data, loading, error, status, simulationId, elapsedMs, run, cancel }`, and
     `status` goes `idle` → `queued` → `running` → `done` or `failed`.
+    To replay a real day, pass `weather: { kind: "replay", weatherDayId: day.id }` in `params`;
+    `{ kind: "slider" }` (the default) uses `peakTempC` and `humidityPct`. In fixture mode a replay returns
+    the one fixture result with `data.fixtureNote` saying the weather day was ignored: show it.
   - Always handle all three states. `components/AsyncView.tsx` does loading and error for you.
 - **Look: use the tokens** in `src/theme.ts` through Tailwind classes (`bg-surface`, `text-ink-muted`,
   `p-md`, `gap-lg`, `rounded-lg`, `font-display`, …). Outcome colours: `bg-outcome-allow`,

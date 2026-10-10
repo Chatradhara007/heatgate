@@ -1,0 +1,134 @@
+{
+ "id": "delhi-2025-06-13",
+ "city": "Delhi",
+ "date": "2025-06-13",
+ "lat": 28.576448,
+ "lng": 77.18678,
+ "source": "Open-Meteo historical weather API",
+ "url": "https://archive-api.open-meteo.com/v1/archive?latitude=28.6139&longitude=77.209&start_date=2020-01-01&end_date=2025-12-31&hourly=temperature_2m%2Crelative_humidity_2m&timezone=Asia%2FKolkata",
+ "timezone": "Asia/Kolkata",
+ "license": "CC BY 4.0, weather data by Open-Meteo.com",
+ "fetchedAt": "2026-10-09",
+ "hourly": [
+  {
+   "hour": 0,
+   "tempC": 34,
+   "humidityPct": 52
+  },
+  {
+   "hour": 1,
+   "tempC": 33.2,
+   "humidityPct": 53
+  },
+  {
+   "hour": 2,
+   "tempC": 32.6,
+   "humidityPct": 55
+  },
+  {
+   "hour": 3,
+   "tempC": 32.1,
+   "humidityPct": 56
+  },
+  {
+   "hour": 4,
+   "tempC": 31.7,
+   "humidityPct": 58
+  },
+  {
+   "hour": 5,
+   "tempC": 31.3,
+   "humidityPct": 60
+  },
+  {
+   "hour": 6,
+   "tempC": 33.2,
+   "humidityPct": 60
+  },
+  {
+   "hour": 7,
+   "tempC": 34.4,
+   "humidityPct": 55
+  },
+  {
+   "hour": 8,
+   "tempC": 36,
+   "humidityPct": 48
+  },
+  {
+   "hour": 9,
+   "tempC": 37.8,
+   "humidityPct": 41
+  },
+  {
+   "hour": 10,
+   "tempC": 39.6,
+   "humidityPct": 36
+  },
+  {
+   "hour": 11,
+   "tempC": 40.8,
+   "humidityPct": 32
+  },
+  {
+   "hour": 12,
+   "tempC": 41.1,
+   "humidityPct": 33
+  },
+  {
+   "hour": 13,
+   "tempC": 39.4,
+   "humidityPct": 41
+  },
+  {
+   "hour": 14,
+   "tempC": 39.8,
+   "humidityPct": 39
+  },
+  {
+   "hour": 15,
+   "tempC": 40.3,
+   "humidityPct": 37
+  },
+  {
+   "hour": 16,
+   "tempC": 40.5,
+   "humidityPct": 36
+  },
+  {
+   "hour": 17,
+   "tempC": 40,
+   "humidityPct": 37
+  },
+  {
+   "hour": 18,
+   "tempC": 36.3,
+   "humidityPct": 47
+  },
+  {
+   "hour": 19,
+   "tempC": 35.2,
+   "humidityPct": 51
+  },
+  {
+   "hour": 20,
+   "tempC": 34.5,
+   "humidityPct": 55
+  },
+  {
+   "hour": 21,
+   "tempC": 33.9,
+   "humidityPct": 58
+  },
+  {
+   "hour": 22,
+   "tempC": 33.3,
+   "humidityPct": 60
+  },
+  {
+   "hour": 23,
+   "tempC": 32.7,
+   "humidityPct": 62
+  }
+ ]
+}

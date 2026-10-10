@@ -5,7 +5,7 @@ import type { Decision, Outcome, SimResult, SimulationJob } from "@heatgate/cont
 import { createApp } from "../src/app.ts";
 import type { SimRunner } from "../src/simulations.ts";
 import { MemoryStore } from "../store/memory.ts";
-import { MAX_AUDITED_SIMULATIONS } from "../store/types.ts";
+import { MAX_ACTIVE_SIMULATIONS, MAX_AUDITED_SIMULATIONS } from "../store/types.ts";
 
 let server: Server | undefined;
 afterEach(() => server?.close());
@@ -59,16 +59,36 @@ test("simulation job: a crash in the run gives status failed with an error and n
   expect(job.result).toBeUndefined();
 });
 
-test("unknown simulation id -> 404 with the standard error body; unsupported fields -> 400", async () => {
+test("POST /simulations -> 429 TOO_MANY_RUNNING while 3 jobs are queued or running", async () => {
+  let release!: () => void;
+  const gate = new Promise<void>((r) => (release = r));
+  const call = await start(async (params, simulationId) => {
+    await gate;
+    return { result: { simulationId, params, runs: {} }, audit: {} };
+  });
+  const ids: string[] = [];
+  for (let i = 0; i < MAX_ACTIVE_SIMULATIONS; i++) {
+    const r = await call("POST", "/simulations", {});
+    expect(r.status).toBe(202);
+    ids.push(r.json.simulationId);
+  }
+  const busy = await call("POST", "/simulations", {});
+  expect(busy.status).toBe(429);
+  expect(busy.json).toEqual({ error: { code: "TOO_MANY_RUNNING", message: expect.any(String) } });
+  const invalid = await call("POST", "/simulations", { startHour: 14, endHour: 12 });
+  expect(invalid.status).toBe(400); // bad params are still a 400, busy or not
+  release();
+  for (const id of ids) expect((await poll(call, id)).status).toBe("done");
+  expect((await call("POST", "/simulations", {})).status).toBe(202);
+});
+
+test("unknown simulation id -> 404 with the standard error body", async () => {
   const call = await start(async () => {
     throw new Error("not called");
   });
   const r = await call("GET", "/simulations/nope");
   expect(r.status).toBe(404);
   expect(r.json).toEqual({ error: { code: "NOT_FOUND", message: expect.any(String) } });
-  const w = await call("POST", "/simulations", { weather: { kind: "slider" } });
-  expect(w.status).toBe(400);
-  expect(w.json.error.code).toBe("NOT_SUPPORTED");
 });
 
 const decision = (simulationId: string, riderId: string, minute: number, outcome: Outcome = "ALLOW"): Decision => ({
@@ -145,3 +165,35 @@ test("the store keeps only the last 5 simulations' audit trails, and never drops
   expect(all.items.filter((d) => d.simulationId === undefined)).toHaveLength(1);
   expect(new Set(all.items.flatMap((d) => (d.simulationId ? [d.simulationId] : []))).size).toBeLessThanOrEqual(MAX_AUDITED_SIMULATIONS);
 });
+
+// Keys that would say where a rider is. None may appear anywhere in an audit entry.
+const LOCATION_KEYS = ["x", "y", "lat", "lng", "position", "coolingPoint", "distanceM"];
+const keysOf = (v: unknown): string[] =>
+  v && typeof v === "object" ? Object.entries(v).flatMap(([k, inner]) => [k, ...keysOf(inner)]) : [];
+
+test("POST /decide: a FORCE_REST tells the rider the nearest cooling point and the message in every language; the audit entry has no location", async () => {
+  const { simulateWithAudit, defaultSimParams } = await import("@heatgate/sim");
+  const call = await start(async (params, simulationId) => simulateWithAudit({ ...params, seeds: [1], riders: 10, startHour: 12, endHour: 16 }, simulationId));
+  const hot = await call("POST", "/decide", {
+    policyVersion: "ndma-2025",
+    rider: { id: "R-015", vehicle: "bike", x: 2, y: 3 },
+    order: { id: "order-2", zone: "Z2", distanceKm: 3.4, tripMinutes: 20 },
+    conditions: { tempC: 42, humidityPct: 30, hourOfDay: 14, demandLevel: 2, alertLevel: 1 },
+    riderState: { minutesSinceBreak: 80, exposureMinutesToday: 200, restMinutesRemaining: 0 },
+  });
+  expect(hot.json.outcome).toBe("FORCE_REST");
+  expect(hot.json.coolingPoint).toEqual({ name: expect.stringMatching(/^Cooling point [1-8]$/), distanceM: expect.any(Number) });
+  expect(Object.keys(hot.json.messages).sort()).toEqual(["hi", "te", "ur"]);
+  expect(keysOf(hot.json)).not.toContain("x"); // the response names a place, never the rider's position
+
+  const sim = (await call("POST", "/simulations", { alertLevel: 1, peakTempC: defaultSimParams().peakTempC })).json.simulationId;
+  expect((await poll(call, sim)).status).toBe("done");
+  const items: Decision[] = (await call("GET", "/audit?limit=200")).json.items;
+  expect(items.some((d) => d.simulationId === sim && d.outcome === "FORCE_REST")).toBe(true);
+  const live = items.find((d) => d.riderId === "R-015")!;
+  expect(live.messages).toEqual(hot.json.messages); // the audit shows what the rider was told
+  for (const d of items) {
+    expect(d.messages?.hi).toMatch(/\S/);
+    for (const key of LOCATION_KEYS) expect(keysOf(d)).not.toContain(key);
+  }
+}, 60_000);

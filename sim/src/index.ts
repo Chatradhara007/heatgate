@@ -7,3 +7,4 @@ export * from "../fair.ts";
 export * from "../city.ts";
 export * from "../rng.ts";
 export * from "../breakeven.ts";
+export * from "../weather.ts";

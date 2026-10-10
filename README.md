@@ -72,14 +72,24 @@ npm run check-policies
 # 3. Run unit and golden tests
 npm test
 
-# 4. Start the local API server
-npm run dev:api
+# 4. Start the local API server (http://localhost:3001)
+npm start --workspace api
 
-# 5. Start the frontend web application
-npm run dev:web
+# 5. Start the frontend web application (http://localhost:5173)
+npm run dev --workspace web
 ```
 
+Building the website? Read the [API guide](docs/api-guide.md): every endpoint with real examples,
+the simulation flow, the rule knobs, how to read results and the honesty rules for the UI.
+
 ---
+
+## Pitch numbers
+
+Quoting a result? Use the [pitch numbers sheet](docs/pitch-numbers.md): every scenario's results as mean and
+range over the seeds, the claims the numbers support (with the command that reproduces each), the claims we
+must not make, and the caveats to say out loud. Regenerate it with `npm run pitch-numbers`; a test fails
+when it is stale.
 
 ## License
 

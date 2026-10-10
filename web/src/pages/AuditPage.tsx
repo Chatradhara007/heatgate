@@ -3,7 +3,7 @@ import type { Decision, Outcome, PolicyVersion } from "@heatgate/contracts";
 import { POLICY_LABELS } from "@heatgate/contracts";
 import { useAudit } from "../hooks/index.ts";
 import { useActiveSimulation } from "../context/SimulationContext.tsx";
-import { isBackendConnected, type AuditQuery } from "../api.ts";
+import type { AuditQuery } from "../api.ts";
 
 interface AuditDecision {
   id: string;
@@ -467,19 +467,19 @@ export function AuditPage() {
 
   // Dynamic simulation options
   const simulationOptions = useMemo(() => [
-    `Active Run (${activeSim.simulationId.slice(0, 10)}...)`,
+    ...(activeSim ? [`Active Run (${activeSim.simulationId.slice(0, 10)}...)`] : []),
     "Simulation: 2024-05-24 Peak Heatwave (Hyderabad)",
     "Simulation: 2024-05-10 Normal Day (Hyderabad)",
     "Simulation: 2024-06-01 Surging Demand (Hyderabad)",
     "All Simulations",
-  ], [activeSim.simulationId]);
+  ], [activeSim?.simulationId]);
 
   // Selected policy mapped to PolicyVersion
   const selectedPolicyCode = selectedPolicy ? POLICY_MAP[selectedPolicy] : undefined;
 
   // Selected simulation filter
   const isSelectedActiveSim = selectedSimulation.startsWith("Active Run");
-  const simulationIdQuery = isSelectedActiveSim ? activeSim.simulationId : undefined;
+  const simulationIdQuery = isSelectedActiveSim ? activeSim?.simulationId : undefined;
 
   const auditQuery: AuditQuery = useMemo(() => {
     return {
@@ -862,7 +862,22 @@ export function AuditPage() {
       </div>
 
       {/* 3. MAIN AREA: Two Columns (about 62% Left and 38% Right) */}
-      {variantView === "live" && (
+      {variantView === "live" && auditError && (
+        <div role="alert" className="w-full bg-[#FFFFFF] border border-[#FECACA] rounded-[12px] p-6 shadow-xs flex flex-col items-center gap-2 text-center">
+          <span className="material-symbols-outlined text-3xl text-[#DC2626]">sync_problem</span>
+          <p className="text-sm font-bold text-[#991B1B]">Could not load decisions</p>
+          <p className="text-xs text-[#4B5563] max-w-[520px]">{auditError.message}</p>
+          <button
+            type="button"
+            onClick={reloadAudit}
+            className="mt-1 px-3 py-1.5 rounded-lg bg-[#DC2626] text-white text-xs font-bold hover:bg-[#B91C1C] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {variantView === "live" && !auditError && (
         <div className="w-full flex flex-col lg:flex-row gap-6 items-start">
           {/* LEFT COLUMN: Results Table (~62%) */}
           <section className="w-full lg:w-[62%] bg-[#FFFFFF] border border-[#E3E1DA] rounded-[12px] shadow-xs overflow-hidden flex flex-col shrink-0">

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { DecideRequest, Decision } from "@heatgate/contracts";
-import { useDecide } from "../hooks/index.ts";
-import { isBackendConnected } from "../api.ts";
+import { useDataSource, useDecide } from "../hooks/index.ts";
 import { RiderPhoneDevice, type RiderScreenState } from "../components/RiderPhoneDevice.tsx";
 
 const MOCK_DECIDE_REQUESTS: Record<RiderScreenState, (riderId: string) => DecideRequest> = {
@@ -47,18 +46,19 @@ export function RiderPhonePage() {
   const [evalLatency, setEvalLatency] = useState<number>(14);
 
   const decideMutation = useDecide();
+  const { source } = useDataSource();
 
   useEffect(() => {
     let active = true;
     const start = performance.now();
     const req = MOCK_DECIDE_REQUESTS[singleState](selectedRider);
+    setLiveDecision(undefined);
+    // useDecide never throws: a failed call leaves data undefined and sets decideMutation.error.
     decideMutation.run(req).then((res) => {
       if (active && res) {
         setLiveDecision(res);
         setEvalLatency(Math.max(6, Math.round(performance.now() - start)));
       }
-    }).catch(() => {
-      // Handled by hybrid fallback inside decideMutation
     });
     return () => {
       active = false;
@@ -195,16 +195,25 @@ export function RiderPhonePage() {
             </button>
           </div>
 
-          {/* Centered Phone Device Frame */}
-          <div className="relative">
-            <RiderPhoneDevice
-              initialState={singleState}
-              initialLang="HI"
-              riderId={selectedRider}
-              decision={liveDecision}
-              isInteractive={true}
-            />
-          </div>
+          {/* Centered Phone Device Frame: only with a real decision, never with made-up content */}
+          {decideMutation.error ? (
+            <div role="alert" className="w-full max-w-[620px] rounded-2xl border border-[#FECACA] bg-[#FEE2E2] p-4 text-center">
+              <p className="text-sm font-bold text-[#991B1B]">Could not get a decision from the API</p>
+              <p className="mt-1 text-xs text-[#4B5563]">{decideMutation.error.message}</p>
+            </div>
+          ) : !liveDecision ? (
+            <p className="text-sm text-[#4B5563]">Asking the policy engine…</p>
+          ) : (
+            <div className="relative">
+              <RiderPhoneDevice
+                initialState={singleState}
+                initialLang="HI"
+                riderId={selectedRider}
+                decision={liveDecision}
+                isInteractive={true}
+              />
+            </div>
+          )}
 
           {/* Caption required by spec */}
           <p className="text-center text-sm font-semibold text-[#4B5563] mt-4">
@@ -221,7 +230,7 @@ export function RiderPhonePage() {
                 </span>
               </div>
               <span className="font-mono text-[11px] text-[#0F766E] bg-[#E6F4F1] px-2 py-0.5 rounded border border-[#0F766E]/20">
-                {evalLatency} ms · {isBackendConnected ? "LIVE BACKEND" : "HYBRID LOCAL"}
+                {liveDecision ? `${evalLatency} ms · ` : ""}{source === "fixtures" ? "FIXTURE DATA" : source === "live" ? "LIVE API" : source === "unreachable" ? "API UNREACHABLE" : "CHECKING API"}
               </span>
             </div>
 

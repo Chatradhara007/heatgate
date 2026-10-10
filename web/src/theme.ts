@@ -88,8 +88,7 @@ export const designTokens = {
 } as const;
 
 export const colors = {
-  // Legacy / convenience tokens
-  surface: "#FFFBF5",
+  // Legacy / convenience tokens (surface comes from designTokens below)
   panel: "#FFFFFF",
   border: "#E7DED2",
   ink: "#1F1A17",
@@ -143,9 +142,6 @@ export const spacing = {
 } as const;
 
 export const radii = {
-  sm: "4px",
-  md: "8px",
-  lg: "16px",
   ...designTokens.radii,
 } as const;
 

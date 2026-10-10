@@ -1,0 +1,56 @@
+{
+ "knobs": {
+  "restHeatC": 38,
+  "workLimitMin": 100,
+  "rushHardLimitMin": 120,
+  "earlyRestMin": 70,
+  "shortTripHeatC": 41,
+  "shortTripMaxKm": 3,
+  "extremeHeatC": 46
+ },
+ "text": "@id(\"base-allow-assign\")\npermit (principal is HeatGate::Rider,\n        action == HeatGate::Action::\"AssignOrder\",\n        resource is HeatGate::Order);\n\n@id(\"fair-rest-in-progress\")\n@outcome(\"FORCE_REST\")\n@message(\"Your paid cooling break is still running.\")\nforbid (principal, action == HeatGate::Action::\"AssignOrder\", resource)\nwhen { context.restMinutesRemaining > 0 };\n\n@id(\"fair-rest-early-in-lull\")\n@outcome(\"FORCE_REST\")\n@restMinutes(\"20\")\n@message(\"Orders are slow right now. Take a paid 20-minute break in the shade.\")\nforbid (principal, action == HeatGate::Action::\"AssignOrder\", resource)\nwhen { context.heatIndexC >= 38\n    && context.minutesSinceBreak >= 70\n    && context.demandLevel == 0 };\n\n@id(\"fair-rest-due\")\n@outcome(\"FORCE_REST\")\n@restMinutes(\"20\")\n@message(\"Paid 20-minute cooling break. Nearest shade and water below.\")\nforbid (principal, action == HeatGate::Action::\"AssignOrder\", resource)\nwhen { context.heatIndexC >= 38\n    && context.minutesSinceBreak + context.tripMinutes > 100\n    && context.demandLevel < 2 };\n\n@id(\"fair-rest-hard-limit\")\n@outcome(\"FORCE_REST\")\n@restMinutes(\"20\")\n@message(\"Paid 20-minute cooling break. Nearest shade and water below.\")\nforbid (principal, action == HeatGate::Action::\"AssignOrder\", resource)\nwhen { context.heatIndexC >= 38\n    && context.minutesSinceBreak + context.tripMinutes > 120 };\n\n@id(\"fair-short-trips-only\")\n@outcome(\"SKIP_ORDER\")\n@message(\"This order is too far for this heat. You stay online for nearer orders.\")\nforbid (principal, action == HeatGate::Action::\"AssignOrder\", resource)\nwhen { context.heatIndexC >= 41 && resource.distanceKm > 3 };\n\n@id(\"fair-extreme-heat-stop\")\n@outcome(\"DENY\")\n@message(\"Extreme heat. Deliveries paused. Your incentive target is reduced for this time.\")\nforbid (principal, action == HeatGate::Action::\"AssignOrder\", resource)\nwhen { context.heatIndexC >= 46 };\n\n@id(\"fair-decline-no-penalty\")\npermit (principal, action == HeatGate::Action::\"DeclineWithoutPenalty\",\n        resource)\nwhen { context.heatIndexC >= 38 };\n",
+ "valid": true,
+ "errors": [],
+ "rules": [
+  {
+   "id": "base-allow-assign",
+   "outcome": "ALLOW",
+   "summary": "Orders are assigned unless one of the rules below stops them."
+  },
+  {
+   "id": "fair-rest-in-progress",
+   "outcome": "FORCE_REST",
+   "summary": "A rider on a paid cooling break gets no orders until the break is over."
+  },
+  {
+   "id": "fair-rest-early-in-lull",
+   "outcome": "FORCE_REST",
+   "summary": "When the heat index is 38 °C or more and orders are slow, a rider who has worked 70 minutes or more since the last break gets a paid 20-minute break."
+  },
+  {
+   "id": "fair-rest-due",
+   "outcome": "FORCE_REST",
+   "summary": "When the heat index is 38 °C or more, an order that would take a rider past 100 minutes since the last break is held and the rider gets a paid 20-minute break, except at rush hour."
+  },
+  {
+   "id": "fair-rest-hard-limit",
+   "outcome": "FORCE_REST",
+   "summary": "When the heat index is 38 °C or more, an order that would take a rider past 120 minutes since the last break is held and the rider gets a paid 20-minute break, even at rush hour."
+  },
+  {
+   "id": "fair-short-trips-only",
+   "outcome": "SKIP_ORDER",
+   "summary": "When the heat index is 41 °C or more, orders over 3 km (rounded up) are skipped; the rider stays online for nearer ones."
+  },
+  {
+   "id": "fair-extreme-heat-stop",
+   "outcome": "DENY",
+   "summary": "When the heat index is 46 °C or more, deliveries are paused and the incentive target is reduced for that time."
+  },
+  {
+   "id": "fair-decline-no-penalty",
+   "outcome": "NO_PENALTY",
+   "summary": "When the heat index is 38 °C or more, a rider can decline any order without penalty (not a knob)."
+  }
+ ]
+}

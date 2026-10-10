@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useActiveSimulation } from "../context/SimulationContext.tsx";
 
 interface ComparisonMetricItem {
@@ -24,7 +25,32 @@ interface ComparisonMetricItem {
 }
 
 export function ComparePage() {
-  const { computedMetrics, isCustomRun } = useActiveSimulation();
+  const { computedMetrics, isCustomRun, loading, status, elapsedMs, error } = useActiveSimulation();
+
+  if (!computedMetrics) {
+    return (
+      <div className="max-w-[1440px] mx-auto px-4 lg:px-6 flex flex-col w-full gap-4 pb-12">
+        <h1 className="text-2xl lg:text-3xl font-bold text-[#1B1F23]">Platform View</h1>
+        {loading ? (
+          <p className="text-sm text-[#4B5563]">
+            Running simulation ({status}, {Math.round(elapsedMs / 1000)} s)…
+          </p>
+        ) : error ? (
+          <p role="alert" className="rounded-xl border border-error/30 bg-error/10 p-3 text-sm font-bold text-error">
+            Simulation failed: {error.message}
+          </p>
+        ) : (
+          <p className="text-sm text-[#4B5563]">
+            No results yet. Run a simulation on the{" "}
+            <Link to="/simulator" className="font-bold text-[#0F766E] underline">
+              Policy Sandbox
+            </Link>{" "}
+            first.
+          </p>
+        )}
+      </div>
+    );
+  }
 
   const comparisonMetrics: ComparisonMetricItem[] = [
     {

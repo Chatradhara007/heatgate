@@ -4,8 +4,8 @@ import { copyFileSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { POLICY_LABELS, type DecideRequest, type Decision, type PolicyVersion } from "@heatgate/contracts";
-import { decide } from "@heatgate/engine";
-import { between, dayAlertLevel, defaultSimParams, dropDistanceKm, simulate, stream, temperatureAt } from "@heatgate/sim";
+import { DEFAULT_FAIR_KNOBS, auditRecord, checkPolicyText, decide, policySchema, renderFairPolicy, summarizeFairPolicy } from "@heatgate/engine";
+import { WEATHER_DAYS, between, cityLayout, dayAlertLevel, defaultSimParams, dropDistanceKm, simulate, stream, temperatureAt, weatherDaySummary } from "@heatgate/sim";
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
 mkdirSync(OUT, { recursive: true });
@@ -20,8 +20,22 @@ function write(name: string, data: unknown, compact = false) {
 const policies = (Object.keys(POLICY_LABELS) as PolicyVersion[]).map((id) => ({ id, label: POLICY_LABELS[id] }));
 write("policies.json", policies);
 
-// defaults.json: what GET /defaults returns.
-write("defaults.json", defaultSimParams());
+// defaults.json: what GET /defaults returns, default heatgate-fair knobs included.
+write("defaults.json", { ...defaultSimParams(), fairKnobs: DEFAULT_FAIR_KNOBS });
+
+// renderPolicy.json: what POST /policies/render returns for the default knobs. The only knobs fixture mode can render.
+const fairText = renderFairPolicy(DEFAULT_FAIR_KNOBS);
+const fairErrors = checkPolicyText(fairText, policySchema);
+write("renderPolicy.json", {
+  knobs: DEFAULT_FAIR_KNOBS,
+  text: fairText,
+  valid: fairErrors.length === 0,
+  errors: fairErrors,
+  rules: summarizeFairPolicy(DEFAULT_FAIR_KNOBS),
+});
+
+// weatherDays.json: what GET /weather-days returns (the committed real days in sim/data/weather).
+write("weatherDays.json", WEATHER_DAYS.map(weatherDaySummary));
 
 // breakEven.json: what GET /break-even returns, minus the stale flag the API adds. A byte-for-byte copy
 // of sim/results/break-even.json, so run npm run sim:breakeven first if that file is out of date.
@@ -36,6 +50,9 @@ write("simResult.json", result, true); // compact, to stay under 1 MB
 
 // audit.json: what GET /audit returns. Real engine decisions under the same day's weather,
 // for riders and moments taken from the simulation's frames. Rider IDs are the sim's pseudonymous ones.
+// decide.json: the same decisions as POST /decide returns them (with coolingPoint for a FORCE_REST);
+// audit.json has them as the log stores them (auditRecord: no coolingPoint).
+const { coolingPoints } = cityLayout();
 const rng = stream(1, "fixtures");
 const alertLevel = dayAlertLevel(params.alertLevel, params.peakTempC);
 const IST_MIDNIGHT_MS = Date.UTC(2026, 4, 20) - 330 * 60_000; // 20 May 2026, 00:00 India time
@@ -66,11 +83,12 @@ for (const policy of params.policyVersions) {
       },
     };
     const at = new Date(IST_MIDNIGHT_MS + Math.round(hour * 60) * 60_000);
-    decisions.push(decide(request, policy, at));
+    decisions.push(decide(request, policy, at, undefined, coolingPoints));
   }
 }
 decisions.sort((a, b) => b.at.localeCompare(a.at) || b.decisionId.localeCompare(a.decisionId));
-write("audit.json", { items: decisions });
+write("decide.json", { items: decisions });
+write("audit.json", { items: decisions.map(auditRecord) });
 
 const counts: Record<string, number> = {};
 for (const d of decisions) counts[d.outcome] = (counts[d.outcome] ?? 0) + 1;

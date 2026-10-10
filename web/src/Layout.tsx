@@ -1,7 +1,23 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { API_URL, USE_FIXTURES, isBackendConnected } from "./api.ts";
+import { useDataSource, type DataSource } from "./hooks/index.ts";
+
+const SOURCE_DOT: Record<DataSource, string> = {
+  live: "bg-emerald-500",
+  fixtures: "bg-amber-500",
+  unreachable: "bg-red-600",
+  checking: "bg-gray-400",
+};
 
 export function Layout({ routes }: { routes: readonly { path: string; label: string }[] }) {
+  const { source, apiUrl, error } = useDataSource();
+  const sourceLabel =
+    source === "live"
+      ? `Live API (${apiUrl})`
+      : source === "fixtures"
+        ? "Fixture data (not a live run)"
+        : source === "unreachable"
+          ? `API unreachable (${apiUrl})`
+          : "Checking API…";
   return (
     <div className="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col">
       {/* Header section (NOT fixed to screen while scrolling) */}
@@ -13,9 +29,13 @@ export function Layout({ routes }: { routes: readonly { path: string; label: str
               <span className="material-symbols-outlined text-[14px] text-primary">info</span>
               Demo data · All rupee amounts are placeholders pending field calibration
             </span>
-            <span className="font-mono text-on-surface-variant/80 shrink-0 text-[11px] flex items-center gap-1.5" data-testid="data-source">
-              <span className={`w-1.5 h-1.5 rounded-full ${isBackendConnected ? "bg-emerald-500" : "bg-[#0F766E]"}`} />
-              {isBackendConnected ? `Backend: Live (${API_URL})` : "Backend: Hybrid (Local Fallback Ready)"}
+            <span
+              className={`font-mono shrink-0 text-[11px] flex items-center gap-1.5 ${source === "unreachable" ? "text-error font-bold" : "text-on-surface-variant/80"}`}
+              data-testid="data-source"
+              title={error?.message}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${SOURCE_DOT[source]}`} />
+              {sourceLabel}
             </span>
           </div>
         </div>

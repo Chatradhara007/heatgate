@@ -1,7 +1,8 @@
 // One simulated day for one rule set and one seed, one step per minute (docs/spec/simulator.md).
 import type { DecideRequest, Decision, Frame, Metrics, Outcome, PolicyVersion, RiderState, SimParams } from "@heatgate/contracts";
 import { decide, heatIndexC } from "@heatgate/engine";
-import { CITY_KM, cityLayout, dayAlertLevel, demandLevelFor, distance, nearest, temperatureAt, type Point } from "./city.ts";
+import { CITY_KM, cityLayout, dayAlertLevel, demandLevelFor, distance, nearest, type Point } from "./city.ts";
+import { dayWeather } from "./weather.ts";
 import { between, poisson, stream, type Rng } from "./rng.ts";
 import { AuditSampler } from "./audit.ts";
 import { dailyTarget, earningsSummary, orderPayInr, pctOfBaseline, type RiderTally } from "./earnings.ts";
@@ -64,6 +65,8 @@ export interface DayResult {
   expiredOrders: number; // also inside ordersLate and missing from ordersDelivered
   cancelledOrders: number; // dropped by customers because of the heat fee; not in ordersTotal
   targetOrders: number; // the daily target before incentive protection
+  deliveredAfterEnd: number; // orders under way at endHour and dropped off after it (inside ordersDelivered)
+  lastOfferMinute: number; // minute of day of the last decide() call (-1 if none); always before endHour
   riders: RiderTally[];
   audit?: Decision[]; // only with { audit: true }: see sim/audit.ts
 }
@@ -194,11 +197,15 @@ export function runDay(
 ): DayResult {
   const { hubs, coolingPoints } = cityLayout();
   const riders = makeRiders(params, seed);
-  const heatIndexAt = (minute: number) =>
-    Math.round(heatIndexC(temperatureAt(params.peakTempC, minute / 60), params.humidityPct));
+  // The slider curve, or a real day's hourly series (sim/weather.ts).
+  const weather = dayWeather(params);
+  const heatIndexAt = (minute: number) => {
+    const w = weather.at(minute / 60);
+    return Math.round(heatIndexC(w.tempC, w.humidityPct));
+  };
   const fee = applyHeatFee(makeOrders(params, seed, hubs), heatIndexAt, params, policy, seed);
   const orders = fee.orders;
-  const alertLevel = dayAlertLevel(params.alertLevel, params.peakTempC);
+  const alertLevel = dayAlertLevel(params.alertLevel, weather.peakTempC);
   const shade = shadeWaitOn(params, policy);
   const atHub = (p: Point) => distance(p, nearest(p, hubs)) < 1e-9;
 
@@ -215,25 +222,34 @@ export function runDay(
   let restsForced = 0;
   let pausedRiderMinutes = 0;
   let expired = 0;
+  let deliveredAfterEnd = 0;
+  let lastOfferMinute = -1;
 
-  for (let minute = params.startHour * 60; minute < params.endHour * 60; minute++) {
+  // The day ends at endHour: no new logins, orders or dispatch after it. Riders on a delivery at that
+  // moment keep riding until they drop off and are paid then; everyone else logs out, as at a shift's end.
+  const endMin = params.endHour * 60;
+  for (let minute = params.startHour * 60; minute < endMin || riders.some((r) => r.state === "delivering"); minute++) {
+    const open = minute < endMin;
     const hour = minute / 60;
-    const tempC = temperatureAt(params.peakTempC, hour);
+    const { tempC, humidityPct } = weather.at(hour);
     const hi = heatIndexAt(minute);
     const now = new Date(Date.UTC(2026, 4, 20, 0, minute)); // simulated time
 
     // 1. Log riders in and out (a rider on a delivery finishes it first). A run that starts after a
-    //    rider's login time (a short test day) starts with that rider already on shift.
+    //    rider's login time (a short test day) starts with that rider already on shift. The end of the
+    //    day is everyone's logout: a rider riding to a cooling point, resting or paused stops then, so
+    //    no rest starts after it.
     for (const r of riders) {
-      if (r.state === "offline" && minute >= r.loginMin && minute < r.logoutMin) r.state = "idle";
-      else if (r.state !== "offline" && minute >= r.logoutMin && r.state !== "delivering") r.state = "offline";
+      const logout = Math.min(r.logoutMin, endMin);
+      if (r.state === "offline" && minute >= r.loginMin && minute < logout) r.state = "idle";
+      else if (r.state !== "offline" && minute >= logout && r.state !== "delivering") r.state = "offline";
     }
     const onShift = riders.filter((r) => r.state !== "offline");
     for (const r of onShift) r.shiftMinutes++;
 
-    // 2. Demand level.
+    // 2. Demand level (demandMinutes counts the day only, not the drop-offs after it).
     const demandLevel = demandLevelFor(onShift.filter((r) => r.state === "delivering").length, onShift.length);
-    demandMinutes[demandLevel]++;
+    if (open) demandMinutes[demandLevel]++;
 
     // 3. Count down rests and pauses.
     for (const r of onShift) {
@@ -277,6 +293,7 @@ export function runDay(
       if (r.route.length > 0) continue;
       if (r.state === "delivering") {
         deliveryMinutes.push(minute + 1 - r.order!.createdMin);
+        if (!open) deliveredAfterEnd++;
         r.ordersDelivered++;
         r.orderPayInr += orderPayInr(r.order!.distanceKm, params.economics);
         r.order = undefined;
@@ -287,14 +304,15 @@ export function runDay(
       }
     }
 
-    // 5. Dispatch waiting orders, oldest first.
-    while (nextOrder < orders.length && orders[nextOrder].createdMin === minute) waiting.push(orders[nextOrder++]);
+    // 5. Dispatch waiting orders, oldest first. Nothing is offered after the end of the day: orders still
+    //    waiting then stay undelivered (and are not counted as expired).
+    while (open && nextOrder < orders.length && orders[nextOrder].createdMin === minute) waiting.push(orders[nextOrder++]);
     // Orders unassigned for 30 minutes expire: undelivered, and counted as late.
-    while (waiting.length > 0 && minute - waiting[0].createdMin >= EXPIRE_AFTER_MIN) {
+    while (open && waiting.length > 0 && minute - waiting[0].createdMin >= EXPIRE_AFTER_MIN) {
       waiting.shift();
       expired++;
     }
-    for (let i = 0; i < waiting.length; i++) {
+    for (let i = 0; open && i < waiting.length; i++) {
       const order = waiting[i];
       const candidates = onShift
         .filter((r) => r.state === "idle")
@@ -315,7 +333,7 @@ export function runDay(
             distanceKm: order.distanceKm,
             tripMinutes: route.reduce((sum, leg) => sum + leg.minutesLeft, 0),
           },
-          conditions: { tempC, humidityPct: params.humidityPct, hourOfDay: Math.floor(hour), demandLevel, alertLevel },
+          conditions: { tempC, humidityPct, hourOfDay: Math.floor(hour), demandLevel, alertLevel },
           riderState: {
             minutesSinceBreak: r.minutesSinceBreak,
             exposureMinutesToday: r.exposureMinutesToday,
@@ -324,8 +342,9 @@ export function runDay(
           simulationId,
           dryRun: true,
         };
-        const d = decide(request, policy, now);
+        const d = decide(request, policy, now, params.fairKnobs, coolingPoints);
         decisions[d.outcome]++;
+        lastOfferMinute = minute;
         audit?.add(d);
         events.push({ riderId: r.id, outcome: d.outcome, rule: d.firedRules[0] ?? "" });
         if (d.outcome === "ALLOW") {
@@ -377,8 +396,8 @@ export function runDay(
       if (hi >= 38 && r.minutesSinceBreak > 120) unsafe120++;
     }
 
-    // 7. Frame every 5 minutes.
-    if ((minute - params.startHour * 60) % FRAME_EVERY_MIN === 0) {
+    // 7. Frame every 5 minutes, over the day only.
+    if (open && (minute - params.startHour * 60) % FRAME_EVERY_MIN === 0) {
       frames.push({
         minute: minute - params.startHour * 60,
         heatIndexC: hi,
@@ -435,6 +454,8 @@ export function runDay(
     expiredOrders: expired,
     cancelledOrders: fee.cancelled,
     targetOrders,
+    deliveredAfterEnd,
+    lastOfferMinute,
     riders: tallies,
   };
   if (audit) result.audit = audit.take();

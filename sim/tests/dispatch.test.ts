@@ -33,3 +33,26 @@ test("orders unassigned for 30 minutes expire and count as late and undelivered"
   expect(d.metrics.ordersLate).toBeGreaterThanOrEqual(d.expiredOrders);
   expect(d.metrics.ordersDelivered).toBeLessThanOrEqual(d.metrics.ordersTotal - d.expiredOrders);
 }, 30_000);
+
+test("end of the day: riders mid-delivery at 20:00 drop off and are paid, and nothing is offered after 20:00", () => {
+  const params = defaultSimParams({ startHour: 18, endHour: 20 }); // the second wave is on shift and busy
+  const day = runDay(params, "no-rules", 1, "t");
+  const start = params.startHour * 60;
+  const end = params.endHour * 60;
+  expect(day.deliveredAfterEnd).toBeGreaterThan(0);
+  expect(day.lastOfferMinute).toBeGreaterThanOrEqual(start);
+  expect(day.lastOfferMinute).toBeLessThan(end);
+  // Every accepted order is delivered and counted, including those dropped off after 20:00.
+  expect(day.metrics.ordersDelivered).toBe(day.metrics.decisions.ALLOW);
+  expect(day.riders.reduce((s, r) => s + r.ordersDelivered, 0)).toBe(day.metrics.ordersDelivered);
+  // Riders whose shift is cut at 20:00 but who stayed on past it were finishing a delivery: they are paid for it.
+  const plan = makeRiders(params, 1);
+  const pastEnd = day.riders.filter((t, i) => plan[i].logoutMin >= end && t.shiftMinutes > end - Math.max(plan[i].loginMin, start));
+  expect(pastEnd.length).toBe(day.deliveredAfterEnd);
+  for (const t of pastEnd) {
+    expect(t.ordersDelivered).toBeGreaterThan(0);
+    expect(t.orderPayInr).toBeGreaterThan(0);
+  }
+  // Frames cover the day only.
+  expect(day.frames[day.frames.length - 1].minute).toBeLessThan(end - start);
+}, 30_000);
