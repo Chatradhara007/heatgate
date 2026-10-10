@@ -53,8 +53,14 @@ must stay in step with `contracts/types.ts` and the API; ask before changing it.
     those knobs (debounce slider moves). In fixture mode only the default knobs render; any other knobs
     give the error "Rule editing needs the live API".
   - `useSimulation()`: `run(params)` starts a simulation and polls it every second (120 s timeout).
-    It returns `{ data, loading, error, status, simulationId, elapsedMs, run, cancel }`, and
-    `status` goes `idle` → `queued` → `running` → `done` or `failed`.
+    It returns `{ data, loading, error, status, simulationId, elapsedMs, run, resume, cancel }`, and
+    `status` goes `idle` → `queued` → `running` → `done` or `failed`. `resume(id)` polls a run started
+    earlier; `cancel()` stops polling and goes back to `idle`.
+  - The active run lives in `context/SimulationContext.tsx`. A finished run's id goes into the URL
+    (`?run=<id>`) and localStorage, and is fetched again on load, so reloads and links like
+    `/compare?run=<id>` show the same data.
+  - `usePolicyLabels()`: the rule-set labels from `GET /policies` (`label(id)`, `short(id)`, `list`).
+    Use it for every on-screen rule-set name.
     To replay a real day, pass `weather: { kind: "replay", weatherDayId: day.id }` in `params`;
     `{ kind: "slider" }` (the default) uses `peakTempC` and `humidityPct`. In fixture mode a replay returns
     the one fixture result with `data.fixtureNote` saying the weather day was ignored: show it.

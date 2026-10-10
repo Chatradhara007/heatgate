@@ -4,11 +4,11 @@ import { CitySimulation } from "../components/CitySimulation.tsx";
 import { SelectedRiderCard } from "../components/SelectedRiderCard.tsx";
 import { PolicyComparisonMatrix } from "../components/PolicyComparisonMatrix.tsx";
 import { BottomCards } from "../components/BottomCards.tsx";
+import { RunStatus } from "../components/RunStatus.tsx";
 import { useActiveSimulation } from "../context/SimulationContext.tsx";
 
 export function SimulatorPage() {
-  const { activeSim, params, setParams, defaultsLoading, defaultsError, runSimulation, loading, status, error, elapsedMs } =
-    useActiveSimulation();
+  const { activeSim, params, setParams, defaultsLoading, defaultsError, runSimulation, loading } = useActiveSimulation();
   const policy: PolicyVersion = "heatgate-fair";
 
   const handleRun = () => {
@@ -32,22 +32,11 @@ export function SimulatorPage() {
       {/* ROW 1: SCENARIO BAR */}
       {params && <ScenarioBar params={params} setParams={setParams} />}
 
-      {loading && (
-        <div className="text-center py-2 px-4 text-primary text-xs font-bold bg-primary/5 rounded-xl border border-primary/20 flex items-center justify-center gap-2">
-          <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
-          Running Simulation ({status}, {Math.round(elapsedMs / 1000)} s)…
-        </div>
-      )}
-
-      {error && (
-        <div role="alert" className="text-center py-2 px-4 text-error text-xs font-bold border border-error/30 bg-error/10 rounded-xl">
-          Simulation failed: {error.message}
-        </div>
-      )}
+      <RunStatus />
 
       {/* ROW 2: CITY SIMULATION & SELECTED RIDER */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
-        <CitySimulation sim={activeSim} policy={policy} />
+        <CitySimulation sim={activeSim} policy={policy} canRun={params !== undefined} />
         <SelectedRiderCard sim={activeSim} policy={policy} />
       </div>
 
@@ -56,9 +45,9 @@ export function SimulatorPage() {
 
       {/* ROW 4: BOTTOM CARDS */}
       {params && (
-        <BottomCards 
-          params={params} 
-          setParams={setParams} 
+        <BottomCards
+          params={params}
+          setParams={setParams}
           runSimulation={handleRun}
           running={loading}
         />
