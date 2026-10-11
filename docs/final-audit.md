@@ -11,7 +11,7 @@ sandbox has no access to OpenStreetMap, so `sandbox-citymap-*.png` shows the Cit
 **stubbed grey tiles** (the test served a blank tile). This proves the label and attribution, not the
 real tiles.
 
-**Result: 46 checks. 43 PASS, 1 FAIL (open), and 2 FAIL that are now fixed.** Two more findings are
+**Result: 46 checks. 43 PASS, 1 FAIL (open), and 2 FAIL that are now fixed.** Three more findings (B–D) are
 listed under "Open items"; they are not failed checks.
 
 ## 1. Build and tests
