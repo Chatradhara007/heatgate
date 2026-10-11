@@ -7,6 +7,7 @@ import { useSearchParams } from "react-router-dom";
 import type { PolicyVersion, RiderState, SimResult } from "@heatgate/contracts";
 import { POLICY_LABELS } from "@heatgate/contracts";
 import { CITY_CENTRES, cityFor, coolingPointsFrom } from "../lib/cityMap.ts";
+import { Badge, DEMAND_WORDS, HeatChip, InfoTip, OUTCOME_WORDS } from "./ui.tsx";
 
 const LeafletCityMap = lazy(() => import("./LeafletCityMap.tsx"));
 
@@ -32,7 +33,7 @@ function storeView(v: MapView) {
   }
 }
 
-const MAP_LABEL = "Illustration: simulated riders placed on a real city map. Positions and cooling points are not real locations.";
+const MAP_LABEL = "Illustration: positions are simulated";
 
 interface CitySimulationProps {
   sim: SimResult | undefined;
@@ -49,7 +50,6 @@ const formatTime = (startHour: number, minute: number) => {
   return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 };
 
-const DEMAND = { 0: "Quiet", 1: "Normal", 2: "Rush" } as const;
 
 const STATE_COLOR: Record<RiderState, string> = {
   idle: "#6B7280",
@@ -118,8 +118,8 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
     return (
       <div className="lg:col-span-8 flex min-h-64 items-center justify-center rounded-2xl border border-dashed border-outline-variant bg-surface-container-lowest text-xs text-on-surface-variant">
         {canRun
-          ? "No simulation yet. Press Run Simulation below to see the city."
-          : "No simulation yet. The Run Simulation button appears once the API answers."}
+          ? "No run yet. Press Run Simulation below."
+          : "No run yet. Waiting for the API."}
       </div>
     );
   }
@@ -135,13 +135,16 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
         <h2 className="font-bold text-on-surface" style={{ fontFamily: '"Bebas Neue", sans-serif', letterSpacing: "0.04em", fontSize: "24px" }}>
           Simulated city · {POLICY_LABELS[policy]}
         </h2>
-        <p className="text-xs text-on-surface-variant">
-          {shown === "map"
-            ? `The simulator's abstract 10 × 10 km grid drawn over ${city} as an illustration. `
-            : "Abstract 10 × 10 km grid, not a real map. "}
-          {sim.params.riders} simulated riders; the map shows the first seed only. Resting riders sit at a cooling point
-          {coolingPoints.length > 0 ? ` (CP 1–${coolingPoints.length}: the ones riders rested at in this run)` : ""}. Hubs are not part of the
-          result, so they are not drawn.
+        <p className="text-xs text-on-surface-variant flex items-center gap-1">
+          {sim.params.riders} simulated riders · first seed
+          <InfoTip label="About this map">
+            {shown === "map"
+              ? `The simulator's abstract 10 × 10 km grid drawn over ${city} as an illustration; positions and cooling points are not real locations. `
+              : "Abstract 10 × 10 km grid, not a real map. "}
+            The map shows the first seed only. Resting riders sit at a cooling point
+            {coolingPoints.length > 0 ? ` (CP 1–${coolingPoints.length}: the ones riders rested at in this run)` : ""}. Hubs are not part of the
+            result, so they are not drawn.
+          </InfoTip>
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1 border border-outline-variant rounded-lg p-0.5 bg-surface-container-lowest" role="radiogroup" aria-label="Map view">
@@ -159,7 +162,8 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
               </button>
             ))}
           </div>
-          {!city && <span className="text-[11px] text-on-surface-variant">No city map for this weather day.</span>}
+          {!city && <span className="text-[11px] text-on-surface-variant">No city map for this day.</span>}
+          {shown === "map" && <Badge icon="map">{MAP_LABEL}</Badge>}
         </div>
         {mapProblem && (
           <p role="status" className="mt-2 text-xs text-on-surface bg-surface-container-low border border-outline-variant rounded-lg px-3 py-1.5">
@@ -184,11 +188,6 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
                 }}
               />
             </Suspense>
-            <div className="absolute left-2 right-2 bottom-6 z-[1000] pointer-events-none flex justify-center">
-              <p className="max-w-[46ch] text-center text-[11px] leading-snug font-semibold text-on-surface bg-surface-container-lowest/95 border border-outline-variant rounded-lg px-2.5 py-1.5 shadow-md">
-                {MAP_LABEL}
-              </p>
-            </div>
           </>
         ) : (
         <svg className="w-full h-full" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`City at ${formatTime(startHour, frame.minute)}: ${counts.delivering} delivering, ${counts.resting} resting, ${counts.idle} idle, ${counts.paused} paused`}>
@@ -233,14 +232,11 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
           <div className="font-bold text-on-surface leading-none text-[24px] sm:text-[32px]" style={{ letterSpacing: "0.06em", fontFamily: '"Bebas Neue", sans-serif' }}>
             {formatTime(startHour, frame.minute)}
           </div>
-          <div className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mt-0.5">1 frame = 5 min</div>
         </div>
         <div className="absolute z-[1000] top-2 right-2 sm:top-3 sm:right-3 flex flex-col items-end sm:flex-row sm:items-center gap-1.5 sm:gap-2 pointer-events-none">
-          <span className="px-2.5 py-1 rounded-lg bg-surface-container-lowest/95 border border-error/30 text-error shadow-md text-xs font-bold">
-            Heat index {frame.heatIndexC}°C
-          </span>
-          <span className="px-2.5 py-1 rounded-lg bg-surface-container-lowest/95 border border-outline-variant text-on-surface shadow-md text-xs font-bold">
-            {DEMAND[frame.demandLevel]} demand
+          <HeatChip c={frame.heatIndexC} className="shadow-md" />
+          <span className="px-2.5 py-0.5 rounded-full bg-surface-container-lowest/95 border border-outline-variant text-on-surface shadow-md text-xs font-bold">
+            {DEMAND_WORDS[frame.demandLevel]}
           </span>
         </div>
       </div>
@@ -300,14 +296,16 @@ export function CitySimulation({ sim, policy, canRun = true }: CitySimulationPro
       </div>
 
       <div className="w-full bg-[#1B1F23] text-white font-mono text-xs px-4 py-2.5 rounded-lg flex items-center gap-3 overflow-x-auto" aria-live="off">
-        <span className="text-[10px] text-gray-400 uppercase tracking-wider shrink-0 font-semibold">Decisions since last frame</span>
+        <span className="text-[10px] text-gray-400 uppercase tracking-wider shrink-0 font-semibold">Latest decisions</span>
         {nonAllow.length === 0 ? (
-          <span className="text-gray-300">{frame.events.length > 0 ? `${frame.events.length} × ALLOW` : "none"}</span>
+          <span className="text-gray-300">{frame.events.length > 0 ? `${frame.events.length} × Allowed` : "none"}</span>
         ) : (
           nonAllow.slice(0, 4).map((e, i) => (
             <span key={i} className="shrink-0">
               <span className="bg-white/10 px-1.5 py-0.5 rounded text-[11px]">{e.riderId}</span>{" "}
-              <span className="text-[#FFB77D] font-bold">{e.outcome}</span> <span className="text-gray-300">{e.rule}</span>
+              <span className="text-[#FFB77D] font-bold" title={`${e.outcome} (${e.rule})`}>
+                {OUTCOME_WORDS[e.outcome]}
+              </span>
             </span>
           ))
         )}

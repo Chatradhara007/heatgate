@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useSearchParams } from "react-router-dom";
 import { useDataSource, type DataSource } from "./hooks/index.ts";
+import { InfoTip } from "./components/ui.tsx";
 
 const SOURCE_DOT: Record<DataSource, string> = {
   live: "bg-emerald-500",
@@ -37,8 +38,8 @@ export function Layout({ routes }: { routes: readonly { path: string; label: str
           <div className="max-w-[1440px] mx-auto w-full flex items-center justify-between gap-3">
             <span className="font-mono flex items-center gap-1.5 min-w-0">
               <span className="material-symbols-outlined text-[14px] text-primary shrink-0">info</span>
-              <span className="truncate sm:hidden">Simulated · ₹ placeholders</span>
-              <span className="hidden sm:inline">Simulated riders · All rupee amounts are placeholders until rider interviews</span>
+              <span className="sm:hidden">₹ amounts are placeholders</span>
+              <span className="hidden sm:inline">Simulated riders · ₹ amounts are placeholders</span>
             </span>
             <span
               className={`font-mono shrink-0 text-[11px] flex items-center gap-1.5 ${source === "unreachable" ? "text-error font-bold" : "text-on-surface-variant/80"}`}
@@ -131,7 +132,11 @@ export function Layout({ routes }: { routes: readonly { path: string; label: str
       <footer className="w-full bg-surface-container-lowest border-t border-outline-variant py-4 mt-auto">
         <div className="max-w-[1440px] mx-auto px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between text-xs text-on-surface-variant gap-2">
           <p className="text-center md:text-left">
-            HeatGate Fair thresholds need expert review. NDMA and union rules copy the published documents. Heat index is a proxy for outdoor heat stress, not a medical measure.
+            Heat index is a proxy for heat stress, not a medical measure.{" "}
+            <InfoTip label="About the rules and numbers">
+              ₹ amounts are placeholders until rider interviews. NDMA and union rules copy the published documents. HeatGate Fair thresholds
+              need expert review. Rider IDs are pseudonymous but likely still personal data under India's DPDP Act, 2023.
+            </InfoTip>
           </p>
 
         </div>

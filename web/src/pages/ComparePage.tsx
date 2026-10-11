@@ -1,6 +1,9 @@
-// Platform view: all four rule sets side by side on the same simulated days, then the break-even view.
+// Platform view: all four rule sets side by side on the same simulated days. It leads with three key numbers
+// per rule set (big tiles with range bars on a shared axis); the full metric cards sit behind "Details", then
+// the break-even view.
 // Every number comes from the active SimResult (mean and lowest–highest seed) or GET /break-even; nothing is typed in.
 // Overlapping seed ranges are called "no clear difference", never ranked. Bars are neutral: no colour by rule set.
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { NumericMetric, PolicyVersion, SimResult } from "@heatgate/contracts";
 import { usePolicyLabels } from "../hooks/index.ts";
@@ -8,6 +11,7 @@ import { useActiveSimulation } from "../context/SimulationContext.tsx";
 import { RunStatus } from "../components/RunStatus.tsx";
 import { BreakEvenChart } from "../components/BreakEvenChart.tsx";
 import { fmt, overlaps, stat, withRange } from "../lib/stats.ts";
+import { Badge, InfoTip, MultiAppBadge, RangeBar } from "../components/ui.tsx";
 
 interface MetricDef {
   metric: NumericMetric;
@@ -57,7 +61,6 @@ const METRICS: MetricDef[] = [
 ];
 
 const card = "bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col gap-3";
-const placeholderTag = "text-[10px] font-mono text-on-surface-variant bg-surface-container-low border border-outline-variant px-2 py-0.5 rounded";
 
 function MetricCard({ sim, def, policies, oneSeed }: { sim: SimResult; def: MetricDef; policies: { id: PolicyVersion; label: string; short: string }[]; oneSeed: boolean }) {
   const rows = policies.flatMap((p) => {
@@ -84,8 +87,10 @@ function MetricCard({ sim, def, policies, oneSeed }: { sim: SimResult; def: Metr
   return (
     <div className={card}>
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{def.title}</h3>
-        {def.money && <span className={placeholderTag}>placeholder</span>}
+        <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
+          {def.title}
+          <InfoTip>{def.note}</InfoTip>
+        </h3>
       </div>
       <div className="flex flex-col gap-2.5">
         {rows.map((r) => (
@@ -107,9 +112,8 @@ function MetricCard({ sim, def, policies, oneSeed }: { sim: SimResult; def: Metr
         ))}
         {rows.length < policies.length && <p className="text-[11px] text-on-surface-variant">Rule sets missing from this run are not shown.</p>}
       </div>
-      <p className="text-[11px] text-on-surface-variant">{def.note}</p>
       {pairs.length > 0 && (
-        <details className="text-[11px]" open={rows.length <= 4}>
+        <details className="text-[11px]">
           <summary className="cursor-pointer font-semibold text-on-surface-variant">Pair by pair</summary>
           <ul className="mt-1 flex flex-col gap-0.5 text-on-surface">
             {pairs.map(({ a, b, text }) => (
@@ -127,14 +131,78 @@ function MetricCard({ sim, def, policies, oneSeed }: { sim: SimResult; def: Metr
   );
 }
 
+// The three numbers each rule set's tile leads with. Same axis per metric across tiles, so bars compare.
+const KEY: { metric: NumericMetric; label: string; digits: number; suffix?: string; info: string }[] = [
+  {
+    metric: "unsafeExposureMin90",
+    label: "Unsafe minutes >90",
+    digits: 0,
+    info: "Rider-minutes outdoors at heat index ≥ 38 °C after 90 minutes without a break (all riders, one day). Lower is safer.",
+  },
+  { metric: "ordersDelivered", label: "Orders delivered", digits: 0, info: "Orders that reached the customer in one simulated day." },
+  {
+    metric: "earningsPctOfNoRules",
+    label: "Earnings vs today · placeholder pay",
+    digits: 1,
+    suffix: "%",
+    info: "The average rider's earnings as a % of today's on the same seed. Placeholder pay: not evidence that riders earn more.",
+  },
+];
+
+function KeyTiles({ sim, policies, oneSeed }: { sim: SimResult; policies: { id: PolicyVersion; label: string; short: string }[]; oneSeed: boolean }) {
+  const axes = KEY.map((k) => Math.max(...policies.map((p) => stat(sim, p.id, k.metric)?.max ?? 0), 1e-9));
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      {policies.map((p) => (
+        <div key={p.id} className={card}>
+          <h3 className="text-sm font-bold text-on-surface leading-tight min-h-[2.5em]">{p.label}</h3>
+          {KEY.map((k, ki) => {
+            const s = stat(sim, p.id, k.metric);
+            if (!s) return null;
+            const num = (v: number) => `${fmt(v, k.digits)}${k.suffix ?? ""}`;
+            // Rule sets whose range overlaps this one: "no clear difference".
+            const same = oneSeed
+              ? []
+              : policies.filter((o) => {
+                  if (o.id === p.id) return false;
+                  const os = stat(sim, o.id, k.metric);
+                  return os !== undefined && overlaps(s, os);
+                });
+            return (
+              <div key={k.metric} className="flex flex-col gap-1">
+                <span className="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">{k.label}</span>
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="font-mono text-[28px] leading-none font-bold text-on-surface">{num(s.mean)}</span>
+                  {!oneSeed && (
+                    <span className="font-mono text-[11px] text-on-surface-variant">
+                      {num(s.min)}–{num(s.max)}
+                    </span>
+                  )}
+                </div>
+                <RangeBar mean={s.mean} min={s.min} max={s.max} axisMax={axes[ki]} oneSeed={oneSeed} />
+                {same.length > 0 && (
+                  <span className="text-[11px] text-on-surface-variant" title="Ranges overlap: no clear difference">
+                    ≈ {same.map((o) => o.short).join(", ")}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ComparePage() {
   const { activeSim: sim, loading, restoreError } = useActiveSimulation();
   const labels = usePolicyLabels();
+  const [details, setDetails] = useState(false);
 
   const header = (
     <div>
       <h1 className="text-2xl lg:text-3xl font-bold text-on-surface">Platform View</h1>
-      <p className="text-sm text-on-surface-variant mt-0.5">All four rule sets on the same simulated days, then what rest pay it takes to match today's earnings.</p>
+      <p className="text-sm text-on-surface-variant mt-0.5">Four rule sets on the same simulated days.</p>
     </div>
   );
 
@@ -145,7 +213,7 @@ export function ComparePage() {
         <RunStatus />
         {!loading && (
           <p className="text-sm text-on-surface-variant">
-            {restoreError ? "" : "No results yet. "}Run a simulation (all four rule sets) on the{" "}
+            {restoreError ? "" : "No results yet. "}Run a simulation on the{" "}
             <Link to="/simulator" className="font-bold text-primary underline">
               Policy Sandbox
             </Link>{" "}
@@ -178,46 +246,66 @@ export function ComparePage() {
 
       <RunStatus />
 
-      <div className="rounded-2xl border border-outline-variant bg-surface-container-low p-4 text-xs text-on-surface-variant leading-relaxed">
-        {oneSeed
-          ? "1 seed: one simulated day, so no ranges and no comparisons. Use 5 seeds for any number you present. "
-          : `Each number is the mean, with the lowest and highest of ${seeds} seeds in brackets. Where two rule sets' ranges overlap we say "no clear difference". `}
-        All rupee amounts are placeholders until rider interviews. Assumes {params.multiAppPct}% of riders keep working on another app during
-        breaks (to confirm with riders), which keeps their heat exposure counting. The alert level is assumed from the peak temperature, not a
-        real IMD alert. Heat index is a proxy for outdoor heat stress, not a medical measure.
-        {params.fairFeatures.shadeWaitCountsAsRest && " Shade waiting is ON: it assumes restaurants have shade for riders (unverified)."}
-      </div>
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <p className="text-xs text-on-surface-variant flex items-center gap-1">
+            {oneSeed ? "1 seed: no ranges, nothing compared." : `Mean, then lowest–highest of ${seeds} seeds. ≈ = no clear difference.`}
+            <InfoTip label="How to read these numbers">
+              {oneSeed
+                ? "One simulated day, so no ranges and no comparisons. Use 5 seeds for any number you present. "
+                : `Each tile shows the mean, with the lowest and highest of ${seeds} seeds; the bar shows both on a scale shared by all four tiles. Where two rule sets' ranges overlap we say "no clear difference" (≈). `}
+              The alert level is assumed from the peak temperature, not a real IMD alert.
+            </InfoTip>
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            <MultiAppBadge pct={params.multiAppPct} />
+            {params.fairFeatures.shadeWaitCountsAsRest && (
+              <Badge icon="umbrella" tone="warn">
+                Shade waiting ON: assumes restaurants have shade (unverified)
+              </Badge>
+            )}
+          </div>
+        </div>
+        <KeyTiles sim={sim} policies={policies} oneSeed={oneSeed} />
+      </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-on-surface">Four rule sets, side by side</h2>
-        <p className="text-xs text-on-surface-variant -mt-2">Bars are means; the dark line spans the lowest to highest seed.</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {METRICS.map((def) => (
-            <MetricCard key={def.metric} sim={sim} def={def} policies={policies} oneSeed={oneSeed} />
-          ))}
-          {fairRestPay && fairHeatFee && (
-            <div className={card}>
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Rest pay vs heat fee ({labels.label("heatgate-fair")})</h3>
-                <span className={placeholderTag}>placeholder</span>
+        <button
+          type="button"
+          onClick={() => setDetails(!details)}
+          aria-expanded={details}
+          className="self-start inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-sm font-bold text-primary hover:bg-surface-container"
+        >
+          <span className="material-symbols-outlined text-[18px]">{details ? "expand_less" : "expand_more"}</span>
+          Details
+        </button>
+        {details && (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {METRICS.map((def) => (
+              <MetricCard key={def.metric} sim={sim} def={def} policies={policies} oneSeed={oneSeed} />
+            ))}
+            {fairRestPay && fairHeatFee && (
+              <div className={card}>
+                <h3 className="text-xs font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
+                  Rest pay vs heat fee ({labels.short("heatgate-fair")})
+                  <InfoTip>The heat fee is a hypothesis: customers may order less. Placeholder amounts.</InfoTip>
+                </h3>
+                <p className="text-sm text-on-surface">
+                  Rest pay paid: <strong className="font-mono">{withRange(fairRestPay, oneSeed, 0, "₹")}</strong>
+                </p>
+                <p className="text-sm text-on-surface">
+                  Heat fee collected: <strong className="font-mono">{withRange(fairHeatFee, oneSeed, 0, "₹")}</strong>
+                </p>
+                <p className="text-xs font-mono text-on-surface-variant">
+                  {feeShare === undefined ? "No rest pay in this run." : `Heat fee covers ${fmt(feeShare)}% of rest pay (means).`}
+                </p>
               </div>
-              <p className="text-sm text-on-surface">
-                Rest pay paid: <strong className="font-mono">{withRange(fairRestPay, oneSeed, 0, "₹")}</strong>
-              </p>
-              <p className="text-sm text-on-surface">
-                Heat fee collected: <strong className="font-mono">{withRange(fairHeatFee, oneSeed, 0, "₹")}</strong>
-              </p>
-              <p className="text-xs font-mono text-on-surface-variant">
-                {feeShare === undefined ? "No rest pay in this run." : `The heat fee covers ${fmt(feeShare)}% of the rest pay (means, placeholder amounts).`}
-              </p>
-              <p className="text-[11px] text-on-surface-variant">The heat fee is a hypothesis: customers may order less.</p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </section>
 
       <BreakEvenChart />
     </div>
   );
 }
-

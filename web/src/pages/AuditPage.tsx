@@ -7,18 +7,13 @@ import { POLICY_LABELS } from "@heatgate/contracts";
 import { auditRowKey, useAudit } from "../hooks/index.ts";
 import type { AuditQuery } from "../hooks/index.ts";
 import { useActiveSimulation } from "../context/SimulationContext.tsx";
+import { usePolicyLabels } from "../hooks/index.ts";
+import { DecisionInputs, InfoTip, OUTCOME_WORDS, OutcomePill, heatColor } from "../components/ui.tsx";
 
 const OUTCOMES: Outcome[] = ["ALLOW", "SKIP_ORDER", "DENY", "FORCE_REST"];
 const POLICIES = Object.keys(POLICY_LABELS) as PolicyVersion[];
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 20;
 const RIDER_DEBOUNCE_MS = 300;
-
-const BADGE: Record<Outcome, { cls: string; icon: string }> = {
-  ALLOW: { cls: "bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]", icon: "check_circle" },
-  SKIP_ORDER: { cls: "bg-[#F3F4F6] text-[#374151] border-[#E5E7EB]", icon: "do_not_disturb_on" },
-  DENY: { cls: "bg-[#FEE2E2] text-[#991B1B] border-[#FECACA]", icon: "cancel" },
-  FORCE_REST: { cls: "bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]", icon: "pause_circle" },
-};
 
 type Lang = "en" | "hi" | "te" | "ur";
 const LANGS: { key: Lang; label: string }[] = [
@@ -28,24 +23,15 @@ const LANGS: { key: Lang; label: string }[] = [
   { key: "ur", label: "اردو" },
 ];
 
-function OutcomeBadge({ outcome }: { outcome: Outcome }) {
-  const b = BADGE[outcome];
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border ${b.cls}`}>
-      <span className="material-symbols-outlined text-[15px]">{b.icon}</span>
-      {outcome}
-    </span>
-  );
-}
-
 // Simulation rows carry simulated time (2026-05-20); live /decide rows carry real time.
-const timeOf = (d: Decision) => `${d.at.slice(11, 16)} ${d.simulationId ? "sim" : "live"}`;
+const timeOf = (d: Decision) => d.at.slice(11, 16);
 
 const selectCls =
   "h-[48px] border border-[#E3E1DA] rounded-xl bg-[#FAFAF7] px-3 text-xs font-semibold text-[#1B1F23] focus:outline-none focus:ring-1 focus:ring-[#0F766E]";
 
 export function AuditPage() {
   const { activeSim } = useActiveSimulation();
+  const labels = usePolicyLabels();
   const [searchParams] = useSearchParams();
 
   const [riderInput, setRiderInput] = useState(searchParams.get("rider") ?? "");
@@ -111,13 +97,17 @@ export function AuditPage() {
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
         <div>
           <h1 className="text-2xl lg:text-3xl font-bold text-[#1B1F23]">Audit Log</h1>
-          <p className="text-sm text-[#4B5563] mt-0.5">Logged dispatch decisions, with the rule that caused each one. Newest first.</p>
+          <p className="text-sm text-[#4B5563] mt-0.5">Every dispatch decision and the rule behind it.</p>
         </div>
         <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#E3E1DA] bg-[#FFFFFF] text-[#4B5563] text-xs font-semibold">
           <span className="material-symbols-outlined text-[18px] text-[#0F766E]" style={{ fontVariationSettings: "'FILL' 1" }}>
             verified_user
           </span>
-          Pseudonymous IDs only · no positions stored
+          Pseudonymous IDs · no positions stored
+          <InfoTip label="About privacy">
+            Rider IDs are pseudonymous but likely still personal data under India's DPDP Act, 2023. The log never keeps a rider's position or
+            the cooling point. All riders here are simulated.
+          </InfoTip>
         </span>
       </header>
 
@@ -139,7 +129,7 @@ export function AuditPage() {
             <option value="">All outcomes</option>
             {OUTCOMES.map((o) => (
               <option key={o} value={o}>
-                {o}
+                {OUTCOME_WORDS[o]}
               </option>
             ))}
           </select>
@@ -185,10 +175,11 @@ export function AuditPage() {
             "Loading decisions…"
           ) : (
             <>
-              <p className="font-bold text-[#1B1F23]">No decisions match these filters.</p>
-              <p className="mt-1 text-xs">
-                The log holds live /decide calls and the trails of the last 5 simulation runs (first seed only). Rider IDs look like
-                rider-014.
+              <p className="font-bold text-[#1B1F23] inline-flex items-center gap-1">
+                No decisions match these filters.
+                <InfoTip>
+                  The log holds live /decide calls and the trails of the last 5 simulation runs (first seed only). Rider IDs look like rider-014.
+                </InfoTip>
               </p>
             </>
           )}
@@ -204,8 +195,8 @@ export function AuditPage() {
                     <th className="py-3 px-2.5">Rider</th>
                     <th className="py-3 px-2.5">Rule set</th>
                     <th className="py-3 px-2.5">Outcome</th>
-                    <th className="py-3 px-2.5">Winning rule</th>
-                    <th className="py-3 px-2.5">Heat index</th>
+                    <th className="py-3 px-2.5">Rule</th>
+                    <th className="py-3 px-2.5">Heat</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E3E1DA]">
@@ -221,14 +212,19 @@ export function AuditPage() {
                         aria-selected={isSelected}
                         className={`h-[52px] cursor-pointer text-sm ${isSelected ? "bg-[#E6F4F1] border-l-4 border-l-[#0F766E]" : "bg-white hover:bg-[#F8FAFC]"}`}
                       >
-                        <td className="py-2 px-2.5 font-mono whitespace-nowrap">{timeOf(d)}</td>
+                        <td className="py-2 px-2.5 font-mono whitespace-nowrap" title={d.simulationId ? "Simulated time" : "Live"}>
+                          {timeOf(d)}
+                          {!d.simulationId && <span className="ml-1 text-[10px] font-bold text-primary">live</span>}
+                        </td>
                         <td className="py-2 px-2.5 font-mono font-semibold whitespace-nowrap">{d.riderId}</td>
-                        <td className="py-2 px-2.5 whitespace-nowrap">{POLICY_LABELS[d.policyVersion]}</td>
+                        <td className="py-2 px-2.5 whitespace-nowrap">{labels.short(d.policyVersion)}</td>
                         <td className="py-2 px-2.5 whitespace-nowrap">
-                          <OutcomeBadge outcome={d.outcome} />
+                          <OutcomePill outcome={d.outcome} size="sm" />
                         </td>
                         <td className="py-2 px-2.5 font-mono text-xs whitespace-nowrap">{d.firedRules[0] ?? "—"}</td>
-                        <td className="py-2 px-2.5 font-mono whitespace-nowrap">{d.heatIndexC}°C</td>
+                        <td className="py-2 px-2.5 font-mono font-bold whitespace-nowrap" style={{ color: heatColor(d.heatIndexC) }}>
+                          {d.heatIndexC}°
+                        </td>
                       </tr>
                     );
                   })}
@@ -237,7 +233,7 @@ export function AuditPage() {
             </div>
             <div className="p-4 bg-[#FAFAF7] border-t border-[#E3E1DA] flex items-center justify-between gap-3">
               <span className="text-sm text-[#4B5563]">
-                Showing {rows.length} decisions{page.data?.nextCursor ? "" : " (all)"}
+                {rows.length} shown{page.data?.nextCursor ? "" : " (all)"}
               </span>
               {page.data?.nextCursor && (
                 <button
@@ -253,21 +249,19 @@ export function AuditPage() {
           </section>
 
           {selected && (
-            <aside className="w-full lg:flex-1 bg-[#FFFFFF] border border-[#E3E1DA] rounded-[12px] shadow-xs p-5 flex flex-col gap-5">
-              <div className="flex flex-col gap-1.5 pb-4 border-b border-[#E3E1DA]">
-                <div className="flex items-center justify-between gap-2">
-                  <OutcomeBadge outcome={selected.outcome} />
-                  <span className="font-mono text-xs text-[#0F766E] bg-[#E6F4F1] px-2 py-0.5 rounded">{POLICY_LABELS[selected.policyVersion]}</span>
-                </div>
-                <span className="font-mono text-sm text-[#1B1F23]">
-                  {selected.riderId} · {selected.at.slice(0, 16).replace("T", " ")} {selected.simulationId ? "(simulated time)" : "(live)"}
-                </span>
-                {selected.simulationId && <span className="font-mono text-[11px] text-[#4B5563]">Run {selected.simulationId}</span>}
+            <aside className="w-full lg:flex-1 bg-[#FFFFFF] border border-[#E3E1DA] rounded-[12px] shadow-xs p-5 flex flex-col gap-4">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <OutcomePill outcome={selected.outcome} size="lg" />
+                <span className="text-xs font-semibold text-[#0F766E] bg-[#E6F4F1] px-2 py-0.5 rounded">{labels.short(selected.policyVersion)}</span>
               </div>
+              <span className="font-mono text-xs text-[#4B5563] flex items-center gap-1">
+                {selected.riderId} · {selected.at.slice(0, 16).replace("T", " ")} {selected.simulationId ? "(sim)" : "(live)"}
+                {selected.simulationId && <InfoTip label="Simulation run">Run {selected.simulationId}. Times inside a simulation are simulated.</InfoTip>}
+              </span>
 
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-[#4B5563] uppercase tracking-wider">What the rider saw</span>
+                  <span className="text-xs font-bold text-[#4B5563] uppercase tracking-wider">Rider saw</span>
                   <div className="inline-flex border border-[#E3E1DA] rounded-lg bg-[#FAFAF7] p-0.5 gap-0.5" role="tablist" aria-label="Language">
                     {LANGS.map((l) => (
                       <button
@@ -286,63 +280,53 @@ export function AuditPage() {
                 <div
                   dir={lang === "ur" ? "rtl" : "ltr"}
                   lang={lang}
-                  className="p-3.5 rounded-xl bg-[#FAFAF7] border border-[#E3E1DA] text-sm text-[#1B1F23] leading-relaxed"
+                  className="p-3.5 rounded-xl bg-[#FAFAF7] border border-[#E3E1DA] text-lg font-semibold text-[#1B1F23] leading-snug"
                   style={lang === "ur" ? { fontFamily: "'Noto Naskh Arabic', serif" } : undefined}
                 >
-                  {message ?? <span className="text-[#4B5563]">No translation logged for this message.</span>}
+                  {message ?? <span className="text-sm font-normal text-[#4B5563]">No translation logged.</span>}
                 </div>
                 {lang !== "en" && (
-                  <span className="text-[11px] font-semibold text-[#92400E]">Draft translation: machine-written, not yet checked by a native speaker.</span>
+                  <span className="self-start text-[10px] font-bold uppercase tracking-wider text-[#92400E] bg-[#FFFBEB] border border-[#FDE68A] rounded px-1.5 py-0.5" title="Machine-written, not yet checked by a native speaker">
+                    Draft · not checked
+                  </span>
                 )}
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-bold text-[#4B5563] uppercase tracking-wider">Rules that fired</span>
                 {selected.firedRules.length === 0 ? (
-                  <span className="text-xs text-[#4B5563]">None: the order was allowed.</span>
+                  <span className="text-xs text-[#4B5563]">None: allowed.</span>
                 ) : (
-                  selected.firedRules.map((r, i) => (
-                    <div key={r} className={`p-2.5 rounded-lg border flex items-center justify-between font-mono text-xs ${i === 0 ? "bg-[#E6F4F1] border-[#0F766E]/30" : "bg-[#FAFAF7] border-[#E3E1DA]"}`}>
-                      <span>
-                        {i + 1}. {r}
+                  <div className="flex flex-wrap gap-1.5 font-mono text-xs">
+                    {selected.firedRules.map((r, i) => (
+                      <span key={r} className={`px-2 py-1 rounded-lg border ${i === 0 ? "bg-[#E6F4F1] border-[#0F766E]/40 font-bold" : "bg-[#FAFAF7] border-[#E3E1DA] text-[#4B5563]"}`} title={i === 0 ? "Winner" : "Also fired"}>
+                        {i === 0 && "★ "}
+                        {r}
                       </span>
-                      <span className="text-[10px] font-bold">{i === 0 ? "WINNER" : "ALSO FIRED"}</span>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-3 gap-2 text-xs">
-                <div className="p-2.5 rounded-lg border border-[#E3E1DA] bg-[#FAFAF7]">
-                  <span className="block text-[11px] text-[#4B5563]">Heat index</span>
-                  <span className="font-mono font-bold">{selected.heatIndexC}°C</span>
-                </div>
-                <div className="p-2.5 rounded-lg border border-[#E3E1DA] bg-[#FAFAF7]">
-                  <span className="block text-[11px] text-[#4B5563]">Rest assigned</span>
-                  <span className="font-mono font-bold">{selected.restMinutes} min</span>
-                </div>
-                <div className="p-2.5 rounded-lg border border-[#E3E1DA] bg-[#FAFAF7]">
-                  <span className="block text-[11px] text-[#4B5563]">Penalty waived</span>
-                  <span className="font-bold">{selected.penaltyWaived ? "Yes" : "No"}</span>
-                </div>
+              <div className="flex flex-wrap gap-1.5 text-xs font-bold">
+                {selected.restMinutes > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E]">
+                    <span className="material-symbols-outlined text-[15px]">timer</span>
+                    {selected.restMinutes} min rest
+                    {selected.outcome === "FORCE_REST" && (
+                      <InfoTip>The rider was sent to the nearest cooling point. The log does not keep which one.</InfoTip>
+                    )}
+                  </span>
+                )}
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border ${selected.penaltyWaived ? "bg-[#ECFDF5] border-[#A7F3D0] text-[#065F46]" : "bg-[#FAFAF7] border-[#E3E1DA] text-[#4B5563]"}`}
+                >
+                  <span className="material-symbols-outlined text-[15px]">{selected.penaltyWaived ? "verified_user" : "gavel"}</span>
+                  {selected.penaltyWaived ? "No penalty" : "Penalty not waived"}
+                </span>
               </div>
-              {selected.outcome === "FORCE_REST" && (
-                <p className="text-[11px] text-[#4B5563]">The rider was sent to the nearest cooling point. The log does not keep which one.</p>
-              )}
 
-              <div className="flex flex-col gap-2">
-                <span className="text-xs font-bold text-[#4B5563] uppercase tracking-wider">Exact inputs sent to Cedar</span>
-                <table className="w-full text-xs font-mono border border-[#E3E1DA] rounded-lg overflow-hidden">
-                  <tbody>
-                    {Object.entries(selected.cedarContext).map(([k, v], i) => (
-                      <tr key={k} className={`h-8 border-b border-[#E3E1DA] last:border-b-0 ${i % 2 === 0 ? "bg-[#FAFAF7]" : "bg-white"}`}>
-                        <td className="px-3 text-[#4B5563]">{k}</td>
-                        <td className="px-3 text-right font-bold">{v}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DecisionInputs ctx={selected.cedarContext} />
 
               <button
                 type="button"
@@ -350,16 +334,13 @@ export function AuditPage() {
                 className="w-full h-10 rounded-xl border border-[#E3E1DA] bg-white hover:bg-[#FAFAF7] text-xs font-bold text-[#1B1F23] flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px]">content_copy</span>
-                Copy decision as JSON
+                Copy as JSON
               </button>
             </aside>
           )}
         </div>
       )}
 
-      <div className="w-full bg-[#FAFAF7] border border-[#E3E1DA] rounded-[12px] p-4 text-xs text-[#4B5563] leading-relaxed">
-        Rider IDs are pseudonymous but likely still personal data under India's DPDP Act, 2023. All riders here are simulated.
-      </div>
     </div>
   );
 }

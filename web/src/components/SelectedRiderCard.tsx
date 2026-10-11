@@ -3,18 +3,12 @@
 import { Link } from "react-router-dom";
 import type { Decision, Outcome, PolicyVersion, SimResult } from "@heatgate/contracts";
 import { useAudit } from "../hooks/index.ts";
+import { DecisionInputs, InfoTip, OutcomePill } from "./ui.tsx";
 
 interface SelectedRiderCardProps {
   sim: SimResult | undefined;
   policy: PolicyVersion;
 }
-
-const BADGE: Record<Outcome, string> = {
-  ALLOW: "bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]",
-  SKIP_ORDER: "bg-[#F3F4F6] text-[#374151] border-[#E5E7EB]",
-  DENY: "bg-[#FEE2E2] text-[#991B1B] border-[#FECACA]",
-  FORCE_REST: "bg-[#FEF3C7] text-[#92400E] border-[#FDE68A]",
-};
 
 function pickEvent(sim: SimResult, policy: PolicyVersion) {
   const frames = sim.runs[policy]?.frames ?? [];
@@ -45,7 +39,7 @@ export function SelectedRiderCard({ sim, policy }: SelectedRiderCardProps) {
   if (!event) {
     return (
       <div className="lg:col-span-4 bg-surface-container-lowest border border-outline-variant rounded-xl p-4 text-xs text-on-surface-variant">
-        No rule fired for any rider in this run's first seed.
+        No rule fired in this run's first seed.
       </div>
     );
   }
@@ -55,15 +49,22 @@ export function SelectedRiderCard({ sim, policy }: SelectedRiderCardProps) {
   const auditLink = `/audit?simulationId=${encodeURIComponent(sim.simulationId)}&rider=${encodeURIComponent(event.riderId)}`;
 
   return (
-    <div className="lg:col-span-4 bg-surface-container-lowest border border-outline-variant rounded-xl p-4 lg:p-5 shadow-xs flex flex-col gap-3">
-      <div className="flex items-center justify-between pb-2 border-b border-outline-variant/60">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">One decision from this run</span>
-        <span className={`h-7 px-2 rounded border text-[10px] font-bold flex items-center ${BADGE[event.outcome]}`}>{event.outcome}</span>
+    <div className="lg:col-span-4 bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 lg:p-5 shadow-xs flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1">
+          One decision
+          <InfoTip label="About this decision">
+            The first rule that stopped an order in this run's first seed (a forced rest if there is one), with what the audit log kept for
+            it. Winning rule: <span className="font-mono">{event.rule}</span>.
+          </InfoTip>
+        </span>
+        <span className="font-mono text-xs text-on-surface-variant">
+          {event.riderId} · {clock(sim.params.startHour, event.minute)}
+        </span>
       </div>
-      <div className="font-mono text-sm text-on-surface">
-        <span className="font-bold">{event.riderId}</span> · {clock(sim.params.startHour, event.minute)} (simulated, first seed)
-      </div>
-      <div className="font-mono text-[11px] text-primary font-bold">Winning rule: {event.rule}</div>
+      <span className="self-start">
+        <OutcomePill outcome={event.outcome} size="lg" />
+      </span>
 
       {audit.error ? (
         <p role="alert" className="text-xs text-error">
@@ -72,36 +73,33 @@ export function SelectedRiderCard({ sim, policy }: SelectedRiderCardProps) {
       ) : audit.loading ? (
         <p className="text-xs text-on-surface-variant">Loading what the rider was told…</p>
       ) : !row ? (
-        <p className="text-xs text-on-surface-variant">
-          No audit entry for this decision. The log keeps the trails of the last 5 runs only, and fixture mode has no trail for this run.
+        <p className="text-xs text-on-surface-variant flex items-center gap-1">
+          No audit entry for this decision.
+          <InfoTip>The log keeps the trails of the last 5 runs only, and fixture mode has no trail for this run.</InfoTip>
         </p>
       ) : (
         <>
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">What the rider saw (English)</span>
-            <p className="text-sm text-on-surface bg-surface-container-low p-2.5 rounded-lg border border-outline-variant">{row.message}</p>
+          <p className="text-lg font-semibold leading-snug text-on-surface">“{row.message}”</p>
+          <div className="flex flex-wrap gap-1.5">
+            {row.restMinutes > 0 && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#FEF3C7] border border-[#FDE68A] text-[#92400E] text-xs font-bold">
+                <span className="material-symbols-outlined text-[15px]">timer</span>
+                {row.restMinutes} min rest
+              </span>
+            )}
+            {row.penaltyWaived && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#ECFDF5] border border-[#A7F3D0] text-[#065F46] text-xs font-bold">
+                <span className="material-symbols-outlined text-[15px]">verified_user</span>
+                No penalty
+              </span>
+            )}
           </div>
-          <dl className="flex flex-col border border-outline-variant rounded-lg divide-y divide-outline-variant font-mono text-xs overflow-hidden">
-            <div className="flex justify-between px-3 py-1.5">
-              <dt className="text-on-surface-variant">Rest assigned</dt>
-              <dd className="font-bold">{row.restMinutes} min</dd>
-            </div>
-            <div className="flex justify-between px-3 py-1.5">
-              <dt className="text-on-surface-variant">Penalty waived</dt>
-              <dd className="font-bold">{row.penaltyWaived ? "Yes" : "No"}</dd>
-            </div>
-            {Object.entries(row.cedarContext).map(([k, v]) => (
-              <div key={k} className="flex justify-between px-3 py-1.5">
-                <dt className="text-on-surface-variant">{k}</dt>
-                <dd className="font-bold">{v}</dd>
-              </div>
-            ))}
-          </dl>
+          <DecisionInputs ctx={row.cedarContext} />
         </>
       )}
 
-      <Link to={auditLink} className="text-primary hover:text-[#0B4F4A] text-xs font-bold flex items-center gap-1 justify-end pt-1">
-        <span>Open this rider in the Audit Log</span>
+      <Link to={auditLink} className="mt-auto text-primary hover:text-[#0B4F4A] text-xs font-bold flex items-center gap-1 justify-end">
+        <span>Open in Audit Log</span>
         <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
       </Link>
     </div>
