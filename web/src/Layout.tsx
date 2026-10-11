@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useSearchParams } from "react-router-dom";
 import { useDataSource, type DataSource } from "./hooks/index.ts";
 import { InfoTip } from "./components/ui.tsx";
+import { useActiveSimulation } from "./context/SimulationContext.tsx";
 
 const SOURCE_DOT: Record<DataSource, string> = {
   live: "bg-emerald-500",
@@ -12,6 +13,9 @@ const SOURCE_DOT: Record<DataSource, string> = {
 
 export function Layout({ routes }: { routes: readonly { path: string; label: string }[] }) {
   const { source, apiUrl, error } = useDataSource();
+  // The caveats every page keeps on screen. The multi-app share comes from the shown run (or the API defaults).
+  const { activeSim, params } = useActiveSimulation();
+  const multiAppPct = activeSim?.params.multiAppPct ?? params?.multiAppPct;
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
@@ -35,11 +39,20 @@ export function Layout({ routes }: { routes: readonly { path: string; label: str
       <header className="w-full bg-surface-container-lowest border-b border-outline-variant shadow-xs">
         {/* Top Disclaimer Banner: one line on a phone (short texts), full texts from sm up */}
         <div className="bg-surface-container-high border-b border-outline-variant px-4 sm:px-6 lg:px-8 py-1 text-on-surface-variant text-[11px]">
-          <div className="max-w-[1440px] mx-auto w-full flex items-center justify-between gap-3">
-            <span className="font-mono flex items-center gap-1.5 min-w-0">
+          <div className="max-w-[1440px] mx-auto w-full flex items-start justify-between gap-3">
+            <span className="font-mono flex items-start gap-1.5 min-w-0" data-testid="caveats">
               <span className="material-symbols-outlined text-[14px] text-primary shrink-0">info</span>
-              <span className="sm:hidden">₹ amounts are placeholders</span>
-              <span className="hidden sm:inline">Simulated riders · ₹ amounts are placeholders</span>
+              <span className="flex flex-wrap gap-x-1.5 [&>span]:whitespace-nowrap">
+                <span className="hidden sm:inline">Simulated riders ·</span>
+                <span>₹ amounts are placeholders ·</span>
+                <span>
+                  {multiAppPct !== undefined ? `Assumes ${multiAppPct}% of riders work another app` : "Multi-app share assumed"}
+                  <span className="hidden sm:inline"> while resting</span> ·
+                </span>
+                <span>
+                  Alert level assumed<span className="hidden sm:inline">, not a real IMD alert</span>
+                </span>
+              </span>
             </span>
             <span
               className={`font-mono shrink-0 text-[11px] flex items-center gap-1.5 ${source === "unreachable" ? "text-error font-bold" : "text-on-surface-variant/80"}`}
