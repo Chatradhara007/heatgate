@@ -1,10 +1,7 @@
 import type { Outcome } from "@heatgate/contracts";
-import { outcomeBgClass, outcomeLabels } from "../theme.ts";
+import { OutcomePill } from "./ui.tsx";
 
+// Kept for older imports: the outcome as a small pill in plain words.
 export function OutcomeBadge({ outcome }: { outcome: Outcome }) {
-  return (
-    <span className={`inline-block rounded-sm px-xs text-xs font-semibold text-white ${outcomeBgClass[outcome]}`}>
-      {outcomeLabels[outcome]}
-    </span>
-  );
+  return <OutcomePill outcome={outcome} size="sm" />;
 }

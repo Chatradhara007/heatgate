@@ -19,7 +19,7 @@ export function SimulatorPage() {
     <div className="max-w-[1440px] mx-auto px-4 lg:px-6 flex flex-col w-full gap-5 lg:gap-6">
       {defaultsLoading && !params && (
         <div className="text-center py-2 px-4 text-on-surface-variant text-xs font-bold rounded-xl border border-outline-variant">
-          Loading the default settings from the API…
+          Loading settings…
         </div>
       )}
 

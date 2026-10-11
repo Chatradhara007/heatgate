@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { FairKnobs, SimParams } from "@heatgate/contracts";
 import { useRenderPolicy } from "../hooks/index.ts";
 import type { FairRuleSummary } from "../hooks/index.ts";
+import { InfoTip, OUTCOME_WORDS } from "./ui.tsx";
 
 interface BottomCardsProps {
   params: SimParams;
@@ -13,9 +14,9 @@ interface BottomCardsProps {
 
 // The API's allowed ranges (contracts/types.ts FairKnobs, docs/api-guide.md §4). Only these three are on screen.
 const SLIDERS: { key: keyof FairKnobs; label: string; unit: string; min: number; max: number; mark?: { at: number; label: string } }[] = [
-  { key: "restHeatC", label: "Rest heat index threshold", unit: "°C", min: 32, max: 46 },
-  { key: "workLimitMin", label: "Work limit before a paid break", unit: "min", min: 60, max: 120, mark: { at: 90, label: "NDMA 90" } },
-  { key: "rushHardLimitMin", label: "Rush-hour hard limit", unit: "min", min: 90, max: 150, mark: { at: 120, label: "Union 120" } },
+  { key: "restHeatC", label: "Rest from heat index", unit: "°C", min: 32, max: 46 },
+  { key: "workLimitMin", label: "Paid break after", unit: "min", min: 60, max: 120, mark: { at: 90, label: "NDMA 90" } },
+  { key: "rushHardLimitMin", label: "Rush-hour limit", unit: "min", min: 90, max: 150, mark: { at: 120, label: "Union 120" } },
 ];
 
 const RENDER_DEBOUNCE_MS = 300;
@@ -31,6 +32,8 @@ function withKnob(knobs: FairKnobs, key: keyof FairKnobs, value: number): FairKn
   if (key === "rushHardLimitMin") next.rushHardLimitMin = Math.max(value, knobs.workLimitMin);
   return next;
 }
+
+const WORDS: Record<FairRuleSummary["outcome"], string> = { ...OUTCOME_WORDS, NO_PENALTY: "No penalty" };
 
 const BADGE: Record<FairRuleSummary["outcome"], string> = {
   ALLOW: "bg-[#EFF6FF] text-[#1D4ED8] border-[#BFDBFE]",
@@ -64,8 +67,9 @@ export function BottomCards({ params, setParams, runSimulation, running }: Botto
       {/* Rendered rules */}
       <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 lg:p-5 shadow-xs flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-bold text-on-surface" style={titleStyle}>
-            HeatGate Fair rules, as set below
+          <h3 className="font-bold text-on-surface flex items-center gap-1" style={titleStyle}>
+            HeatGate Fair rules
+            <InfoTip label="About the rules">Only HeatGate Fair changes with the sliders. NDMA and union rules copy the published documents and never change.</InfoTip>
           </h3>
           {rendered && (
             <button
@@ -74,7 +78,7 @@ export function BottomCards({ params, setParams, runSimulation, running }: Botto
               aria-pressed={showCedar}
               className="text-xs font-bold text-primary border border-outline-variant rounded-lg px-2.5 py-1 hover:bg-surface-container"
             >
-              {showCedar ? "Show plain rules" : "Show the Cedar code"}
+              {showCedar ? "Plain rules" : "Cedar code"}
             </button>
           )}
         </div>
@@ -91,11 +95,9 @@ export function BottomCards({ params, setParams, runSimulation, running }: Botto
         ) : (
           <ol className="flex flex-col gap-2 max-h-[340px] overflow-auto">
             {rendered.rules.map((r) => (
-              <li key={r.id} className="flex items-start gap-2 text-xs text-on-surface">
-                <span className={`shrink-0 px-1.5 py-0.5 rounded border text-[10px] font-bold ${BADGE[r.outcome]}`}>{r.outcome}</span>
-                <span>
-                  {r.summary} <span className="font-mono text-[10px] text-on-surface-variant">({r.id})</span>
-                </span>
+              <li key={r.id} className="flex items-start gap-2 text-xs text-on-surface" title={r.id}>
+                <span className={`shrink-0 w-[92px] text-center px-1.5 py-0.5 rounded-full border text-[10px] font-bold ${BADGE[r.outcome]}`}>{WORDS[r.outcome]}</span>
+                <span>{r.summary}</span>
               </li>
             ))}
           </ol>
@@ -107,20 +109,17 @@ export function BottomCards({ params, setParams, runSimulation, running }: Botto
             ))}
           </ul>
         )}
-        <p className="text-[11px] text-on-surface-variant">
-          Only HeatGate Fair changes with the knobs. NDMA and union rules copy the published documents and never change.
-        </p>
       </div>
 
       {/* Knobs */}
       <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 lg:p-5 shadow-xs flex flex-col justify-between gap-3">
         <div>
           <h3 className="font-bold text-on-surface" style={titleStyle}>
-            Change the numbers in the rules
+            Tune the rules
           </h3>
           {!knobs ? (
             <p role="alert" className="mt-2 text-xs text-error">
-              The API's defaults have no rule knobs (fairKnobs), so the sliders are off.
+              No rule knobs in the API defaults, so the sliders are off.
             </p>
           ) : (
             <div className="flex flex-col gap-3.5 mt-3">

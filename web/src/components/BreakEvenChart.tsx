@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import type { BreakEvenReport, PolicyVersion } from "@heatgate/contracts";
 import { useBreakEven, usePolicyLabels } from "../hooks/index.ts";
 import { fmt } from "../lib/stats.ts";
+import { InfoTip } from "./ui.tsx";
 
 // Categorical hues in fixed order (validated: CVD ΔE 29, contrast ≥ 3:1). Identity only, not good/bad.
 const HUES = ["#0051d5", "#a15600", "#6b4fbb", "#3e4947"];
@@ -35,21 +36,21 @@ const rupees = (n: number) => `₹${fmt(n, 2)}`;
 function breakEvenText(p: PolicyEntry): string {
   const b = p.breakEven;
   if (b.status === "notReached") {
-    return `not reached within the sweep (best ${fmt(b.bestEarningsPctOfNoRules, 1)}% of today at ${rupees(b.atRestPayInrPerMin)}/min, placeholder)`;
+    return `not reached (best ${fmt(b.bestEarningsPctOfNoRules, 1)}% of today at ${rupees(b.atRestPayInrPerMin)}/min)`;
   }
-  const notAll = b.seedsNotReached > 0 ? `; ${b.seedsNotReached} seed${b.seedsNotReached === 1 ? "" : "s"} never reached it within the sweep` : "";
-  return `${rupees(b.perSeedMinInrPerMin)}–${rupees(b.perSeedMaxInrPerMin)} per min across seeds (placeholder)${notAll}`;
+  const notAll = b.seedsNotReached > 0 ? `; ${b.seedsNotReached} seed${b.seedsNotReached === 1 ? "" : "s"} never reached it` : "";
+  return `${rupees(b.perSeedMinInrPerMin)}–${rupees(b.perSeedMaxInrPerMin)}/min${notAll}`;
 }
 
 // Compares the rule sets' per-seed break-even ranges at one demand level. Overlap = "no clear difference".
 function levelCompare(entries: PolicyEntry[]): string {
   if (entries.length < 2) return "—";
   const reached = entries.map((e) => e.breakEven).filter((b) => b.status === "reached");
-  if (reached.length === 0) return "Not reached by any rule set within the sweep.";
-  if (reached.length !== entries.length) return "Not reached by every rule set, so no range to compare.";
+  if (reached.length === 0) return "Not reached by any.";
+  if (reached.length !== entries.length) return "Not reached by all: no comparison.";
   const lo = Math.max(...reached.map((b) => b.perSeedMinInrPerMin));
   const hi = Math.min(...reached.map((b) => b.perSeedMaxInrPerMin));
-  return lo <= hi ? "Ranges overlap: no clear difference." : "Ranges do not overlap.";
+  return lo <= hi ? "No clear difference (ranges overlap)." : "Ranges do not overlap.";
 }
 
 export function BreakEvenChart() {
@@ -63,8 +64,13 @@ export function BreakEvenChart() {
     <section className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 sm:p-6 shadow-xs flex flex-col gap-4">
       <div>
         <h2 className="text-lg font-bold text-on-surface">Break-even rest pay</h2>
-        <p className="text-xs text-on-surface-variant mt-0.5">
-          The rest pay per minute at which a rule set's average rider earns as much as today. Pre-computed sweep, not this run.
+        <p className="text-xs text-on-surface-variant mt-0.5 flex items-center gap-1">
+          Rest pay per minute at which riders earn as much as today.
+          <InfoTip label="About the break-even sweep">
+            The rest pay per minute at which a rule set's average rider earns as much as today. Pre-computed sweep, not this run.
+            {report.data && ` ${report.data.note}`} Every ₹ is a placeholder, so read the shapes, not the prices. Each line is the mean over
+            {report.data ? ` ${report.data.params.seeds.length}` : ""} seeds; the table gives the lowest–highest seed.
+          </InfoTip>
         </p>
       </div>
       {body}
@@ -114,15 +120,11 @@ export function BreakEvenChart() {
 
   return shell(
     <>
-      <div className="rounded-xl border border-outline-variant bg-surface-container-low p-3 text-xs text-on-surface-variant leading-relaxed">
-        {data.note} Every ₹ on this chart is a placeholder, so read the shapes, not the prices. Each line is the mean over{" "}
-        {data.params.seeds.length} seeds; the table below gives the lowest–highest seed.
-        {data.stale && (
-          <strong className="block mt-1 text-error">
-            Warning: this sweep was made with settings that differ from today's defaults. Re-run npm run sim:breakeven before quoting it.
-          </strong>
-        )}
-      </div>
+      {data.stale && (
+        <p role="alert" className="text-xs font-bold text-error">
+          Warning: this sweep used settings that differ from today's defaults. Re-run npm run sim:breakeven before quoting it.
+        </p>
+      )}
 
       {/* Legend: colour = rule set, dash = demand level */}
       <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-on-surface">
@@ -245,7 +247,7 @@ export function BreakEvenChart() {
                   {labels.label(id)}
                 </th>
               ))}
-              <th className="py-2 pr-3">Comparison</th>
+              <th className="py-2 pr-3">Compared</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-variant">
@@ -274,7 +276,7 @@ export function BreakEvenChart() {
       </div>
 
       <details className="text-xs">
-        <summary className="cursor-pointer text-primary font-semibold">Show every point of the chart</summary>
+        <summary className="cursor-pointer text-primary font-semibold">All chart points</summary>
         <div className="overflow-x-auto mt-2">
           <table className="w-full text-left border-collapse min-w-[420px]">
             <thead>
