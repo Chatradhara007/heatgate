@@ -221,7 +221,7 @@ export function AuditPage() {
                         <td className="py-2 px-2.5 whitespace-nowrap">
                           <OutcomePill outcome={d.outcome} size="sm" />
                         </td>
-                        <td className="py-2 px-2.5 font-mono text-xs whitespace-nowrap">{d.firedRules[0] ?? "—"}</td>
+                        <td className="py-2 px-2.5 font-mono text-xs whitespace-nowrap">{d.firedRules[0] ?? <span className="font-sans text-[#4B5563]">none: allowed</span>}</td>
                         <td className="py-2 px-2.5 font-mono font-bold whitespace-nowrap" style={{ color: heatColor(d.heatIndexC) }}>
                           {d.heatIndexC}°
                         </td>
